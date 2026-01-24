@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mpv
+      POSTGRES_USER: mpv
+      POSTGRES_PASSWORD: mpv_password_change_me
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./packages/db/migrations:/migrations:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgresql://mpv:mpv_password_change_me@db:5432/mpv
+      UPLOAD_DIR: /app/uploads
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: gpt-4.1-mini
+      MASTER_ADMIN_EMAILS: "owner1@moydompro.ru"
+    volumes:
+      - ./data/api_uploads:/app/uploads
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: "https://api.moydompro.ru"
+      API_BASE_URL: "http://api:8080"
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  admin:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: ./apps/admin/Dockerfile
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: "http://api:8080"
+      NEXT_PUBLIC_API_BASE_URL: "https://api.moydompro.ru"
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3001:3001"
+
+volumes:
+  db_data:

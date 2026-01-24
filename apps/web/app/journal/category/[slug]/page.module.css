@@ -1,0 +1,264 @@
+/* apps/web/app/journal/category/[slug]/page.module.css */
+
+.wrap {
+  padding: 24px 16px;
+}
+
+.shell {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.backRow {
+  margin-bottom: 14px;
+}
+
+.backLink {
+  text-decoration: none;
+  color: rgba(109, 40, 217, 1);
+  font-weight: 400;
+}
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.h1 {
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 18px;
+  font-weight: 400;
+}
+
+@media (max-width: 720px) {
+  .h1 {
+    font-size: 34px;
+  }
+}
+
+.pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.pill {
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  text-decoration: none;
+  color: rgba(109, 40, 217, 1);
+  background: #fff;
+  font-weight: 400;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pill:hover {
+  background: rgba(109, 40, 217, 0.06);
+  border-color: rgba(109, 40, 217, 0.22);
+}
+
+.pillActive {
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(109, 40, 217, 1);
+  font-weight: 400;
+}
+
+/* Featured banner */
+.featured {
+  display: grid;
+  grid-template-columns: 1fr;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  margin-bottom: 22px;
+  background: #fff;
+}
+
+.featuredImg {
+  position: relative;
+  height: 360px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 720px) {
+  .featuredImg {
+    height: 220px;
+  }
+}
+
+.featuredOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.05),
+    rgba(0, 0, 0, 0.0) 40%,
+    rgba(0, 0, 0, 0.08)
+  );
+}
+
+.featuredBody {
+  padding: 16px 16px 18px;
+}
+
+.featuredTop {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.70);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+.featuredTitle {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 720px) {
+  .featuredTitle {
+    font-size: 22px;
+  }
+}
+
+.featuredExcerpt {
+  font-size: 16px;
+  line-height: 1.65;
+  opacity: 0.85;
+  margin-bottom: 14px;
+}
+
+.featuredMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.date {
+  opacity: 0.55;
+}
+
+.more {
+  color: rgba(109, 40, 217, 1);
+  font-weight: 300;
+}
+
+/* Cards grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  display: block;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+}
+
+.cardImg {
+  position: relative;
+  height: 210px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.cardImgStub {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.cardBadge {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.70);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 300;
+}
+
+.cardBody {
+  padding: 14px 14px 16px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.cardExcerpt {
+  opacity: 0.78;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.empty {
+  padding: 18px;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  opacity: 0.75;
+}

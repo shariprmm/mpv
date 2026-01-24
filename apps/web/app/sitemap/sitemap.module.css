@@ -1,0 +1,228 @@
+/* apps/web/app/sitemap/sitemap.module.css */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #111;
+}
+
+.header {
+  margin-bottom: 40px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 30px;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #666;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.backLink:hover {
+  color: #111;
+}
+
+.h1 {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.meta {
+  display: inline-block;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-left: 10px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Якоря (Pills) */
+.anchors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.anchorPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 99px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+  transition: all 0.2s ease;
+}
+
+.anchorPill:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  transform: translateY(-1px);
+}
+
+.count {
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Сетка карточек */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+  align-items: start; /* Чтобы карточки не растягивались по высоте */
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  scroll-margin-top: 20px;
+}
+
+.cardHeader {
+  padding: 16px 20px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.regionLink {
+  font-size: 13px;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.regionLink:hover {
+  text-decoration: underline;
+}
+
+.cardBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Подгруппы (Услуги, Товары...) */
+.subGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subTitle {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  font-weight: 700;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 6px;
+}
+
+.linkList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linkList li a {
+  display: block;
+  font-size: 14px;
+  color: #374151;
+  text-decoration: none;
+  line-height: 1.4;
+  transition: color 0.2s;
+}
+
+.linkList li a:hover {
+  color: #2563eb;
+}
+
+.mainLink {
+  font-weight: 600;
+  color: #111 !important;
+}
+
+/* Error State */
+.errorBox {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 24px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.btnPrimary {
+  display: inline-block;
+  margin-top: 12px;
+  background: #111;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .h1 {
+    font-size: 28px;
+  }
+  
+  .anchors {
+    gap: 6px;
+  }
+  
+  .anchorPill {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

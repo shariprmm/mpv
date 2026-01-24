@@ -1,0 +1,162 @@
+type Region = { id: number; name: string; slug: string };
+type Service = { id: number; name: string; slug: string; category: string };
+type Company = {
+  id: number;
+  name: string;
+  rating: string | number;
+  reviews_count: number;
+  is_verified: boolean;
+  region_slug: string;
+  price_min: number | null;
+  price_max: number | null;
+};
+
+async function getJson(url: string) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+  return r.json();
+}
+
+function asNumber(v: any): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: { region: string; service: string };
+  searchParams?: { sort?: string };
+}) {
+  const apiBase = process.env.API_BASE_URL || "http://api:8080";
+
+  const regionSlug = params.region;
+  const serviceSlug = params.service;
+  const sort = searchParams?.sort === "price" ? "price" : "rating";
+
+  const regionsRes = await getJson(`${apiBase}/regions`);
+  const servicesRes = await getJson(`${apiBase}/services`);
+  const companiesRes = await getJson(
+    `${apiBase}/companies?region_slug=${encodeURIComponent(regionSlug)}&service_slug=${encodeURIComponent(
+      serviceSlug
+    )}&sort=${encodeURIComponent(sort)}`
+  );
+
+  const regions: Region[] = regionsRes.items || [];
+  const services: Service[] = servicesRes.items || [];
+  const companies: Company[] = companiesRes.items || [];
+
+  const regionObj = regions.find((r) => r.slug === regionSlug);
+  const serviceObj = services.find((s) => s.slug === serviceSlug);
+
+  const lowPrice =
+    companies.length > 0
+      ? Math.min(...companies.map((c) => c.price_min ?? Number.POSITIVE_INFINITY))
+      : null;
+  const highPrice =
+    companies.length > 0 ? Math.max(...companies.map((c) => c.price_max ?? 0)) : null;
+
+  const low = lowPrice !== null && lowPrice !== Number.POSITIVE_INFINITY ? asNumber(lowPrice) : null;
+  const high = highPrice !== null ? asNumber(highPrice) : null;
+
+  // JSON-LD: Service + AggregateOffer (low/high) + ItemList (компании)
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": serviceObj?.name || serviceSlug,
+    "areaServed": {
+      "@type": "AdministrativeArea",
+      "name": regionObj?.name || regionSlug
+    },
+    "offers": companies.length
+      ? {
+          "@type": "AggregateOffer",
+          "priceCurrency": "RUB",
+          "lowPrice": low ?? undefined,
+          "highPrice": high ?? undefined,
+          "offerCount": companies.length
+        }
+      : undefined,
+    "provider": {
+      "@type": "Organization",
+      "name": "МойДомPRO"
+    }
+  };
+
+  const itemList = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": companies.map((c, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "name": c.name,
+      "url": `https://moydompro.ru/c/${c.id}`
+    }))
+  };
+
+  return (
+    <main style={{ fontFamily: "system-ui", padding: 24, maxWidth: 1100, margin: "0 auto" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+
+      <h1 style={{ marginBottom: 6 }}>
+        {serviceObj?.name || serviceSlug} — {regionObj?.name || regionSlug}
+      </h1>
+
+      <div style={{ opacity: 0.8, marginBottom: 14 }}>
+        Сортировка: <b>{sort === "price" ? "по цене" : "по рейтингу"}</b>
+        {companies.length && low != null && high != null ? (
+          <>
+            {" "}· Диапазон цен: <b>{low}</b>–<b>{high}</b> RUB · Компаний: <b>{companies.length}</b>
+          </>
+        ) : null}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+        <a href={`/r/${regionSlug}/services/${serviceSlug}?sort=rating`} style={{ textDecoration: "none" }}>
+          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #ddd" }}>По рейтингу</span>
+        </a>
+        <a href={`/r/${regionSlug}/services/${serviceSlug}?sort=price`} style={{ textDecoration: "none" }}>
+          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #ddd" }}>По цене</span>
+        </a>
+      </div>
+
+      {companies.length ? (
+        <div style={{ display: "grid", gap: 10 }}>
+          {companies.map((c) => (
+            <a
+              key={c.id}
+              href={`/c/${c.id}`}
+              style={{
+                textDecoration: "none",
+                color: "inherit",
+                border: "1px solid #f0f0f0",
+                borderRadius: 14,
+                padding: 14,
+              }}
+            >
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div style={{ fontWeight: 800 }}>{c.name}</div>
+                {c.is_verified ? (
+                  <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, border: "1px solid #ddd" }}>
+                    ✅ Проверенная
+                  </span>
+                ) : null}
+                <span style={{ marginLeft: "auto", fontSize: 13, opacity: 0.85 }}>
+                  ⭐ {Number(c.rating).toFixed(2)} ({c.reviews_count})
+                </span>
+              </div>
+
+              <div style={{ marginTop: 8, opacity: 0.9 }}>
+                Цена: <b>{c.price_min ?? "—"}</b> – <b>{c.price_max ?? "—"}</b> RUB
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div style={{ opacity: 0.7 }}>Пока нет данных по этому региону и услуге.</div>
+      )}
+    </main>
+  );
+}

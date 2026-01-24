@@ -1,0 +1,378 @@
+.card{
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 18px;
+  background: #fff;
+  padding: 14px;
+}
+
+/* ===== HEADER ===== */
+.head{
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.avatar{
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+}
+
+.avatarImg{
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  object-fit: cover;
+  display: block;
+}
+
+.avatarStub{
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.06);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 800;
+}
+
+.headMain{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.titleRow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap: wrap;
+}
+
+.titleLink{
+  font-size: 18px;
+  font-weight: 850;
+  text-decoration: none;
+  color: #111;
+  line-height: 1.15;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.verified{
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  background: rgba(34, 197, 94, .14);
+  color: rgb(21, 128, 61);
+}
+
+.subRow{
+  margin-top: 6px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap: wrap;
+  color: rgba(0,0,0,.6);
+  font-size: 13px;
+}
+
+.rating{ color:#111; font-weight:800; }
+.star{ margin-right: 3px; }
+.ratingMuted{ color: rgba(0,0,0,.45); }
+.dot{ opacity:.6; }
+.reviews{ white-space: nowrap; }
+
+.right{
+  margin-left: auto;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.priceValue{
+  font-size: 20px;
+  font-weight: 950;
+  color:#111;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.priceMuted{
+  font-size: 13px;
+  color: rgba(0,0,0,.5);
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.itemsCount{
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(0,0,0,.45);
+}
+
+/* ===== BODY (полная ширина) ===== */
+.body{
+  margin-top: 10px;
+}
+
+.addrRow{
+  font-size: 12.5px;
+  color: rgba(0,0,0,.55);
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.desc{
+  margin-top: 8px;
+  color: rgba(0,0,0,.72);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.readMore{
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0b5bd3;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.readMore:hover{ text-decoration: underline; }
+
+/* ===== GALLERY (нормально) ===== */
+.galleryLink{
+  display:block;
+  margin-top: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.gallery{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+
+.thumb{
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  overflow:hidden;
+  background: rgba(0,0,0,.05);
+  flex: 0 0 auto;
+}
+
+.thumbImg{
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  display:block;
+}
+
+.moreThumb{
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  overflow:hidden;
+  background: rgba(0,0,0,.22);
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.moreOverlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 950;
+  font-size: 18px;
+  color:#fff;
+  background: rgba(0,0,0,.35);
+}
+
+/* ===== ACTIONS ===== */
+.actions{
+  margin-top: 12px;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btnSecondary{
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(0,0,0,.03);
+  color:#111;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration:none;
+  font-size: 14px;
+}
+
+.btnPrimary{
+  border: 1px solid rgba(0,0,0,.10);
+  background: #0b1f3a;
+  color:#fff;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  text-decoration:none;
+  font-size: 14px;
+}
+
+/* =========================
+   ✅ MOBILE: текст на всю ширину + нормальная галерея
+========================= */
+@media (max-width: 640px){
+  .card{
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .head{
+    gap: 10px;
+  }
+
+  .avatar{
+    width: 56px;
+    height: 56px;
+    flex: 0 0 56px;
+  }
+
+  .avatarImg, .avatarStub{
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+  }
+
+  .titleLink{
+    font-size: 16px;
+  }
+
+  .verified{
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+
+  .subRow{
+    font-size: 12.5px;
+    gap: 6px;
+  }
+
+  .priceValue{ font-size: 18px; }
+  .itemsCount{ display:none; }
+
+  /* ✅ тело реально по ширине карточки */
+  .body{
+    margin-top: 10px;
+  }
+
+  /* ✅ галерея как “плитки”, без горизонтального уродства */
+  .gallery{
+    gap: 8px;
+  }
+
+  .thumb, .moreThumb{
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+  }
+
+  .thumbImg{
+    width: 64px;
+    height: 64px;
+  }
+
+  .moreOverlay{
+    font-size: 16px;
+  }
+
+  /* ✅ кнопки 2 в ряд, профиль прячем */
+  .actions{
+    margin-top: 12px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .actions > :first-child{ display:none; }
+
+  .btnSecondary, .btnPrimary{
+    text-align:center;
+    padding: 12px 14px;
+  }
+}
+
+/* ===== HARD ANTI-OVERFLOW (важно) ===== */
+.card{
+  max-width: 100%;
+  overflow: hidden;            /* режем всё, что вылезает */
+}
+
+.head, .headMain, .titleRow, .titleLink, .subRow, .body{
+  min-width: 0;                /* иначе flex дети распирают */
+}
+
+/* ===== MOBILE: делаем галерею плитками и убираем распирание ===== */
+@media (max-width: 640px){
+  /* вместо flex — grid, чтобы никогда не вылезало */
+  .gallery{
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    align-items: stretch;
+    max-width: 100%;
+  }
+
+  .thumb, .moreThumb{
+    width: 100%;
+    height: auto;              /* высоту не фиксируем */
+    aspect-ratio: 1 / 1;       /* квадраты */
+    border-radius: 12px;
+  }
+
+  .thumbImg{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* " +N " аккуратно */
+  .moreThumb{
+    position: relative;
+    background: rgba(0,0,0,.15);
+  }
+
+  .moreOverlay{
+    position: absolute;
+    inset: 0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight: 950;
+    font-size: 16px;
+    color: #fff;
+    background: rgba(0,0,0,.45);
+  }
+
+  /* кнопки тоже не должны распирать */
+  .actions{
+    max-width: 100%;
+  }
+
+  .btnSecondary, .btnPrimary{
+    width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+}

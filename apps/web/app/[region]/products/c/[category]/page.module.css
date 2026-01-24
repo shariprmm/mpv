@@ -1,0 +1,256 @@
+/* apps/web/app/[region]/products/c/[category]/page.module.css */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0px 12px;
+}
+
+.padX {
+  padding: 0 12px;
+}
+
+/* ✅ лёгкие заголовки под Rubik */
+.h1 {
+  margin: 18px 0 0;
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+.seoText {
+  margin-top: 12px;
+  max-width: none;
+  width: 100%;
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: 0.9;
+  white-space: pre-line;
+}
+
+.section {
+  margin-top: 18px;
+  padding: 0 12px;
+}
+
+.h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* шапка секции */
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.viewAll {
+  opacity: 0.72;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.viewAll:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* ===== ✅ КАТЕГОРИИ ПЛИТКАМИ (как на /[region]) ===== */
+
+.rubricatorGrid {
+  margin-top: 14px;
+
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 140px;
+  grid-template-rows: repeat(2, 70px);
+  gap: 12px;
+
+  overflow-x: auto;
+  padding: 10px 2px 12px;
+
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rubricatorTile {
+  position: relative;
+  display: block;
+  width: 140px;
+  height: 70px;
+
+  border-radius: 14px;
+  background: #f7f7f7;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+
+  text-decoration: none;
+  color: inherit;
+
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.rubricatorTitle {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  right: 50px;
+
+  font-size: 14px;
+  line-height: 1.15;
+  font-weight: 600;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rubricatorImg {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+
+  opacity: 0.95;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* аккуратный скроллбар */
+.rubricatorGrid::-webkit-scrollbar {
+  height: 8px;
+}
+.rubricatorGrid::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+}
+
+/* ===== грид товаров ===== */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.empty {
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+/* ===== карточка товара ===== */
+
+.card {
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+}
+
+.cardLeft {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+/* ✅ мини-картинка */
+.cardThumb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.cardThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cardText {
+  min-width: 0;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardSubtitle {
+  margin-top: 4px;
+  opacity: 0.72;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardArrow {
+  opacity: 0.55;
+  font-size: 28px;
+  padding-left: 8px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* низ */
+.backRow {
+  margin-top: 18px;
+}
+
+.backLink {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 400;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+/* адаптив */
+@media (max-width: 700px) {
+  .h1 {
+    font-size: 32px;
+  }
+  .h2 {
+    font-size: 24px;
+  }
+
+  .rubricatorGrid {
+    grid-auto-columns: 140px; /* держим размеры как на главной */
+  }
+}

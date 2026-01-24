@@ -1,0 +1,9 @@
+{
+  "name": "@mpv/db",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "migrate": "echo \"(db) migrations later\"",
+    "seed": "echo \"(db) seed later\""
+  }
+}
