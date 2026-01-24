@@ -224,8 +224,34 @@ export default async function ProductPage({
   // Берем только первые 15, чтобы не перегружать
   specs = specs.slice(0, 15);
 
+  const ctx = {
+    region: {
+      id: region?.id ?? "",
+      slug: regionSlug,
+      name: regionName,
+      in: regionIn,
+    },
+    product: {
+      id: product?.id ?? "",
+      slug: productSlug,
+      name: productName,
+    },
+    price: {
+      from: pr.priceMin != null ? Math.round(Number(pr.priceMin)) : "",
+      to: pr.priceMax != null ? Math.round(Number(pr.priceMax)) : "",
+      currency: pr.currency || "RUB",
+      from_fmt: pr.priceMin != null ? fmtRub(Math.round(Number(pr.priceMin))) : "",
+      to_fmt: pr.priceMax != null ? fmtRub(Math.round(Number(pr.priceMax))) : "",
+    },
+    companies: {
+      count: companies.length,
+      label: companiesLabel(companies.length),
+    },
+  };
+
   // Описание
-  const descriptionHtml = product.description || product.short_description || "";
+  const descriptionHtmlRaw = product.description || product.short_description || "";
+  const descriptionHtml = renderTemplate(descriptionHtmlRaw, ctx);
 
   // Хлебные крошки
   const crumbs = [
