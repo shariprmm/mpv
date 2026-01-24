@@ -427,7 +427,8 @@ export default function PricePage() {
 
     const added: PickedPhoto[] = [];
     for (const f of list) {
-      if (!isAllowedImageType(f.type)) {
+      const fileType = String(f.type || "").toLowerCase();
+      if (!["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(fileType)) {
         setErr("Фото: поддерживаются только png/jpg/webp.");
         continue;
       }
