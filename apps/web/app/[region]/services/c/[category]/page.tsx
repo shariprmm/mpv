@@ -218,6 +218,13 @@ function fmtRub(n: number | null | undefined) {
   return new Intl.NumberFormat("ru-RU").format(n);
 }
 
+function formatPriceFrom(v?: number | string | null) {
+  if (v === null || v === undefined) return "";
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return `от ${fmtRub(n)} ₽`;
+}
+
 /** простое "в Балашихе" / "в Москве" и т.п. */
 function toPrepositional(city: string) {
   const s = String(city || "").trim();
@@ -312,55 +319,36 @@ function CategoryIconLink(props: { href: string; label: string; icon: string; ac
   );
 }
 
-function ServiceBigCard(props: {
+function ServiceCard(props: {
   href: string;
   title: string;
-  subtitle?: string;
-  companiesCount?: number;
-  priceFrom?: number | null;
+  meta?: string;
   imageUrl?: string | null;
 }) {
-  const { href, title, subtitle, companiesCount, priceFrom, imageUrl } = props;
-
-  const sub2 =
-    companiesCount && companiesCount > 0
-      ? `${companiesCount} ${companiesCount === 1 ? "компания" : "компаний"}`
-      : "пока нет предложений";
-
-  const sub3 = priceFrom != null ? `от ${fmtRub(priceFrom)} ₽` : "цена по запросу";
+  const { href, title, meta, imageUrl } = props;
 
   return (
-    <Link href={href} className={styles.card}>
-      {imageUrl ? (
-        <div className={styles.cardBgImage} style={{ backgroundImage: `url("${imageUrl}")` }} />
-      ) : null}
-
-      <div className={styles.cardBg} />
-      <div className={styles.cardOverlay} />
-
-      <div className={styles.cardPlus} aria-hidden="true">
-        +
-      </div>
-
-      <div className={styles.cardBottom}>
-        <div className={styles.cardLeft}>
-          <div className={styles.cardMiniIcon} aria-hidden="true">
-            🧰
-          </div>
-
-          <div className={styles.cardText}>
-            <div className={styles.cardTitle} title={title}>
-              {title}
-            </div>
-
-            <div className={styles.cardSubtitle}>
-              {subtitle ? `${subtitle} · ${sub2} · ${sub3}` : `${sub2} · ${sub3}`}
-            </div>
-          </div>
+    <Link href={href} className={styles.simpleCard}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className={styles.cardThumb} aria-hidden={!imageUrl}>
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt={title}
+              width={38}
+              height={38}
+              loading="lazy"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <span style={{ fontSize: 16, opacity: 0.5 }}>•</span>
+          )}
         </div>
 
-        <div className={styles.cardArrow} aria-hidden="true">
-          ›
+        <div style={{ minWidth: 0 }}>
+          <div className={styles.simpleCardTitle}>{title}</div>
+          {meta ? <div className={styles.simpleCardMeta}>{meta}</div> : null}
         </div>
       </div>
     </Link>
@@ -778,24 +766,26 @@ export default async function ServiceCategoryPage({
           </Link>
         </div>
 
-        <div className={styles.cardsRow}>
+        <div className={styles.grid}>
           {items.length === 0 ? (
             <div className={styles.emptyText}>Нет услуг в категории "{activeCat.name}".</div>
           ) : (
             items.slice(0, 18).map((s: any) => {
-              const priceFrom = toNum(s.price_min);
-              const companiesCount = Number(s.companies_count ?? 0) || 0;
+              const parts: string[] = [];
+              const price = formatPriceFrom(toNum(s.price_min));
+              if (price) parts.push(price);
+              if ((Number(s.companies_count) || 0) > 0) {
+                parts.push(`Компаний: ${s.companies_count}`);
+              }
 
               const imageUrl = pickServiceImageAbs(s, absPublicUrl);
 
               return (
-                <ServiceBigCard
+                <ServiceCard
                   key={s.slug || s.id}
                   href={`/${region}/services/${s.slug || s.id}`}
                   title={s.name}
-                  subtitle={activeCat.name || s.category || undefined}
-                  companiesCount={companiesCount}
-                  priceFrom={priceFrom}
+                  meta={parts.length ? parts.join(" • ") : undefined}
                   imageUrl={imageUrl}
                 />
               );
