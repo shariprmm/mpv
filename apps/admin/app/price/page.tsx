@@ -147,11 +147,6 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-function isAllowedImageType(mime: string) {
-  const t = String(mime || "").toLowerCase();
-  return ["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(t);
-}
-
 function normCat(v: any): string {
   const s = String(v ?? "").trim();
   return s ? s : "Без категории";
