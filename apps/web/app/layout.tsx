@@ -2,6 +2,7 @@
 import SiteHeader from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { RegionProvider } from "@/context/RegionContext";
+import styles from "./layout.module.css";
 import "./globals.css";
 
 const API_BASE =
@@ -47,30 +48,14 @@ export default async function RootLayout({
         />
       </head>
 
-      <body 
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          minHeight: "100vh",
-          margin: 0,
-          fontFamily: '"Rubik", sans-serif',
-          backgroundColor: "#fff",
-        }}
-      >
+      <body className={styles.body}>
         <RegionProvider initialRegions={regions}>
-          
           <SiteHeader regions={regions} />
 
           {/* flex-grow: 1 растягивает контент, прижимая футер к низу */}
-          <main style={{ flexGrow: 1, width: "100%" }}>
-            {children}
-          </main>
+          <main className={styles.main}>{children}</main>
 
-          <SiteFooter 
-            productCats={productCats} 
-            serviceCats={serviceCats} 
-          />
-          
+          <SiteFooter productCats={productCats} serviceCats={serviceCats} />
         </RegionProvider>
       </body>
     </html>

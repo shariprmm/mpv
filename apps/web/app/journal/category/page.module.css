@@ -1,0 +1,64 @@
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.15;
+  margin-bottom: 10px;
+}
+
+.errorTitle {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.backRow {
+  margin-bottom: 14px;
+}
+
+.backLink {
+  text-decoration: none;
+}
+
+.separator {
+  opacity: 0.6;
+}
+
+.excerpt {
+  opacity: 0.85;
+  margin-bottom: 18px;
+}
+
+.cover {
+  height: 340px;
+  border-radius: 16px;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 18px;
+}
+
+.article {
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.stub {
+  margin-top: 32px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.stubTitle {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.stubText {
+  opacity: 0.85;
+}

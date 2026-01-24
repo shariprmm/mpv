@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_NAME, absUrl } from "@/lib/seo";
+import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,11 @@ async function getHome(region_slug: string) {
   const text = await r.text();
 
   let data: any = null;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { raw: text };
+  }
 
   if (!r.ok) {
     const msg = data?.error || data?.message || `HTTP ${r.status}`;
@@ -68,66 +73,73 @@ export default async function Page({ searchParams }: { searchParams?: { region?:
 
   if (err) {
     return (
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: 24, fontFamily: "system-ui" }}>
-        <h1 style={{ fontSize: 28 }}>MoyDomPro</h1>
-        <p style={{ opacity: 0.8 }}>Главная временно не загрузилась.</p>
-        <pre style={{ whiteSpace: "pre-wrap", padding: 12, border: "1px solid #eee", borderRadius: 12 }}>
-{err}
-        </pre>
-        <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
-          <a href="/" style={{ textDecoration: "none" }}><button>Обновить</button></a>
-          <a href="https://admin.moydompro.ru/login" style={{ textDecoration: "none" }}><button>Вход для компаний</button></a>
+      <main className={styles.main}>
+        <h1 className={styles.errorTitle}>MoyDomPro</h1>
+        <p className={styles.muted}>Главная временно не загрузилась.</p>
+        <pre className={styles.errorDetails}>{err}</pre>
+        <div className={styles.actions}>
+          <a href="/" className={styles.link}>
+            <button>Обновить</button>
+          </a>
+          <a href="https://admin.moydompro.ru/login" className={styles.link}>
+            <button>Вход для компаний</button>
+          </a>
         </div>
       </main>
     );
   }
 
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: 24, fontFamily: "system-ui" }}>
-      <h1 style={{ fontSize: 32, marginBottom: 8 }}>{data?.seo?.h1 || "MoyDomPro"}</h1>
-      <p style={{ opacity: 0.8, marginTop: 0 }}>
+    <main className={styles.main}>
+      <h1 className={styles.title}>{data?.seo?.h1 || "MoyDomPro"}</h1>
+      <p className={`${styles.muted} ${styles.marginTopZero}`}>
         Регион: <b>{data.region?.name}</b>
       </p>
 
-      <section style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: 16, border: "1px solid #eee", borderRadius: 12, marginTop: 16 }}>
-        <a href={`/?region=${encodeURIComponent(data.region?.slug || region_slug)}`} style={{ textDecoration: "none" }}>
+      <section className={styles.section}>
+        <a
+          href={`/?region=${encodeURIComponent(data.region?.slug || region_slug)}`}
+          className={styles.link}
+        >
           <button>Обновить</button>
         </a>
-        <a href="https://admin.moydompro.ru/login" style={{ textDecoration: "none" }}>
+        <a href="https://admin.moydompro.ru/login" className={styles.link}>
           <button>Вход для компаний</button>
         </a>
       </section>
 
-      <h2 style={{ fontSize: 22, marginTop: 28 }}>Популярные услуги</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
+      <h2 className={styles.sectionTitle}>Популярные услуги</h2>
+      <div className={styles.grid}>
         {(data.top_services || []).map((s: any) => (
-          <div key={s.slug} style={{ border: "1px solid #eee", borderRadius: 12, padding: 14 }}>
-            <div style={{ fontWeight: 700 }}>{s.name}</div>
-            <div style={{ opacity: 0.85, marginTop: 6 }}>
+          <div key={s.slug} className={styles.card}>
+            <div className={styles.cardTitle}>{s.name}</div>
+            <div className={`${styles.opacity85} ${styles.marginTopSmall}`}>
               от <b>{money(s.price_min)}</b> до <b>{money(s.price_max)}</b>
             </div>
-            <div style={{ opacity: 0.7, marginTop: 6 }}>{s.companies_count} компаний</div>
+            <div className={`${styles.opacity7} ${styles.marginTopSmall}`}>
+              {s.companies_count} компаний
+            </div>
           </div>
         ))}
       </div>
 
-      <h2 style={{ fontSize: 22, marginTop: 28 }}>Рекомендуемые компании</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
+      <h2 className={styles.sectionTitle}>Рекомендуемые компании</h2>
+      <div className={styles.grid}>
         {(data.featured_companies || []).map((c: any) => (
-          <div key={c.id} style={{ border: "1px solid #eee", borderRadius: 12, padding: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-              <div style={{ fontWeight: 700 }}>{c.name}</div>
-              {c.is_verified ? <span style={{ fontSize: 12, padding: "2px 8px", border: "1px solid #ddd", borderRadius: 999 }}>Проверенная</span> : null}
+          <div key={c.id} className={styles.card}>
+            <div className={styles.cardRow}>
+              <div className={styles.cardTitle}>{c.name}</div>
+              {c.is_verified ? <span className={styles.badge}>Проверенная</span> : null}
             </div>
-            <div style={{ opacity: 0.8, marginTop: 6 }}>
+            <div className={`${styles.muted} ${styles.marginTopSmall}`}>
               ⭐ {c.rating ?? "—"} ({c.reviews_count ?? 0})
             </div>
-            <div style={{ opacity: 0.85, marginTop: 6 }}>
+            <div className={`${styles.opacity85} ${styles.marginTopSmall}`}>
               Цены: от <b>{money(c.price_min)}</b> до <b>{money(c.price_max)}</b>
             </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+            <div className={styles.tagRow}>
               {(c.service_tags || []).slice(0, 5).map((t: any) => (
-                <span key={t.slug} style={{ fontSize: 12, padding: "2px 8px", background: "#f6f6f6", borderRadius: 999 }}>
+                <span key={t.slug} className={styles.tag}>
                   {t.name}
                 </span>
               ))}
@@ -136,12 +148,14 @@ export default async function Page({ searchParams }: { searchParams?: { region?:
         ))}
       </div>
 
-      <h2 style={{ fontSize: 22, marginTop: 28 }}>Лучшие предложения</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
+      <h2 className={styles.sectionTitle}>Лучшие предложения</h2>
+      <div className={styles.grid}>
         {(data.best_deals || []).map((d: any) => (
-          <div key={d.slug} style={{ border: "1px solid #eee", borderRadius: 12, padding: 14 }}>
-            <div style={{ fontWeight: 700 }}>{d.name}</div>
-            <div style={{ opacity: 0.85, marginTop: 6 }}>от <b>{money(d.price_from)}</b></div>
+          <div key={d.slug} className={styles.card}>
+            <div className={styles.cardTitle}>{d.name}</div>
+            <div className={`${styles.opacity85} ${styles.marginTopSmall}`}>
+              от <b>{money(d.price_from)}</b>
+            </div>
           </div>
         ))}
       </div>

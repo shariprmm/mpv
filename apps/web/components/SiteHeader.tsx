@@ -6,6 +6,7 @@ import Image from "next/image";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useRegion } from "@/context/RegionContext"; // ✅ 1. Импорт контекста
+import styles from "./SiteHeader.module.css";
 
 // Расширяем тип, чтобы он совпадал с тем, что ждет контекст
 type RegionItem = { slug: string; name: string; name_in?: string; id?: number };
@@ -90,7 +91,7 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
     // 1) регион в URL
     if (seg && regions.some((r) => r.slug === seg)) {
       targetSlug = seg;
-    } 
+    }
     // 2) регион из cookie
     else {
       const fromCookie = getCookie("region");
@@ -110,10 +111,9 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
         id: regionObj.id || 0,
         name: regionObj.name,
         slug: regionObj.slug,
-        name_in: regionObj.name_in || `в ${regionObj.name}` // Фоллбэк склонения
+        name_in: regionObj.name_in || `в ${regionObj.name}`, // Фоллбэк склонения
       });
     }
-
   }, [pathname, regions, setCurrentRegion]); // Добавили setCurrentRegion в зависимости
 
   const currentRegionLabel = useMemo(() => {
@@ -205,7 +205,7 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
         id: regionObj.id || 0,
         name: regionObj.name,
         slug: regionObj.slug,
-        name_in: regionObj.name_in || `в ${regionObj.name}`
+        name_in: regionObj.name_in || `в ${regionObj.name}`,
       });
     }
 
@@ -255,76 +255,28 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
   );
 
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        background: "#fff",
-        borderBottom: "1px solid rgba(0,0,0,.08)",
-      }}
-    >
+    <header className={styles.header}>
       {/* ... Весь ваш остальной JSX код (он без изменений) ... */}
       {/* Я оставлю эту часть как есть, чтобы не дублировать огромный блок, */}
       {/* главное, что логика goRegion и useEffect теперь обновляют контекст. */}
       {/* Скопируйте JSX из вашего старого файла, начиная с {showRegionConfirm ? ( ... */}
       {showRegionConfirm ? (
-        <div
-          style={{
-            borderBottom: "1px solid rgba(0,0,0,.06)",
-            background: "#F9FAFB",
-          }}
-        >
+        <div className={styles.regionBanner}>
           <div
-            style={{
-              maxWidth: 1200,
-              margin: "0 auto",
-              padding: isMobile ? "8px 12px" : "10px 16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-            }}
+            className={`${styles.regionBannerInner} ${
+              isMobile ? styles.regionBannerInnerMobile : ""
+            }`}
           >
-            <div style={{ fontSize: 13, fontWeight: 400, color: "#111827" }}>
-              Ваш регион:{" "}
-              <span style={{ fontWeight: 400 }}>{currentRegionLabel}</span>?
+            <div className={styles.regionText}>
+              Ваш регион: <span className={styles.regionLabel}>{currentRegionLabel}</span>?
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button
-                type="button"
-                onClick={confirmRegionYes}
-                style={{
-                  border: 0,
-                  background: "#111827",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontWeight: 400,
-                  fontSize: 13,
-                  padding: "8px 12px",
-                  borderRadius: 12,
-                  whiteSpace: "nowrap",
-                }}
-              >
+            <div className={styles.regionActions}>
+              <button type="button" onClick={confirmRegionYes} className={styles.regionConfirmYes}>
                 Да
               </button>
 
-              <button
-                type="button"
-                onClick={confirmRegionNo}
-                style={{
-                  border: "1px solid rgba(0,0,0,.10)",
-                  background: "#fff",
-                  color: "#111",
-                  cursor: "pointer",
-                  fontWeight: 400,
-                  fontSize: 13,
-                  padding: "8px 12px",
-                  borderRadius: 12,
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <button type="button" onClick={confirmRegionNo} className={styles.regionConfirmNo}>
                 Нет
               </button>
             </div>
@@ -333,47 +285,28 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
       ) : null}
 
       <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: isMobile ? "10px 12px" : "14px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: isMobile ? 10 : 16,
-        }}
+        className={`${styles.headerInner} ${isMobile ? styles.headerInnerMobile : ""}`}
       >
-        <Link
-          href={homeHref}
-          style={{
-            textDecoration: "none",
-            color: "#111",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
+        <Link href={homeHref} className={styles.logoLink}>
           <Image
             src="/images/logo.png"
             alt="МойДомПро"
             width={isMobile ? 34 : 40}
             height={isMobile ? 34 : 40}
             priority
-            style={{ display: "block" }}
+            className={styles.logoImage}
           />
 
-          <span style={{ display: "grid", lineHeight: 1.05 }}>
-            <span style={{ fontWeight: 400, fontSize: isMobile ? 16 : 22 }}>
+          <span className={styles.logoText}>
+            <span
+              className={`${styles.logoTitle} ${isMobile ? styles.logoTitleMobile : ""}`}
+            >
               МойДомПро
             </span>
             <span
-              style={{
-                fontSize: isMobile ? 10 : 12,
-                opacity: 0.7,
-                fontWeight: 300,
-                display: isMobile ? "none" : "block",
-              }}
+              className={`${styles.logoSubtitle} ${
+                isMobile ? styles.logoSubtitleHidden : ""
+              }`}
             >
               маркетплейс услуг для дома
             </span>
@@ -381,59 +314,22 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
         </Link>
 
         {!isMobile ? (
-          <form
-            onSubmit={onSubmit}
-            style={{
-              width: "min(520px, 45vw)",
-              display: "flex",
-              alignItems: "center",
-              background: "#F3F4F6",
-              borderRadius: 999,
-              padding: "10px 14px",
-              gap: 10,
-              flexShrink: 0,
-            }}
-          >
+          <form onSubmit={onSubmit} className={styles.searchForm}>
             {IconSearch}
 
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Найдите идеального мастера и услугу"
-              style={{
-                flex: 1,
-                border: 0,
-                outline: "none",
-                background: "transparent",
-                fontSize: 14,
-              }}
+              className={styles.searchInput}
             />
 
-            <button
-              type="submit"
-              style={{
-                border: 0,
-                background: "transparent",
-                cursor: "pointer",
-                fontWeight: 400,
-                fontSize: 13,
-                padding: "6px 10px",
-                borderRadius: 999,
-              }}
-              title="Искать"
-            >
+            <button type="submit" className={styles.searchSubmit} title="Искать">
               Найти
             </button>
           </form>
         ) : (
-          <div
-            style={{
-              marginLeft: "auto",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
+          <div className={styles.mobileActions}>
             <button
               type="button"
               onClick={() => {
@@ -441,16 +337,7 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
                 setSearchOpen((v) => !v);
               }}
               aria-label="Открыть поиск"
-              style={{
-                border: "1px solid rgba(0,0,0,.10)",
-                background: "#fff",
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                display: "grid",
-                placeItems: "center",
-                cursor: "pointer",
-              }}
+              className={styles.iconButton}
               title="Поиск"
             >
               {IconSearch}
@@ -463,119 +350,44 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
                 setRegionOpen((v) => !v);
               }}
               aria-label="Выбрать регион"
-              style={{
-                border: "1px solid rgba(0,0,0,.10)",
-                background: "#fff",
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                display: "grid",
-                placeItems: "center",
-                cursor: "pointer",
-              }}
+              className={styles.iconButton}
               title={currentRegionLabel}
             >
               {IconPin}
             </button>
 
-            <Link
-              href="https://admin.moydompro.ru/login"
-              style={{
-                textDecoration: "none",
-                color: "#fff",
-                background: "#111827",
-                padding: "10px 14px",
-                borderRadius: 12,
-                fontWeight: 400,
-                whiteSpace: "nowrap",
-                fontSize: 13,
-              }}
-            >
+            <Link href="https://admin.moydompro.ru/login" className={styles.loginLink}>
               Войти
             </Link>
           </div>
         )}
 
         {!isMobile ? (
-          <nav
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              marginLeft: "auto",
-            }}
-          >
-            <details ref={regionDetailsRef} style={{ position: "relative" }}>
-              <summary
-                style={{
-                  listStyle: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontWeight: 300,
-                  userSelect: "none",
-                  whiteSpace: "nowrap",
-                }}
-              >
+          <nav className={styles.nav}>
+            <details ref={regionDetailsRef} className={styles.regionDetails}>
+              <summary className={styles.regionSummary}>
                 {currentRegionLabel}
-                <span style={{ opacity: 0.6 }}>▾</span>
+                <span className={styles.regionCaret}>▾</span>
               </summary>
 
-              <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "calc(100% + 10px)",
-                  width: 360,
-                  background: "#fff",
-                  border: "1px solid rgba(0,0,0,.08)",
-                  borderRadius: 14,
-                  boxShadow: "0 12px 30px rgba(0,0,0,.10)",
-                  padding: 10,
-                }}
-              >
+              <div className={styles.regionDropdown}>
                 {regions.length === 0 ? (
-                  <div style={{ padding: 10, opacity: 0.7 }}>
-                    Нет списка регионов
-                  </div>
+                  <div className={styles.regionEmpty}>Нет списка регионов</div>
                 ) : (
                   <>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        background: "#F3F4F6",
-                        borderRadius: 12,
-                        padding: "10px 12px",
-                        marginBottom: 10,
-                      }}
-                    >
+                    <div className={styles.regionSearch}>
                       {IconSearch}
                       <input
                         value={regionQuery}
                         onChange={(e) => setRegionQuery(e.target.value)}
                         placeholder="Найти город"
-                        style={{
-                          flex: 1,
-                          border: 0,
-                          outline: "none",
-                          background: "transparent",
-                          fontSize: 14,
-                        }}
+                        className={styles.regionSearchInput}
                       />
                       {regionQuery ? (
                         <button
                           type="button"
                           onClick={() => setRegionQuery("")}
-                          style={{
-                            border: 0,
-                            background: "transparent",
-                            cursor: "pointer",
-                            fontWeight: 400,
-                            opacity: 0.7,
-                          }}
+                          className={styles.regionClearBtn}
                           title="Очистить"
                         >
                           ✕
@@ -583,39 +395,20 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
                       ) : null}
                     </div>
 
-                    <div
-                      style={{
-                        maxHeight: 360,
-                        overflow: "auto",
-                        display: "grid",
-                        gap: 6,
-                      }}
-                    >
+                    <div className={styles.regionList}>
                       {filteredRegions.length === 0 ? (
-                        <div style={{ padding: 10, opacity: 0.7 }}>
-                          Ничего не найдено
-                        </div>
+                        <div className={styles.regionEmpty}>Ничего не найдено</div>
                       ) : (
                         filteredRegions.map((r) => (
                           <button
                             key={r.slug}
                             type="button"
                             onClick={() => goRegion(r.slug)}
-                            style={{
-                              textAlign: "left",
-                              width: "100%",
-                              border: 0,
-                              background:
-                                r.slug === currentRegionSlug
-                                  ? "rgba(109,40,217,.08)"
-                                  : "transparent",
-                              padding: "10px 10px",
-                              borderRadius: 10,
-                              cursor: "pointer",
-                              color: "#111",
-                            }}
+                            className={`${styles.regionOption} ${
+                              r.slug === currentRegionSlug ? styles.regionOptionActive : ""
+                            }`}
                           >
-                            <div style={{ fontWeight: 300 }}>{r.name}</div>
+                            <div className={styles.regionOptionText}>{r.name}</div>
                           </button>
                         ))
                       )}
@@ -627,15 +420,7 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
 
             <Link
               href="https://admin.moydompro.ru/login"
-              style={{
-                textDecoration: "none",
-                color: "#fff",
-                background: "#111827",
-                padding: "12px 22px",
-                borderRadius: 14,
-                fontWeight: 400,
-                whiteSpace: "nowrap",
-              }}
+              className={`${styles.loginLink} ${styles.loginLinkDesktop}`}
             >
               Войти
             </Link>
@@ -644,52 +429,18 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
       </div>
 
       {isMobile && searchOpen ? (
-        <div style={{ borderTop: "1px solid rgba(0,0,0,.06)" }}>
-          <div
-            style={{
-              maxWidth: 1200,
-              margin: "0 auto",
-              padding: "10px 12px",
-            }}
-          >
-            <form
-              onSubmit={onSubmit}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                background: "#F3F4F6",
-                borderRadius: 14,
-                padding: "10px 12px",
-                gap: 10,
-              }}
-            >
+        <div className={styles.mobileSearchWrap}>
+          <div className={styles.mobileSearchInner}>
+            <form onSubmit={onSubmit} className={styles.mobileSearchForm}>
               {IconSearch}
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Найдите идеального мастера и услугу"
-                style={{
-                  flex: 1,
-                  border: 0,
-                  outline: "none",
-                  background: "transparent",
-                  fontSize: 14,
-                }}
+                className={styles.searchInput}
                 autoFocus
               />
-              <button
-                type="submit"
-                style={{
-                  border: 0,
-                  background: "#111827",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontWeight: 400,
-                  fontSize: 13,
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                }}
-              >
+              <button type="submit" className={styles.mobileSearchSubmit}>
                 Найти
               </button>
             </form>
@@ -701,132 +452,55 @@ export default function SiteHeader(props: { regions?: RegionItem[] }) {
         <div
           role="dialog"
           aria-modal="true"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,.35)",
-            zIndex: 60,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            padding: "76px 12px 12px",
-          }}
+          className={styles.regionModalOverlay}
           onClick={() => setRegionOpen(false)}
         >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 520,
-              background: "#fff",
-              borderRadius: 16,
-              border: "1px solid rgba(0,0,0,.08)",
-              boxShadow: "0 12px 30px rgba(0,0,0,.18)",
-              padding: 12,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-              }}
-            >
-              <div style={{ fontWeight: 800, fontSize: 16 }}>
-                Выберите город
-              </div>
+          <div className={styles.regionModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.regionModalHeader}>
+              <div className={styles.regionModalTitle}>Выберите город</div>
               <button
                 type="button"
                 onClick={() => setRegionOpen(false)}
-                style={{
-                  border: "1px solid rgba(0,0,0,.10)",
-                  background: "#fff",
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  cursor: "pointer",
-                  fontWeight: 400,
-                }}
+                className={styles.regionModalClose}
               >
                 ✕
               </button>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                background: "#F3F4F6",
-                borderRadius: 12,
-                padding: "10px 12px",
-                marginTop: 10,
-              }}
-            >
+            <div className={styles.regionModalSearch}>
               {IconSearch}
               <input
                 value={regionQuery}
                 onChange={(e) => setRegionQuery(e.target.value)}
                 placeholder="Найти город"
-                style={{
-                  flex: 1,
-                  border: 0,
-                  outline: "none",
-                  background: "transparent",
-                  fontSize: 14,
-                }}
+                className={styles.regionSearchInput}
                 autoFocus
               />
               {regionQuery && (
                 <button
                   type="button"
                   onClick={() => setRegionQuery("")}
-                  style={{
-                    border: 0,
-                    background: "transparent",
-                    cursor: "pointer",
-                    fontWeight: 400,
-                    opacity: 0.7,
-                  }}
+                  className={styles.regionClearBtn}
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            <div
-              style={{
-                marginTop: 10,
-                maxHeight: "60vh",
-                overflow: "auto",
-                display: "grid",
-                gap: 6,
-              }}
-            >
+            <div className={styles.regionModalList}>
               {filteredRegions.length === 0 ? (
-                <div style={{ padding: 10, opacity: 0.7 }}>
-                  Ничего не найдено
-                </div>
+                <div className={styles.regionEmpty}>Ничего не найдено</div>
               ) : (
                 filteredRegions.map((r) => (
                   <button
                     key={r.slug}
                     type="button"
                     onClick={() => goRegion(r.slug)}
-                    style={{
-                      textAlign: "left",
-                      border: "1px solid rgba(0,0,0,.08)",
-                      background:
-                        r.slug === currentRegionSlug
-                          ? "rgba(109,40,217,.08)"
-                          : "#fff",
-                      padding: "10px 10px",
-                      borderRadius: 12,
-                      cursor: "pointer",
-                    }}
+                    className={`${styles.regionModalOption} ${
+                      r.slug === currentRegionSlug ? styles.regionModalOptionActive : ""
+                    }`}
                   >
-                    <div style={{ fontWeight: 400 }}>{r.name}</div>
+                    <div className={styles.regionModalOptionText}>{r.name}</div>
                   </button>
                 ))
               )}

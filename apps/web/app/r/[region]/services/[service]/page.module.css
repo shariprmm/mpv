@@ -1,0 +1,76 @@
+.main {
+  font-family: system-ui;
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.title {
+  margin-bottom: 6px;
+}
+
+.meta {
+  opacity: 0.8;
+  margin-bottom: 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.tabLink {
+  text-decoration: none;
+}
+
+.tabPill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+}
+
+.card {
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #f0f0f0;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.cardHeader {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cardTitle {
+  font-weight: 800;
+}
+
+.cardBadge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+}
+
+.cardRating {
+  margin-left: auto;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.cardMeta {
+  margin-top: 8px;
+  opacity: 0.9;
+}
+
+.empty {
+  opacity: 0.7;
+}

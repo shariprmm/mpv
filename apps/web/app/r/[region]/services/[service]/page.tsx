@@ -1,3 +1,5 @@
+import styles from "./page.module.css";
+
 type Region = { id: number; name: string; slug: string };
 type Service = { id: number; name: string; slug: string; category: string };
 type Company = {
@@ -64,47 +66,53 @@ export default async function Page({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
-    "name": serviceObj?.name || serviceSlug,
-    "areaServed": {
+    name: serviceObj?.name || serviceSlug,
+    areaServed: {
       "@type": "AdministrativeArea",
-      "name": regionObj?.name || regionSlug
+      name: regionObj?.name || regionSlug,
     },
-    "offers": companies.length
+    offers: companies.length
       ? {
           "@type": "AggregateOffer",
-          "priceCurrency": "RUB",
-          "lowPrice": low ?? undefined,
-          "highPrice": high ?? undefined,
-          "offerCount": companies.length
+          priceCurrency: "RUB",
+          lowPrice: low ?? undefined,
+          highPrice: high ?? undefined,
+          offerCount: companies.length,
         }
       : undefined,
-    "provider": {
+    provider: {
       "@type": "Organization",
-      "name": "МойДомPRO"
-    }
+      name: "МойДомPRO",
+    },
   };
 
   const itemList = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "itemListElement": companies.map((c, i) => ({
+    itemListElement: companies.map((c, i) => ({
       "@type": "ListItem",
-      "position": i + 1,
-      "name": c.name,
-      "url": `https://moydompro.ru/c/${c.id}`
-    }))
+      position: i + 1,
+      name: c.name,
+      url: `https://moydompro.ru/c/${c.id}`,
+    })),
   };
 
   return (
-    <main style={{ fontFamily: "system-ui", padding: 24, maxWidth: 1100, margin: "0 auto" }}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+    <main className={styles.main}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
+      />
 
-      <h1 style={{ marginBottom: 6 }}>
+      <h1 className={styles.title}>
         {serviceObj?.name || serviceSlug} — {regionObj?.name || regionSlug}
       </h1>
 
-      <div style={{ opacity: 0.8, marginBottom: 14 }}>
+      <div className={styles.meta}>
         Сортировка: <b>{sort === "price" ? "по цене" : "по рейтингу"}</b>
         {companies.length && low != null && high != null ? (
           <>
@@ -113,49 +121,41 @@ export default async function Page({
         ) : null}
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-        <a href={`/r/${regionSlug}/services/${serviceSlug}?sort=rating`} style={{ textDecoration: "none" }}>
-          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #ddd" }}>По рейтингу</span>
+      <div className={styles.tabs}>
+        <a
+          href={`/r/${regionSlug}/services/${serviceSlug}?sort=rating`}
+          className={styles.tabLink}
+        >
+          <span className={styles.tabPill}>По рейтингу</span>
         </a>
-        <a href={`/r/${regionSlug}/services/${serviceSlug}?sort=price`} style={{ textDecoration: "none" }}>
-          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #ddd" }}>По цене</span>
+        <a
+          href={`/r/${regionSlug}/services/${serviceSlug}?sort=price`}
+          className={styles.tabLink}
+        >
+          <span className={styles.tabPill}>По цене</span>
         </a>
       </div>
 
       {companies.length ? (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div className={styles.list}>
           {companies.map((c) => (
-            <a
-              key={c.id}
-              href={`/c/${c.id}`}
-              style={{
-                textDecoration: "none",
-                color: "inherit",
-                border: "1px solid #f0f0f0",
-                borderRadius: 14,
-                padding: 14,
-              }}
-            >
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <div style={{ fontWeight: 800 }}>{c.name}</div>
-                {c.is_verified ? (
-                  <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, border: "1px solid #ddd" }}>
-                    ✅ Проверенная
-                  </span>
-                ) : null}
-                <span style={{ marginLeft: "auto", fontSize: 13, opacity: 0.85 }}>
+            <a key={c.id} href={`/c/${c.id}`} className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div className={styles.cardTitle}>{c.name}</div>
+                {c.is_verified ? <span className={styles.cardBadge}>✅ Проверенная</span> : null}
+                <span className={styles.cardRating}>
                   ⭐ {Number(c.rating).toFixed(2)} ({c.reviews_count})
                 </span>
               </div>
 
-              <div style={{ marginTop: 8, opacity: 0.9 }}>
+              <div className={styles.cardMeta}>
                 Цена: <b>{c.price_min ?? "—"}</b> – <b>{c.price_max ?? "—"}</b> RUB
               </div>
             </a>
           ))}
         </div>
       ) : (
-        <div style={{ opacity: 0.7 }}>Пока нет данных по этому региону и услуге.</div>
+        <div className={styles.empty}>Пока нет данных по этому региону и услуге.</div>
       )}
     </main>
   );

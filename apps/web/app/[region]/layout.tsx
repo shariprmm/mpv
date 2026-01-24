@@ -1,6 +1,7 @@
 // apps/web/app/[region]/layout.tsx
 import React from "react";
 import { notFound } from "next/navigation";
+import styles from "./layout.module.css";
 
 const API =
   (process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || "")
@@ -53,9 +54,5 @@ export default async function RegionLayout({
   const ok = await isValidRegion(regionSlug);
   if (!ok) notFound();
 
-  return (
-    <main style={{ maxWidth: 1200, margin: "0 auto", padding: "16px" }}>
-      {children}
-    </main>
-  );
+  return <main className={styles.main}>{children}</main>;
 }

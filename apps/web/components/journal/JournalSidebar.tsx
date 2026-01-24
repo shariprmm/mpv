@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import styles from "./JournalSidebar.module.css";
 
 export default function JournalSidebar() {
   const [phone, setPhone] = useState("");
@@ -14,30 +15,14 @@ export default function JournalSidebar() {
   return (
     <aside>
       <form onSubmit={onSubmit}>
-        <div style={{ fontWeight: 600, marginBottom: 10 }}>Получить консультацию</div>
+        <div className={styles.title}>Получить консультацию</div>
         <input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="+7 (___) ___-__-__"
-          style={{
-            width: "100%",
-            height: 44,
-            borderRadius: 12,
-            border: "1px solid rgba(0,0,0,.15)",
-            padding: "0 12px",
-          }}
+          className={styles.input}
         />
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            height: 44,
-            marginTop: 10,
-            borderRadius: 12,
-            border: 0,
-            cursor: "pointer",
-          }}
-        >
+        <button type="submit" className={styles.button}>
           Отправить
         </button>
       </form>

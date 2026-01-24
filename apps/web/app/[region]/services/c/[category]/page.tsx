@@ -329,7 +329,7 @@ function ServiceCard(props: {
 
   return (
     <Link href={href} className={styles.simpleCard}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className={styles.mediaRow}>
         <div className={styles.cardThumb} aria-hidden={!imageUrl}>
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -339,14 +339,14 @@ function ServiceCard(props: {
               width={38}
               height={38}
               loading="lazy"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              className={styles.thumbImage}
             />
           ) : (
-            <span style={{ fontSize: 16, opacity: 0.5 }}>•</span>
+            <span className={styles.thumbPlaceholder}>•</span>
           )}
         </div>
 
-        <div style={{ minWidth: 0 }}>
+        <div className={styles.mediaContent}>
           <div className={styles.simpleCardTitle}>{title}</div>
           {meta ? <div className={styles.simpleCardMeta}>{meta}</div> : null}
         </div>

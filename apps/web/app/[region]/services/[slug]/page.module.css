@@ -496,3 +496,10 @@
     height: 170px;
   }
 }
+.scrollRow {
+  overflow-x: auto;
+}
+
+.mutedTop {
+  margin-top: 10px;
+}
