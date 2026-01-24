@@ -1,0 +1,164 @@
+.footer {
+  background-color: #111;
+  color: #fff;
+  padding: 60px 0 30px 0;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 40px;
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.logoLink {
+  text-decoration: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.logoImage {
+  display: block;
+}
+
+.logoText {
+  display: grid;
+  line-height: 1.05;
+}
+
+.logoTitle {
+  font-weight: 400;
+  font-size: 22px;
+}
+
+.logoSubtitle {
+  font-size: 12px;
+  opacity: 0.7;
+  font-weight: 300;
+  display: block;
+}
+
+.description {
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 10px 0;
+  max-width: 260px;
+}
+
+.heading {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.link {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.2s;
+  display: block;
+}
+
+.linkMuted {
+  opacity: 0.5;
+}
+
+.masterLink {
+  color: #93c5fd;
+  margin-top: 10px;
+}
+
+.sitemapLink {
+  margin-top: 15px;
+  text-decoration: underline;
+  opacity: 0.6;
+}
+
+.rootLink {
+  opacity: 0.5;
+  margin-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+
+.showMoreButton {
+  background: transparent;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 5px;
+}
+
+.contactLink {
+  color: #fff;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.contactButton {
+  width: 100%;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  background-color: #222;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 10px;
+  transition: background 0.2s;
+}
+
+.bottomBar {
+  margin-top: 60px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 15px;
+  font-size: 12px;
+}
+
+.bottomInfo {
+  opacity: 0.5;
+}
+
+.bottomLinks {
+  display: flex;
+  gap: 20px;
+}
+
+.bottomLink {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.5;
+}

@@ -768,7 +768,7 @@ export default async function ServicePage({
             <div className={styles.sectionHint}>{specs.length} шт.</div>
           </div>
 
-          <div style={{ overflowX: "auto" }}>
+          <div className={styles.scrollRow}>
             <div className={styles.specTable}>
               {specs.map((s, i) => (
                 <div key={s.name + i} className={styles.specRow}>
@@ -798,11 +798,11 @@ export default async function ServicePage({
         </div>
 
         {companiesForCards.length === 0 ? (
-          <p className={styles.muted} style={{ marginTop: 10 }}>
+          <p className={`${styles.muted} ${styles.mutedTop}`}>
             Пока нет компаний по этой услуге.
           </p>
         ) : (
-          <div className={styles.cardsGrid} style={{ display: "grid", gap: 12, marginTop: 10 }}>
+          <div className={styles.cardsGrid}>
             {companiesForCards.map((c) => (
               <CompanyCard
                 key={c.id}

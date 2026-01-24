@@ -409,6 +409,30 @@
   color:#111;
 }
 
+.cutText{
+  display: -webkit-box;
+  -webkit-line-clamp: var(--line-clamp);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+  font-size: 15px;
+  color: rgba(0,0,0,.75);
+}
+
+.cutTextOpen{
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.cutToggle{
+  margin-top: 8px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
 .MoreChevron{ color: rgba(0,0,0,.45); }
 
 /* ===== Reviews ===== */

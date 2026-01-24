@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import styles from "./Scroller.module.css";
 
 export default function Scroller(props: {
   children: React.ReactNode;
@@ -46,18 +47,11 @@ export default function Scroller(props: {
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className={styles.wrapper}>
       <div
         ref={ref}
-        style={{
-          overflowX: "auto",
-          overflowY: "hidden",
-          display: "flex",
-          gap: itemGap,
-          height,
-          paddingBottom: 2,
-          scrollBehavior: "smooth",
-        }}
+        className={styles.scroller}
+        style={{ "--item-gap": `${itemGap}px`, "--height": `${height}px` } as React.CSSProperties}
       >
         {children}
       </div>
@@ -67,7 +61,7 @@ export default function Scroller(props: {
           type="button"
           onClick={() => scrollBy(-step)}
           aria-label="Влево"
-          style={arrowBtn("left")}
+          className={`${styles.arrowButton} ${styles.arrowLeft}`}
         >
           ‹
         </button>
@@ -78,31 +72,11 @@ export default function Scroller(props: {
           type="button"
           onClick={() => scrollBy(step)}
           aria-label="Вправо"
-          style={arrowBtn("right")}
+          className={`${styles.arrowButton} ${styles.arrowRight}`}
         >
           ›
         </button>
       ) : null}
     </div>
   );
-}
-
-function arrowBtn(side: "left" | "right"): React.CSSProperties {
-  return {
-    position: "absolute",
-    top: "50%",
-    transform: "translateY(-50%)",
-    [side]: 6,
-    width: 34,
-    height: 34,
-    borderRadius: 999,
-    border: "1px solid rgba(0,0,0,.12)",
-    background: "#fff",
-    boxShadow: "0 2px 10px rgba(0,0,0,.08)",
-    cursor: "pointer",
-    fontSize: 22,
-    lineHeight: "34px",
-    textAlign: "center",
-    userSelect: "none",
-  } as React.CSSProperties;
 }

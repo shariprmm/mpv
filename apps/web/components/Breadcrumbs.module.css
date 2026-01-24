@@ -1,0 +1,35 @@
+.nav {
+  font-size: 14px;
+  margin: 8px 0 16px;
+}
+
+.list {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.link {
+  text-decoration: none;
+}
+
+.crumb {
+  opacity: 0.8;
+}
+
+.current {
+  opacity: 1;
+}
+
+.separator {
+  opacity: 0.5;
+}

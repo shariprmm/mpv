@@ -78,15 +78,8 @@ export default function Cut(props: {
     <div>
       <div
         ref={ref}
-        style={{
-          display: "-webkit-box",
-          WebkitLineClamp: open ? ("unset" as any) : String(collapsedLines),
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-          lineHeight: "1.35",
-          fontSize: "15px",
-          color: "rgba(0,0,0,.75)",
-        }}
+        className={`${styles.cutText} ${open ? styles.cutTextOpen : ""}`}
+        style={{ "--line-clamp": String(collapsedLines) } as React.CSSProperties}
       >
         {clean}
       </div>
@@ -95,8 +88,7 @@ export default function Cut(props: {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={styles.MoreLink}
-          style={{ marginTop: 8, background: "transparent", border: 0, padding: 0, cursor: "pointer" }}
+          className={`${styles.MoreLink} ${styles.cutToggle}`}
           aria-expanded={open}
         >
           {open ? lessLabel : moreLabel}

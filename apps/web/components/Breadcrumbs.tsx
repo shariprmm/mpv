@@ -1,5 +1,6 @@
 // apps/web/components/Breadcrumbs.tsx
 import Link from "next/link";
+import styles from "./Breadcrumbs.module.css";
 
 export type Crumb = {
   // поддерживаем разные варианты полей, чтобы не чинить все страницы вручную
@@ -17,36 +18,27 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
   if (!items?.length) return null;
 
   return (
-    <nav aria-label="Breadcrumbs" style={{ fontSize: 14, margin: "8px 0 16px" }}>
-      <ol
-        style={{
-          display: "flex",
-          gap: 8,
-          listStyle: "none",
-          padding: 0,
-          margin: 0,
-          flexWrap: "wrap",
-        }}
-      >
+    <nav aria-label="Breadcrumbs" className={styles.nav}>
+      <ol className={styles.list}>
         {items.map((c, idx) => {
           const isLast = idx === items.length - 1;
           const text = getText(c);
 
           return (
-            <li
-              key={`${text}-${idx}`}
-              style={{ display: "flex", gap: 8, alignItems: "center" }}
-            >
+            <li key={`${text}-${idx}`} className={styles.item}>
               {c.href && !isLast ? (
-                <Link href={c.href} style={{ textDecoration: "none" }}>
+                <Link href={c.href} className={styles.link}>
                   {text}
                 </Link>
               ) : (
-                <span aria-current={isLast ? "page" : undefined} style={{ opacity: isLast ? 1 : 0.8 }}>
+                <span
+                  aria-current={isLast ? "page" : undefined}
+                  className={isLast ? styles.current : styles.crumb}
+                >
                   {text}
                 </span>
               )}
-              {!isLast && <span style={{ opacity: 0.5 }}>/</span>}
+              {!isLast && <span className={styles.separator}>/</span>}
             </li>
           );
         })}

@@ -1,6 +1,7 @@
 // /web/app/journal/[slug]/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
+import styles from "./page.module.css";
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -49,9 +50,9 @@ export default async function JournalPostPage({ params }: { params: { slug: stri
 
   if (!post) {
     return (
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800 }}>Статья не найдена</h1>
-        <p style={{ marginTop: 10 }}>
+      <main className={styles.main}>
+        <h1 className={styles.errorTitle}>Статья не найдена</h1>
+        <p>
           <Link href="/journal">Вернуться в журнал</Link>
         </p>
       </main>
@@ -65,58 +66,38 @@ export default async function JournalPostPage({ params }: { params: { slug: stri
     : null;
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px" }}>
-      <div style={{ marginBottom: 14 }}>
-        <Link href="/journal" style={{ textDecoration: "none" }}>
+    <main className={styles.main}>
+      <div className={styles.backRow}>
+        <Link href="/journal" className={styles.backLink}>
           ← Журнал
         </Link>
         {post.category_slug && post.category_name && (
           <>
-            <span style={{ opacity: 0.6 }}> · </span>
-            <Link href={`/journal/category/${post.category_slug}`} style={{ textDecoration: "none" }}>
+            <span className={styles.separator}> · </span>
+            <Link href={`/journal/category/${post.category_slug}`} className={styles.backLink}>
               {post.category_name}
             </Link>
           </>
         )}
       </div>
 
-      <h1 style={{ fontSize: 36, fontWeight: 900, lineHeight: 1.15, marginBottom: 10 }}>
-        {post.title}
-      </h1>
+      <h1 className={styles.title}>{post.title}</h1>
 
-      {post.excerpt && <p style={{ opacity: 0.85, marginBottom: 18 }}>{post.excerpt}</p>}
+      {post.excerpt && <p className={styles.excerpt}>{post.excerpt}</p>}
 
-      {cover && (
-        <div
-          style={{
-            height: 340,
-            borderRadius: 16,
-            backgroundImage: `url(${cover})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            marginBottom: 18,
-          }}
-        />
-      )}
+      {cover && <div className={styles.cover} style={{ backgroundImage: `url(${cover})` }} />}
 
       <article
-        style={{ fontSize: 18, lineHeight: 1.7 }}
+        className={styles.article}
         dangerouslySetInnerHTML={{ __html: post.content_html }}
       />
 
       {/* Блок-заглушка под перелинковку (дальше подключим услуги/товары/регион) */}
-      <div
-        style={{
-          marginTop: 32,
-          padding: 16,
-          borderRadius: 16,
-          border: "1px solid rgba(0,0,0,.12)",
-          background: "rgba(0,0,0,.02)",
-        }}
-      >
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>Подобрать подрядчика</div>
-        <div style={{ opacity: 0.85 }}>
-          Дальше сюда подключим блок: «Найти услуги/товары в вашем регионе» (через /[region]/services и /[region]/products).
+      <div className={styles.stub}>
+        <div className={styles.stubTitle}>Подобрать подрядчика</div>
+        <div className={styles.stubText}>
+          Дальше сюда подключим блок: «Найти услуги/товары в вашем регионе» (через /[region]/services и
+          /[region]/products).
         </div>
       </div>
     </main>

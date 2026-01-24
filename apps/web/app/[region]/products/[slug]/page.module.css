@@ -342,3 +342,21 @@
   background: #f3f3f3;
   display: block;
 }
+
+.missingImage {
+  opacity: 0.5;
+  padding: 40px;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.noOffers {
+  margin-bottom: 16px;
+  opacity: 0.6;
+  font-size: 13px;
+}
+
+.emptyCompanies {
+  opacity: 0.6;
+}

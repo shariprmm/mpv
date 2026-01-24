@@ -1,0 +1,110 @@
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: system-ui;
+}
+
+.title {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.errorTitle {
+  font-size: 28px;
+}
+
+.muted {
+  opacity: 0.8;
+}
+
+.errorDetails {
+  white-space: pre-wrap;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+}
+
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.link {
+  text-decoration: none;
+}
+
+.section {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+.sectionTitle {
+  font-size: 22px;
+  margin-top: 28px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.cardTitle {
+  font-weight: 700;
+}
+
+.cardRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tagRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: #f6f6f6;
+  border-radius: 999px;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+}
+
+.marginTopSmall {
+  margin-top: 6px;
+}
+
+.marginTopZero {
+  margin-top: 0;
+}
+
+.opacity85 {
+  opacity: 0.85;
+}
+
+.opacity7 {
+  opacity: 0.7;
+}

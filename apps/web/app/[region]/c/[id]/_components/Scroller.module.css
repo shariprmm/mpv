@@ -1,0 +1,38 @@
+.wrapper {
+  position: relative;
+}
+
+.scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  gap: var(--item-gap);
+  height: var(--height);
+  padding-bottom: 2px;
+  scroll-behavior: smooth;
+}
+
+.arrowButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 34px;
+  text-align: center;
+  user-select: none;
+}
+
+.arrowLeft {
+  left: 6px;
+}
+
+.arrowRight {
+  right: 6px;
+}

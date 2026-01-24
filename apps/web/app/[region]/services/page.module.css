@@ -161,3 +161,24 @@
   .grid { grid-template-columns: 1fr; gap: 8px; }
   .simpleCard { padding: 10px; }
 }
+
+.mediaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mediaContent {
+  min-width: 0;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbPlaceholder {
+  font-size: 16px;
+  opacity: 0.5;
+}

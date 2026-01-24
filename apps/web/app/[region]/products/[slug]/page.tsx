@@ -318,7 +318,7 @@ export default async function ProductPage({
                             )}
                         </>
                     ) : (
-                        <div style={{opacity: 0.5, padding: 40, textAlign: "center", background: "#f9f9f9", borderRadius: 8}}>
+                        <div className={styles.missingImage}>
                             Изображение отсутствует
                         </div>
                     )}
@@ -369,7 +369,7 @@ export default async function ProductPage({
                                 ✓ {companies.length} {companiesLabel(companies.length)}
                             </div>
                         ) : (
-                            <div style={{marginBottom: 16, opacity: 0.6, fontSize: 13}}>
+                            <div className={styles.noOffers}>
                                 Нет предложений
                             </div>
                         )}
@@ -389,7 +389,7 @@ export default async function ProductPage({
             <h2 className={styles.h2}>Предложения компаний ({companies.length})</h2>
             
             {companies.length === 0 ? (
-                <p style={{opacity: 0.6}}>К сожалению, пока нет активных предложений по этому товару в выбранном регионе.</p>
+                <p className={styles.emptyCompanies}>К сожалению, пока нет активных предложений по этому товару в выбранном регионе.</p>
             ) : (
                 <div className={styles.companiesListWrapper}>
                     <div className={styles.companiesList}>

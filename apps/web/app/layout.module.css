@@ -1,0 +1,13 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  font-family: "Rubik", sans-serif;
+  background-color: #fff;
+}
+
+.main {
+  flex-grow: 1;
+  width: 100%;
+}

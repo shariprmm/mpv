@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import React, { useState } from "react";
 import { useRegion } from "@/context/RegionContext";
+import styles from "./SiteFooter.module.css";
 
 // Типы данных
 type CategoryItem = {
@@ -24,108 +25,91 @@ export function SiteFooter({ productCats = [], serviceCats = [] }: SiteFooterPro
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer style={footerStyle}>
+    <footer className={styles.footer}>
       <div className="container">
-        <div className="footer-grid" style={gridStyle}>
-          
+        <div className={`footer-grid ${styles.grid}`}>
           {/* 1. О компании */}
-          <div style={colStyle}>
+          <div className={styles.column}>
             {/* Логотип */}
-            <Link
-              href={`/${regionSlug}`}
-              style={{
-                textDecoration: "none",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                whiteSpace: "nowrap",
-                flexShrink: 0,
-                marginBottom: "12px",
-              }}
-            >
+            <Link href={`/${regionSlug}`} className={styles.logoLink}>
               <Image
                 src="/images/logo.png"
                 alt="МойДомПро"
                 width={40}
                 height={40}
-                style={{ display: "block" }}
+                className={styles.logoImage}
               />
-              <span style={{ display: "grid", lineHeight: 1.05 }}>
-                <span style={{ fontWeight: 400, fontSize: "22px" }}>
-                  МойДомПро
-                </span>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    opacity: 0.7,
-                    fontWeight: 300,
-                    display: "block",
-                  }}
-                >
-                  маркетплейс услуг для дома
-                </span>
+              <span className={styles.logoText}>
+                <span className={styles.logoTitle}>МойДомПро</span>
+                <span className={styles.logoSubtitle}>маркетплейс услуг для дома</span>
               </span>
             </Link>
 
-            <p style={descStyle}>
+            <p className={styles.description}>
               Агрегатор инженерных решений и услуг для загородного строительства в {regionNameIn}.
             </p>
-            <Link href="/about" style={linkStyle}>О проекте</Link>
-            <Link href="/journal" style={linkStyle}>Журнал</Link>
-            <Link href="/master/login" style={{...linkStyle, color: "#93c5fd", marginTop: "10px"}}>
+            <Link href="/about" className={styles.link}>
+              О проекте
+            </Link>
+            <Link href="/journal" className={styles.link}>
+              Журнал
+            </Link>
+            <Link href="/master/login" className={`${styles.link} ${styles.masterLink}`}>
               Вход для мастеров
             </Link>
           </div>
 
           {/* 2. Каталог товаров */}
-          <div style={colStyle}>
-            <h3 style={headingStyle}>Каталог товаров</h3>
-            <CategoryList 
-              items={productCats} 
-              baseUrl={`/${regionSlug}/products/c`} 
+          <div className={styles.column}>
+            <h3 className={styles.heading}>Каталог товаров</h3>
+            <CategoryList
+              items={productCats}
+              baseUrl={`/${regionSlug}/products/c`}
               rootUrl={`/${regionSlug}/products`}
               rootLabel="Все товары"
             />
           </div>
 
           {/* 3. Услуги */}
-          <div style={colStyle}>
-            <h3 style={headingStyle}>Услуги мастеров</h3>
-            <CategoryList 
-              items={serviceCats} 
-              baseUrl={`/${regionSlug}/services/c`} 
+          <div className={styles.column}>
+            <h3 className={styles.heading}>Услуги мастеров</h3>
+            <CategoryList
+              items={serviceCats}
+              baseUrl={`/${regionSlug}/services/c`}
               rootUrl={`/${regionSlug}/services`}
               rootLabel="Все услуги"
             />
           </div>
 
           {/* 4. Связь */}
-          <div style={colStyle}>
-            <h3 style={headingStyle}>Связь</h3>
-            <div style={navStyle}>
+          <div className={styles.column}>
+            <h3 className={styles.heading}>Связь</h3>
+            <div className={styles.nav}>
               {/* ✅ ТЕМНАЯ КНОПКА */}
-              <button className="btn" style={btnStyle}>
+              <button className={`btn ${styles.contactButton}`}>
                 Связаться с нами
               </button>
-              
-              <a href="mailto:info@moydompro.ru" style={contactLinkStyle}>
+
+              <a href="mailto:info@moydompro.ru" className={styles.contactLink}>
                 info@moydompro.ru
               </a>
-              <Link href="/sitemap" style={{...linkStyle, marginTop: "15px", textDecoration: "underline", opacity: 0.6}}>
+              <Link href="/sitemap" className={`${styles.link} ${styles.sitemapLink}`}>
                 Карта сайта (HTML)
               </Link>
             </div>
           </div>
-
         </div>
 
         {/* Нижняя плашка */}
-        <div style={bottomBarStyle}>
-          <div style={{ opacity: 0.5 }}>© {currentYear} МойДомПро.</div>
-          <div style={{ display: "flex", gap: "20px" }}>
-            <Link href="/policy" style={bottomLinkStyle}>Конфиденциальность</Link>
-            <Link href="/terms" style={bottomLinkStyle}>Оферта</Link>
+        <div className={styles.bottomBar}>
+          <div className={styles.bottomInfo}>© {currentYear} МойДомПро.</div>
+          <div className={styles.bottomLinks}>
+            <Link href="/policy" className={styles.bottomLink}>
+              Конфиденциальность
+            </Link>
+            <Link href="/terms" className={styles.bottomLink}>
+              Оферта
+            </Link>
           </div>
         </div>
       </div>
@@ -134,14 +118,24 @@ export function SiteFooter({ productCats = [], serviceCats = [] }: SiteFooterPro
 }
 
 // ... (компонент CategoryList без изменений)
-function CategoryList({ items, baseUrl, rootUrl, rootLabel }: { items: CategoryItem[], baseUrl: string, rootUrl: string, rootLabel: string }) {
+function CategoryList({
+  items,
+  baseUrl,
+  rootUrl,
+  rootLabel,
+}: {
+  items: CategoryItem[];
+  baseUrl: string;
+  rootUrl: string;
+  rootLabel: string;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const LIMIT = 6;
 
   if (!items || items.length === 0) {
     return (
-      <nav style={navStyle}>
-        <span style={{...linkStyle, opacity: 0.5}}>Нет категорий</span>
+      <nav className={styles.nav}>
+        <span className={`${styles.link} ${styles.linkMuted}`}>Нет категорий</span>
       </nav>
     );
   }
@@ -150,138 +144,28 @@ function CategoryList({ items, baseUrl, rootUrl, rootLabel }: { items: CategoryI
   const hasMore = items.length > LIMIT;
 
   return (
-    <nav style={navStyle}>
+    <nav className={styles.nav}>
       {visibleItems.map((cat) => (
-        <Link 
-          key={cat.id || cat.slug} 
-          href={`${baseUrl}/${cat.slug}`} 
-          style={linkStyle}
-        >
+        <Link key={cat.id || cat.slug} href={`${baseUrl}/${cat.slug}`} className={styles.link}>
           {cat.name}
         </Link>
       ))}
 
       {hasMore && !isExpanded && (
-        <button onClick={() => setIsExpanded(true)} style={showMoreBtnStyle}>
+        <button onClick={() => setIsExpanded(true)} className={styles.showMoreButton}>
           Показать еще ({items.length - LIMIT}) ↓
         </button>
       )}
 
       {hasMore && isExpanded && (
-        <button onClick={() => setIsExpanded(false)} style={showMoreBtnStyle}>
+        <button onClick={() => setIsExpanded(false)} className={styles.showMoreButton}>
           Свернуть ↑
         </button>
       )}
 
-      <Link href={rootUrl} style={{...linkStyle, opacity: 0.5, marginTop: 5, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 8}}>
+      <Link href={rootUrl} className={`${styles.link} ${styles.rootLink}`}>
         {rootLabel} →
       </Link>
     </nav>
   );
 }
-
-
-// --- Стили ---
-
-const footerStyle: React.CSSProperties = {
-  backgroundColor: "#111",
-  color: "#fff",
-  padding: "60px 0 30px 0",
-  marginTop: "auto",
-  borderTop: "1px solid rgba(255,255,255,0.1)",
-  fontSize: "14px",
-};
-
-const gridStyle: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "40px",
-  alignItems: "start",
-};
-
-const colStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-};
-
-const descStyle: React.CSSProperties = {
-  lineHeight: "1.5",
-  color: "rgba(255,255,255,0.5)",
-  margin: "0 0 10px 0",
-  maxWidth: "260px",
-};
-
-const headingStyle: React.CSSProperties = {
-  fontSize: "13px",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-  marginBottom: "8px",
-  color: "rgba(255,255,255,0.4)",
-};
-
-const navStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-};
-
-const linkStyle: React.CSSProperties = {
-  color: "rgba(255,255,255,0.8)",
-  textDecoration: "none",
-  transition: "color 0.2s",
-  display: "block",
-};
-
-const showMoreBtnStyle: React.CSSProperties = {
-  background: "transparent",
-  border: "none",
-  color: "#3b82f6",
-  cursor: "pointer",
-  textAlign: "left",
-  padding: 0,
-  fontSize: "13px",
-  fontWeight: 500,
-  marginTop: "5px",
-};
-
-const contactLinkStyle: React.CSSProperties = {
-  color: "#fff",
-  textDecoration: "none",
-  fontSize: "15px",
-  fontWeight: 500,
-};
-
-// ✅ ОБНОВЛЕННЫЙ СТИЛЬ КНОПКИ
-const btnStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "12px",
-  textAlign: "center",
-  cursor: "pointer",
-  backgroundColor: "#222", // Темный фон
-  color: "#fff",           // Белый текст
-  border: "1px solid rgba(255,255,255,0.15)", // Легкая обводка
-  borderRadius: "8px",
-  fontWeight: 600,
-  fontSize: "14px",
-  marginBottom: "10px",
-  transition: "background 0.2s",
-};
-
-const bottomBarStyle: React.CSSProperties = {
-  marginTop: "60px",
-  paddingTop: "20px",
-  borderTop: "1px solid rgba(255,255,255,0.05)",
-  display: "flex",
-  justifyContent: "space-between",
-  flexWrap: "wrap",
-  gap: "15px",
-  fontSize: "12px",
-};
-
-const bottomLinkStyle: React.CSSProperties = {
-  color: "inherit",
-  textDecoration: "none",
-  opacity: 0.5,
-};
