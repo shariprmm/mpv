@@ -424,14 +424,6 @@ export default function PricePage() {
     setProductCategories(catItems);
     setItems(serverItems);
 
-    setEditDesc((prev) => {
-      const next = { ...prev };
-      for (const it of serverItems) {
-        if (next[it.id] === undefined) next[it.id] = (it.description || "").toString();
-      }
-      return next;
-    });
-
     setPriceDraft((prev) => {
       const next = { ...prev };
       for (const it of serverItems) {
