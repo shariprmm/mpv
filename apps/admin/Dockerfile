@@ -2,8 +2,12 @@ FROM node:22-alpine AS build
 WORKDIR /app
 RUN corepack enable
 
-# 1. Сначала копируем только лок-файл
-COPY pnpm-lock.yaml ./
+# 1. Сначала копируем манифесты
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json apps/web/
+COPY apps/admin/package.json apps/admin/
+COPY apps/api/package.json apps/api/
+COPY packages/db/package.json packages/db/
 
 # 2. Скачиваем зависимости в кэш (этот слой не будет пересобираться при изменении кода)
 RUN pnpm fetch
