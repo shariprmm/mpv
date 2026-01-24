@@ -407,9 +407,12 @@ async function getRegionBySlugOr404(res, regionSlug) {
 /* =========================================================
    AUTH (JWT in cookie)
 ========================================================= */
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET must be set");
+}
 const COOKIE_NAME = "mpv_auth";
-const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || ".moydompro.ru";
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
 const COOKIE_SECURE = String(process.env.COOKIE_SECURE || "1") !== "0";
 
 function signToken(payload) {
@@ -417,25 +420,27 @@ function signToken(payload) {
 }
 
 function setAuthCookie(res, token) {
-  res.cookie(COOKIE_NAME, token, {
+  const options = {
     httpOnly: true,
     secure: COOKIE_SECURE,
     sameSite: "Lax",
-    domain: COOKIE_DOMAIN,
     path: "/",
     maxAge: 7 * 24 * 3600 * 1000,
-  });
+  };
+  if (COOKIE_DOMAIN) options.domain = COOKIE_DOMAIN;
+  res.cookie(COOKIE_NAME, token, options);
 }
 
 function clearAuthCookie(res) {
-  res.cookie(COOKIE_NAME, "", {
+  const options = {
     httpOnly: true,
     secure: COOKIE_SECURE,
     sameSite: "Lax",
-    domain: COOKIE_DOMAIN,
     path: "/",
     expires: new Date(0),
-  });
+  };
+  if (COOKIE_DOMAIN) options.domain = COOKIE_DOMAIN;
+  res.cookie(COOKIE_NAME, "", options);
 }
 
 function authMiddleware(req, res, next) {
