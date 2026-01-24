@@ -265,10 +265,21 @@ export default async function ProductPage({
     name: c.label, 
     item: c.href ? `${SITE_URL}${c.href}` : undefined 
   })));
+  const ldProduct = {
+    ...jsonLdProduct({
+      url: `${SITE_URL}/${regionSlug}/products/${productSlug}`,
+      name: productName,
+      regionName,
+      price: pr,
+      companiesCount: companies.length,
+    }),
+    ...(allImages.length ? { image: allImages } : {}),
+  };
 
   return (
     <div className={styles.wrap}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldProduct) }} />
         
         {/* Навигация */}
         <Breadcrumbs items={crumbs} />

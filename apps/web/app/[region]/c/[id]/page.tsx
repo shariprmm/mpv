@@ -702,7 +702,7 @@ function ProfileServiceCard({
                   src={src}
                   width={64}
                   height={64}
-                  alt=""
+                  alt={`${name || "Фото услуги"} — фото ${idx + 1}`}
                   loading="lazy"
                   decoding="async"
                   draggable={false}

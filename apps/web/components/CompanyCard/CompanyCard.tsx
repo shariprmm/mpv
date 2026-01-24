@@ -244,7 +244,14 @@ export default function CompanyCard(props: {
             <div className={styles.gallery}>
               {preview.map((src, i) => (
                 <div key={src + i} className={styles.thumb}>
-                  <Image src={src} alt="" width={84} height={84} className={styles.thumbImg} unoptimized />
+                  <Image
+                    src={src}
+                    alt={`${company.name || "Компания"} — фото ${i + 1}`}
+                    width={84}
+                    height={84}
+                    className={styles.thumbImg}
+                    unoptimized
+                  />
                 </div>
               ))}
 

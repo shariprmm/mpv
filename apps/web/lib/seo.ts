@@ -459,6 +459,7 @@ export function buildCompanySeo(input: {
 ========================= */
 
 export function toNextMetadata(seo: { title: string; description: string; canonical: string }): Metadata {
+  const ogImage = absUrl("/images/og-default.png");
   return {
     title: normalizeText(seo.title),
     description: normalizeText(seo.description),
@@ -470,6 +471,13 @@ export function toNextMetadata(seo: { title: string; description: string; canoni
       siteName: SITE_NAME,
       type: "website",
       locale: "ru_RU",
+      images: [ogImage],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: normalizeText(seo.title),
+      description: normalizeText(seo.description),
+      images: [ogImage],
     },
   };
 }
