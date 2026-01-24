@@ -66,11 +66,20 @@ type CompanyProfile = {
   phone: string | null;
   address: string | null;
   work_hours: string | null;
+  description?: string | null;
+  photos?: string[] | null;
   vk_url: string | null;
   tg_url: string | null;
   youtube_url: string | null;
   website_url?: string | null;
   logo_url: string | null;
+};
+
+type PickedPhoto = {
+  name: string;
+  size: number;
+  type: string;
+  dataUrl: string;
 };
 
 async function jget(url: string) {
@@ -281,6 +290,9 @@ export default function PricePage() {
   const [pVk, setPVk] = useState("");
   const [pTg, setPTg] = useState("");
   const [pYt, setPYt] = useState("");
+  const [about, setAbout] = useState("");
+  const [companyPhotos, setCompanyPhotos] = useState<string[]>([]);
+  const [pickedCompanyPhotos, setPickedCompanyPhotos] = useState<PickedPhoto[]>([]);
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFileName, setLogoFileName] = useState<string>("");
@@ -400,6 +412,44 @@ export default function PricePage() {
     setProductId("");
   }
 
+  async function onPickCompanyPhotos(files: FileList | null) {
+    if (!files || !files.length) return;
+    setErr(null);
+
+    const existing = pickedCompanyPhotos.slice(0);
+    const remaining = Math.max(0, 40 - companyPhotos.length - existing.length);
+    const list = Array.from(files).slice(0, remaining);
+
+    if (!list.length) {
+      setErr("Можно прикрепить максимум 40 фото.");
+      return;
+    }
+
+    const added: PickedPhoto[] = [];
+    for (const f of list) {
+      if (!isAllowedImageType(f.type)) {
+        setErr("Фото: поддерживаются только png/jpg/webp.");
+        continue;
+      }
+      if (f.size > 3 * 1024 * 1024) {
+        setErr("Фото: файл слишком большой (макс 3MB).");
+        continue;
+      }
+      const dataUrl = await fileToDataUrl(f);
+      added.push({ name: f.name, size: f.size, type: f.type, dataUrl });
+    }
+
+    setPickedCompanyPhotos([...existing, ...added].slice(0, 40 - companyPhotos.length));
+  }
+
+  function removeCompanyPhoto(idx: number) {
+    setCompanyPhotos((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function removePickedCompanyPhoto(idx: number) {
+    setPickedCompanyPhotos((prev) => prev.filter((_, i) => i !== idx));
+  }
+
   async function loadAll() {
     setErr(null);
 
@@ -447,6 +497,9 @@ export default function PricePage() {
     setPTg(cp.tg_url || "");
     setPYt(cp.youtube_url || "");
     setPSite((cp.website_url as any) || "");
+    setAbout(cp.description || "");
+    setCompanyPhotos(Array.isArray(cp.photos) ? cp.photos.filter(Boolean) : []);
+    setPickedCompanyPhotos([]);
     setLogoPreview(absPublicUrl(cp.logo_url));
 
     const firstSvcCat = svcItems.length ? normCat(svcItems[0].category) : "";
@@ -602,6 +655,7 @@ export default function PricePage() {
         phone: pPhone ? digitsOnly(pPhone) : null,
         address: pAddress || null,
         work_hours: pHours || null,
+        description: about || null,
         website_url: site || null,
         vk_url: vk || null,
         tg_url: tg || null,
@@ -609,10 +663,19 @@ export default function PricePage() {
         ...(payloadExtra || {}),
       };
 
+      body.photos_keep = companyPhotos;
+      if (pickedCompanyPhotos.length) {
+        body.photos_base64 = pickedCompanyPhotos.map((p) => p.dataUrl);
+        body.photos_filenames = pickedCompanyPhotos.map((p) => p.name);
+      }
+
       const r = await jreq(`${API}/company/profile`, "PATCH", body);
       const cp = r.company as CompanyProfile;
       setProfile(cp);
       setLogoPreview(absPublicUrl(cp.logo_url));
+      setAbout(cp.description || "");
+      setCompanyPhotos(Array.isArray(cp.photos) ? cp.photos.filter(Boolean) : []);
+      setPickedCompanyPhotos([]);
 
       setMe((prev) =>
         prev
@@ -824,7 +887,8 @@ export default function PricePage() {
 
           {/* ===================== COMPANY (profile) ===================== */}
           {activeMainTab === "company" && (
-            <div className={styles.card}>
+            <>
+              <div className={styles.card}>
               <div className={styles.cardHead}>
                 <h2 className={styles.h2}>Профиль компании</h2>
                 <button
@@ -1020,6 +1084,95 @@ export default function PricePage() {
                 </div>
               </div>
             </div>
+
+              <div className={styles.card}>
+                <div className={styles.cardHead}>
+                  <h2 className={styles.h2}>О компании и примеры работ</h2>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={() => saveProfile()}
+                    disabled={savingProfile}
+                  >
+                    {savingProfile ? "Сохранение…" : "Сохранить"}
+                  </button>
+                </div>
+
+                <div className={styles.formGrid}>
+                  <div className={`${styles.field} ${styles.fieldWide}`}>
+                    <div className={styles.label}>Описание</div>
+                    <textarea
+                      className={`${styles.input} ${styles.textarea}`}
+                      value={about}
+                      onChange={(e) => setAbout(e.target.value)}
+                      placeholder="Расскажи о компании, опыте, подходе к работе."
+                      rows={6}
+                    />
+                    <div className={styles.hint}>До 5000 символов.</div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <div className={styles.detailsTitle}>Примеры работ (фото)</div>
+                  <div className={styles.photosRow}>
+                    <label className={styles.btnGhost} style={{ cursor: "pointer" }}>
+                      Добавить фото
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        multiple
+                        onChange={(e) => onPickCompanyPhotos(e.target.files)}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                    <div className={styles.hint}>До 40 фото, png/jpg/webp, до 3MB каждое.</div>
+                  </div>
+
+                  {(companyPhotos.length > 0 || pickedCompanyPhotos.length > 0) && (
+                    <div className={styles.photosGrid}>
+                      {companyPhotos.map((src, idx) => {
+                        const url = absPublicUrl(src);
+                        return (
+                          <div key={`existing-${idx}`} className={styles.photoCard}>
+                            {url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={url} alt={`company-${idx + 1}`} />
+                            ) : (
+                              <div className={styles.logoEmpty}>Нет фото</div>
+                            )}
+                            <button
+                              className={styles.photoDel}
+                              type="button"
+                              onClick={() => removeCompanyPhoto(idx)}
+                              title="Убрать"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {pickedCompanyPhotos.map((ph, idx) => (
+                        <div key={`new-${idx}`} className={styles.photoCard}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={ph.dataUrl} alt={ph.name} />
+                          <button
+                            className={styles.photoDel}
+                            type="button"
+                            onClick={() => removePickedCompanyPhoto(idx)}
+                            title="Убрать"
+                          >
+                            ×
+                          </button>
+                          <div className={styles.photoName} title={ph.name}>
+                            {ph.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
 
           {/* ===================== PRICE ===================== */}

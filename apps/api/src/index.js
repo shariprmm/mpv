@@ -2121,7 +2121,8 @@ app.get(
     const r = await pool.query(
       `SELECT id, name, is_verified,
               phone, address, work_hours,
-              vk_url, tg_url, youtube_url,
+              description, photos,
+              website_url, vk_url, tg_url, youtube_url,
               logo_url
        FROM companies
        WHERE id=$1
@@ -2144,7 +2145,9 @@ app.patch(
     const phone = cleanStr(b.phone);
     const address = cleanStr(b.address);
     const work_hours = cleanStr(b.work_hours);
+    const description = b.description !== undefined ? sanitizeText(b.description, 5000) : undefined;
 
+    const website_url = b.website_url === undefined ? undefined : cleanUrl(b.website_url);
     const vk_url = b.vk_url === undefined ? undefined : cleanUrl(b.vk_url);
     const tg_url = b.tg_url === undefined ? undefined : cleanUrl(b.tg_url);
     const youtube_url = b.youtube_url === undefined ? undefined : cleanUrl(b.youtube_url);
@@ -2181,16 +2184,69 @@ app.patch(
     if (phone !== undefined) put("phone", phone);
     if (address !== undefined) put("address", address);
     if (work_hours !== undefined) put("work_hours", work_hours);
+    if (description !== undefined) put("description", description);
 
+    if (website_url !== undefined) put("website_url", website_url);
     if (vk_url !== undefined) put("vk_url", vk_url);
     if (tg_url !== undefined) put("tg_url", tg_url);
     if (youtube_url !== undefined) put("youtube_url", youtube_url);
 
     if (newLogoUrl !== undefined) put("logo_url", newLogoUrl);
 
+    const keepPhotosRaw = b.photos_keep;
+    const photosKeep =
+      keepPhotosRaw === undefined
+        ? undefined
+        : Array.isArray(keepPhotosRaw)
+        ? keepPhotosRaw
+        : typeof keepPhotosRaw === "string"
+        ? keepPhotosRaw.split("\n").map((x) => x.trim()).filter(Boolean)
+        : [];
+
+    const newPhotos = await (async () => {
+      const list = normalizeListInput(b.photos_base64);
+      if (list === undefined) return undefined;
+      if (list === null) return [];
+      if (list.length > 40) {
+        const err = new Error("too_many_photos");
+        err.statusCode = 400;
+        throw err;
+      }
+      const names = normalizeFilenamesInput(b.photos_filenames);
+      const urls = [];
+      const MAX_BYTES = 3 * 1024 * 1024;
+      for (let i = 0; i < list.length; i++) {
+        const saved = await saveDataUrlImage({
+          companyId,
+          prefix: "company-photo",
+          dataUrl: list[i],
+          filenameHint: names[i] || `photo-${i + 1}.jpg`,
+          maxBytes: MAX_BYTES,
+        });
+        if (!saved.ok) {
+          const err = new Error(saved.error || "bad_photo");
+          err.statusCode = 400;
+          throw err;
+        }
+        urls.push(saved.url);
+      }
+      return urls;
+    })();
+
+    if (photosKeep !== undefined || newPhotos !== undefined) {
+      const base = Array.isArray(photosKeep) ? photosKeep : [];
+      const merged = newPhotos === undefined ? base : [...base, ...newPhotos];
+      if (merged.length > 40) {
+        return res.status(400).json({ ok: false, error: "too_many_photos" });
+      }
+      put("photos", JSON.stringify(merged));
+    }
+
     if (!sets.length) {
       const r0 = await pool.query(
-        `SELECT id, name, is_verified, phone, address, work_hours, vk_url, tg_url, youtube_url, logo_url
+        `SELECT id, name, is_verified, phone, address, work_hours,
+                description, photos,
+                website_url, vk_url, tg_url, youtube_url, logo_url
          FROM companies WHERE id=$1 LIMIT 1`,
         [companyId]
       );
@@ -2204,7 +2260,8 @@ app.patch(
       WHERE id = $${vals.length}
       RETURNING id, name, is_verified,
                 phone, address, work_hours,
-                vk_url, tg_url, youtube_url,
+                description, photos,
+                website_url, vk_url, tg_url, youtube_url,
                 logo_url
     `;
     const r = await pool.query(q, vals);
