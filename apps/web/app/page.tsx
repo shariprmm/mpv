@@ -1,4 +1,28 @@
+import type { Metadata } from "next";
+import { SITE_NAME, absUrl } from "@/lib/seo";
+
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: `${SITE_NAME} — услуги и товары для дома`,
+  description: "Каталог услуг, товаров и компаний для загородного дома по регионам.",
+  alternates: { canonical: absUrl("/") },
+  openGraph: {
+    title: `${SITE_NAME} — услуги и товары для дома`,
+    description: "Каталог услуг, товаров и компаний для загородного дома по регионам.",
+    url: absUrl("/"),
+    siteName: SITE_NAME,
+    type: "website",
+    locale: "ru_RU",
+    images: [absUrl("/images/og-default.png")],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — услуги и товары для дома`,
+    description: "Каталог услуг, товаров и компаний для загородного дома по регионам.",
+    images: [absUrl("/images/og-default.png")],
+  },
+};
 
 async function getHome(region_slug: string) {
   // ВАЖНО:

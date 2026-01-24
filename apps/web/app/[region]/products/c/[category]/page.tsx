@@ -302,7 +302,7 @@ function ProductBigCard(props: {
       <div className={styles.cardLeft}>
         <div className={styles.cardThumb} aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt="" loading="lazy" className={styles.cardThumbImg} />
+          <img src={src} alt={title} loading="lazy" className={styles.cardThumbImg} />
         </div>
 
         <div className={styles.cardText}>
