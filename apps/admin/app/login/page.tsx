@@ -7,8 +7,8 @@ const API =
   "https://api.moydompro.ru";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("owner1@moydompro.ru");
+  const [password, setPassword] = useState("Password123");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
