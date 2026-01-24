@@ -114,7 +114,10 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
     return null;
   }
 
+  let companiesMappingCache = null;
+
   async function companiesMapping() {
+    if (companiesMappingCache) return companiesMappingCache;
     const cols = await getCompaniesCols();
 
     const map = {
@@ -151,6 +154,7 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
       updated_at: cols.has("updated_at") ? "updated_at" : null,
     };
 
+    companiesMappingCache = map;
     return map;
   }
 
@@ -179,8 +183,7 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
 
       try {
         const p = JSON.parse(s);
-        if (Array.isArray(p)) arr = p;
-        else arr = [s];
+        arr = Array.isArray(p) ? p : [s];
       } catch {
         arr = [s];
       }
@@ -188,18 +191,20 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
       return null;
     }
 
-    const cleaned = arr
-      .map((x) => (x == null ? "" : String(x).trim()))
-      .filter(Boolean)
-      .slice(0, maxItems)
-      .filter((u) => {
-        if (!u) return false;
-        if (u.startsWith("/uploads/")) return true;
-        if (u.startsWith("uploads/")) return true;
-        if (/^https?:\/\//i.test(u)) return true;
-        return false;
-      })
-      .map((u) => (u.startsWith("uploads/") ? `/${u}` : u));
+    const cleaned = [];
+
+    for (const raw of arr) {
+      if (cleaned.length >= maxItems) break;
+      const u = raw == null ? "" : String(raw).trim();
+      if (!u) continue;
+      if (u.startsWith("/uploads/") || /^https?:\/\//i.test(u)) {
+        cleaned.push(u);
+        continue;
+      }
+      if (u.startsWith("uploads/")) {
+        cleaned.push(`/${u}`);
+      }
+    }
 
     return cleaned.length ? cleaned : null;
   }
