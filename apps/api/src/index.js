@@ -56,9 +56,12 @@ app.use("/uploads", express.static(UPLOAD_DIR, { maxAge: "7d", etag: true }));
    MIDDLEWARES
 ========================================================= */
 
+const LOG_REQUESTS = process.env.LOG_REQUESTS === "true";
 // лог запросов
 app.use((req, _res, next) => {
-  console.log("REQ", req.method, req.url);
+  if (LOG_REQUESTS) {
+    console.log("REQ", req.method, req.url);
+  }
   next();
 });
 
@@ -259,7 +262,7 @@ function normalizeFilenamesInput(v) {
   return arr.map((x) => String(x || "").trim());
 }
 
-function saveDataUrlImageGeneric({ prefix, dataUrl, filenameHint, maxBytes }) {
+async function saveDataUrlImageGeneric({ prefix, dataUrl, filenameHint, maxBytes }) {
   const parsed = parseDataUrlBase64(dataUrl);
   if (!parsed) return { ok: false, error: "bad_image_base64" };
   if (!isAllowedImageMime(parsed.mime)) return { ok: false, error: "bad_image_type" };
@@ -273,7 +276,7 @@ function saveDataUrlImageGeneric({ prefix, dataUrl, filenameHint, maxBytes }) {
 
   const fname = `${prefix}-${Date.now()}-${crypto.randomBytes(6).toString("hex")}.${safeExt}`;
   const fpath = path.join(UPLOAD_DIR, fname);
-  fs.writeFileSync(fpath, buf);
+  await fs.promises.writeFile(fpath, buf);
 
   return { ok: true, url: `/uploads/${fname}` };
 }
@@ -291,7 +294,7 @@ async function saveDataUrlImageAsWebp({ prefix, dataUrl, filenameHint, maxBytes 
   if (String(parsed.mime).toLowerCase() === "image/svg+xml") {
     const fname = `${prefix}-${Date.now()}-${crypto.randomBytes(6).toString("hex")}.svg`;
     const fpath = path.join(UPLOAD_DIR, fname);
-    fs.writeFileSync(fpath, buf);
+    await fs.promises.writeFile(fpath, buf);
     return { ok: true, url: `/uploads/${fname}` };
   }
 
@@ -317,7 +320,7 @@ function isAllowedImageMime(m) {
   return ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"].includes(mm);
 }
 
-function saveDataUrlImage({ companyId, prefix, dataUrl, filenameHint, maxBytes }) {
+async function saveDataUrlImage({ companyId, prefix, dataUrl, filenameHint, maxBytes }) {
   const parsed = parseDataUrlBase64(dataUrl);
   if (!parsed) return { ok: false, error: "bad_image_base64" };
   if (!isAllowedImageMime(parsed.mime)) return { ok: false, error: "bad_image_type" };
@@ -333,12 +336,12 @@ function saveDataUrlImage({ companyId, prefix, dataUrl, filenameHint, maxBytes }
     .randomBytes(6)
     .toString("hex")}.${safeExt}`;
   const fpath = path.join(UPLOAD_DIR, fname);
-  fs.writeFileSync(fpath, buf);
+  await fs.promises.writeFile(fpath, buf);
 
   return { ok: true, url: `/uploads/${fname}` };
 }
 
-function saveImagesFromDataUrls({ companyId, itemId, photos_base64, photos_filenames }) {
+async function saveImagesFromDataUrls({ companyId, itemId, photos_base64, photos_filenames }) {
   // photos_base64: undefined => не трогать (PATCH)
   // null => очистить
   // [] => очистить
@@ -358,7 +361,7 @@ function saveImagesFromDataUrls({ companyId, itemId, photos_base64, photos_filen
   const MAX_BYTES = 3 * 1024 * 1024; // 3MB
 
   for (let i = 0; i < list.length; i++) {
-    const saved = saveDataUrlImage({
+    const saved = await saveDataUrlImage({
       companyId,
       prefix: `item-${itemId}`,
       dataUrl: list[i],
@@ -2598,7 +2601,7 @@ app.post(
 
     const item = rIns.rows[0];
 
-    const photosUrls = saveImagesFromDataUrls({
+    const photosUrls = await saveImagesFromDataUrls({
       companyId,
       itemId: item.id,
       photos_base64: pick(b, ["photos_base64", "photosBase64"]),
@@ -2680,7 +2683,7 @@ app.patch(
 
     const description = sanitizeText(pick(b, ["description", "desc"]), 5000);
 
-    const photosUrls = saveImagesFromDataUrls({
+    const photosUrls = await saveImagesFromDataUrls({
       companyId,
       itemId: id,
       photos_base64: pick(b, ["photos_base64", "photosBase64"]),
