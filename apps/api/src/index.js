@@ -2113,16 +2113,66 @@ app.get(
 /* =========================================================
    COMPANY PROFILE (AUTH) — единая точка: /company/profile
 ========================================================= */
+let companiesProfileColsPromise = null;
+
+async function getCompaniesProfileCols() {
+  if (!companiesProfileColsPromise) {
+    companiesProfileColsPromise = pool
+      .query(
+        `
+        select column_name
+        from information_schema.columns
+        where table_schema = 'public' and table_name = 'companies'
+      `
+      )
+      .then((r) => new Set(r.rows.map((x) => String(x.column_name).toLowerCase())));
+  }
+  return companiesProfileColsPromise;
+}
+
+function pickCompanyProfileCol(colsSet, preferred) {
+  for (const c of preferred) {
+    const key = String(c).toLowerCase();
+    if (colsSet.has(key)) return key;
+  }
+  return null;
+}
+
+let companyProfileMappingCache = null;
+
+async function companyProfileMapping() {
+  if (companyProfileMappingCache) return companyProfileMappingCache;
+  const cols = await getCompaniesProfileCols();
+
+  const map = {
+    website: pickCompanyProfileCol(cols, ["website_url", "website", "site", "url"]),
+    description: pickCompanyProfileCol(cols, ["description", "about", "descr", "details", "text"]),
+    photos: pickCompanyProfileCol(cols, ["photos", "gallery", "images"]),
+  };
+
+  companyProfileMappingCache = map;
+  return map;
+}
+
+function companyProfileSelect(dbCol, alias) {
+  if (!dbCol) return `NULL as ${alias}`;
+  if (alias && dbCol !== alias) return `${dbCol} as ${alias}`;
+  return dbCol;
+}
+
 app.get(
   "/company/profile",
   requireAuth,
   aw(async (req, res) => {
     const companyId = Number(req.user?.company_id);
+    const m = await companyProfileMapping();
     const r = await pool.query(
       `SELECT id, name, is_verified,
               phone, address, work_hours,
-              description, photos,
-              website_url, vk_url, tg_url, youtube_url,
+              ${companyProfileSelect(m.description, "description")},
+              ${companyProfileSelect(m.photos, "photos")},
+              ${companyProfileSelect(m.website, "website_url")},
+              vk_url, tg_url, youtube_url,
               logo_url
        FROM companies
        WHERE id=$1
@@ -2139,6 +2189,7 @@ app.patch(
   requireAuth,
   aw(async (req, res) => {
     const companyId = Number(req.user?.company_id);
+    const m = await companyProfileMapping();
     const b = req.body || {};
 
     const name = cleanStr(b.name);
@@ -2179,14 +2230,25 @@ app.patch(
       vals.push(v);
       sets.push(`${col} = $${vals.length}`);
     };
+    const putJsonb = (col, v) => {
+      if (!col) return;
+      if (v === undefined) return;
+      if (v === null) {
+        vals.push(null);
+        sets.push(`${col} = $${vals.length}::jsonb`);
+        return;
+      }
+      vals.push(JSON.stringify(v));
+      sets.push(`${col} = $${vals.length}::jsonb`);
+    };
 
     if (name !== undefined) put("name", name);
     if (phone !== undefined) put("phone", phone);
     if (address !== undefined) put("address", address);
     if (work_hours !== undefined) put("work_hours", work_hours);
-    if (description !== undefined) put("description", description);
+    if (description !== undefined && m.description) put(m.description, description);
 
-    if (website_url !== undefined) put("website_url", website_url);
+    if (website_url !== undefined && m.website) put(m.website, website_url);
     if (vk_url !== undefined) put("vk_url", vk_url);
     if (tg_url !== undefined) put("tg_url", tg_url);
     if (youtube_url !== undefined) put("youtube_url", youtube_url);
@@ -2239,14 +2301,16 @@ app.patch(
       if (merged.length > 40) {
         return res.status(400).json({ ok: false, error: "too_many_photos" });
       }
-      put("photos", JSON.stringify(merged));
+      putJsonb(m.photos, merged);
     }
 
     if (!sets.length) {
       const r0 = await pool.query(
         `SELECT id, name, is_verified, phone, address, work_hours,
-                description, photos,
-                website_url, vk_url, tg_url, youtube_url, logo_url
+                ${companyProfileSelect(m.description, "description")},
+                ${companyProfileSelect(m.photos, "photos")},
+                ${companyProfileSelect(m.website, "website_url")},
+                vk_url, tg_url, youtube_url, logo_url
          FROM companies WHERE id=$1 LIMIT 1`,
         [companyId]
       );
@@ -2260,8 +2324,10 @@ app.patch(
       WHERE id = $${vals.length}
       RETURNING id, name, is_verified,
                 phone, address, work_hours,
-                description, photos,
-                website_url, vk_url, tg_url, youtube_url,
+                ${companyProfileSelect(m.description, "description")},
+                ${companyProfileSelect(m.photos, "photos")},
+                ${companyProfileSelect(m.website, "website_url")},
+                vk_url, tg_url, youtube_url,
                 logo_url
     `;
     const r = await pool.query(q, vals);
