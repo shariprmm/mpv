@@ -192,6 +192,13 @@
   align-items: center;
 }
 
+.mobileTabs {
+  display: none;
+  gap: 8px;
+  padding: 0 22px 10px;
+  flex-wrap: wrap;
+}
+
 /* ===== Cards ===== */
 .card {
   background: #fff;
@@ -415,7 +422,7 @@
 
 .rowMain {
   display: grid;
-  grid-template-columns: 32px 1fr 340px 110px;
+  grid-template-columns: 1fr 340px 110px;
   align-items: center;
   gap: 12px;
   padding: 12px;
@@ -834,7 +841,7 @@
 /* ===== Responsive ===== */
 @media (max-width: 1080px) {
   .rowMain {
-    grid-template-columns: 32px 1fr 320px 110px;
+    grid-template-columns: 1fr 320px 110px;
   }
   .photosGrid {
     grid-template-columns: repeat(4, 1fr);
@@ -860,6 +867,11 @@
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .mobileTabs {
+    display: flex;
+    padding: 0 14px 10px;
   }
 
   .content {
@@ -888,16 +900,12 @@
   }
 
   .rowMain {
-    grid-template-columns: 32px 1fr;
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "exp title"
+      "title"
       "price price"
       "actions actions";
     row-gap: 10px;
-  }
-
-  .rowExpand {
-    grid-area: exp;
   }
 
   .rowTitle {

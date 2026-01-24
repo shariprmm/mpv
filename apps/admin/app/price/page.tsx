@@ -129,13 +129,6 @@ function absPublicUrl(p: string | null | undefined) {
   return `${API}${path}`;
 }
 
-type PickedPhoto = {
-  name: string;
-  size: number;
-  type: string;
-  dataUrl: string;
-};
-
 async function fileToDataUrl(file: File): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
     const fr = new FileReader();
@@ -143,11 +136,6 @@ async function fileToDataUrl(file: File): Promise<string> {
     fr.onerror = () => reject(new Error("Не удалось прочитать файл"));
     fr.readAsDataURL(file);
   });
-}
-
-function isAllowedImageType(mime: string) {
-  const t = String(mime || "").toLowerCase();
-  return ["image/png", "image/jpeg", "image/jpg", "image/webp"].includes(t);
 }
 
 function normCat(v: any): string {
@@ -281,10 +269,8 @@ export default function PricePage() {
   const [savingProfile, setSavingProfile] = useState<boolean>(false);
 
   // ===== sections/tabs =====
-  const [activeMainTab, setActiveMainTab] = useState<"price" | "catalog" | "company">("price");
-  const [activeCatalogTab, setActiveCatalogTab] = useState<"products" | "services" | "custom">(
-    "products"
-  );
+  const [activeMainTab, setActiveMainTab] = useState<"catalog" | "company">("catalog");
+  const [activeCatalogTab, setActiveCatalogTab] = useState<"products" | "services">("products");
 
   // ===== Company profile form =====
   const [pName, setPName] = useState("");
@@ -300,50 +286,25 @@ export default function PricePage() {
   const [logoFileName, setLogoFileName] = useState<string>("");
 
   // ===== Price add/edit =====
-  const [kind, setKind] = useState<"service" | "product" | "custom">("service");
+  const [kind, setKind] = useState<"service" | "product">("service");
   const [serviceCategory, setServiceCategory] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
   const [productId, setProductId] = useState<string>("");
-  const [customTitle, setCustomTitle] = useState<string>("");
   const [priceMin, setPriceMin] = useState<string>("");
-  const [newDesc, setNewDesc] = useState<string>("");
-  const [newPhotos, setNewPhotos] = useState<PickedPhoto[]>([]);
   const [showAdd, setShowAdd] = useState(false);
 
   // price list UI
-  const [openItem, setOpenItem] = useState<Record<number, boolean>>({});
   const [priceDraft, setPriceDraft] = useState<Record<number, string>>({});
-  const [editDesc, setEditDesc] = useState<Record<number, string>>({});
-  const [editPhotos, setEditPhotos] = useState<Record<number, PickedPhoto[]>>({});
 
-  const [itemsKindFilter, setItemsKindFilter] = useState<"all" | "service" | "product" | "custom">(
-    "all"
-  );
+  const [itemsKindFilter, setItemsKindFilter] = useState<"all" | "service" | "product">("all");
   const [itemsQuery, setItemsQuery] = useState("");
 
-  // ===== Catalog (products/services/custom) =====
+  // ===== Catalog (products/services) =====
   const [catalogQuery, setCatalogQuery] = useState("");
   const [catalogCatId, setCatalogCatId] = useState<string>(""); // for products filter
   const [catalogSvcCat, setCatalogSvcCat] = useState<string>(""); // for services filter
 
-  // modal: edit product/service/custom
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState<"product" | "service" | "custom">("product");
-  const [editId, setEditId] = useState<number | null>(null);
-
-  const [eName, setEName] = useState("");
-  const [eSlug, setESlug] = useState("");
-  const [eCatId, setECatId] = useState<string>("");
-  const [eSvcCat, setESvcCat] = useState<string>("");
-  const [eDesc, setEDesc] = useState("");
-  const [ePicked, setEPicked] = useState<PickedPhoto[]>([]);
-  const [eKeepServerPhotos, setEKeepServerPhotos] = useState<string[]>([]);
-  const [editSaving, setEditSaving] = useState(false);
-
-  // create product in drawer (existing feature)
-  const [newProductName, setNewProductName] = useState<string>("");
-  const [newProductSlug, setNewProductSlug] = useState<string>("");
-  const [creatingProduct, setCreatingProduct] = useState<boolean>(false);
+  // modal: edit product/service (removed)
 
   const serviceCategories = useMemo(() => {
     const set = new Set<string>();
@@ -434,83 +395,9 @@ export default function PricePage() {
   }, [productCategories]);
 
   function resetNewItemForm() {
-    setCustomTitle("");
     setPriceMin("");
-    setNewDesc("");
-    setNewPhotos([]);
-  }
-
-  async function onPickNewPhotos(files: FileList | null) {
-    if (!files || !files.length) return;
-    setErr(null);
-
-    const existing = newPhotos.slice(0);
-    const canAdd = Math.max(0, 5 - existing.length);
-    const list = Array.from(files).slice(0, canAdd);
-
-    if (!list.length) {
-      setErr("Можно прикрепить максимум 5 фото.");
-      return;
-    }
-
-    const added: PickedPhoto[] = [];
-    for (const f of list) {
-      if (!isAllowedImageType(f.type)) {
-        setErr("Фото: поддерживаются только png/jpg/webp.");
-        continue;
-      }
-      if (f.size > 3 * 1024 * 1024) {
-        setErr("Фото: файл слишком большой (макс 3MB).");
-        continue;
-      }
-      const dataUrl = await fileToDataUrl(f);
-      added.push({ name: f.name, size: f.size, type: f.type, dataUrl });
-    }
-
-    const next = [...existing, ...added].slice(0, 5);
-    setNewPhotos(next);
-  }
-
-  function removeNewPhoto(idx: number) {
-    setNewPhotos((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  async function onPickEditPhotos(itemId: number, files: FileList | null) {
-    if (!files || !files.length) return;
-    setErr(null);
-
-    const existing = (editPhotos[itemId] || []).slice(0);
-    const canAdd = Math.max(0, 5 - existing.length);
-    const list = Array.from(files).slice(0, canAdd);
-
-    if (!list.length) {
-      setErr("Можно прикрепить максимум 5 фото.");
-      return;
-    }
-
-    const added: PickedPhoto[] = [];
-    for (const f of list) {
-      if (!isAllowedImageType(f.type)) {
-        setErr("Фото: поддерживаются только png/jpg/webp.");
-        continue;
-      }
-      if (f.size > 3 * 1024 * 1024) {
-        setErr("Фото: файл слишком большой (макс 3MB).");
-        continue;
-      }
-      const dataUrl = await fileToDataUrl(f);
-      added.push({ name: f.name, size: f.size, type: f.type, dataUrl });
-    }
-
-    const next = [...existing, ...added].slice(0, 5);
-    setEditPhotos((prev) => ({ ...prev, [itemId]: next }));
-  }
-
-  function removeEditPhoto(itemId: number, idx: number) {
-    setEditPhotos((prev) => ({
-      ...prev,
-      [itemId]: (prev[itemId] || []).filter((_, i) => i !== idx),
-    }));
+    setServiceId("");
+    setProductId("");
   }
 
   async function loadAll() {
@@ -536,14 +423,6 @@ export default function PricePage() {
     setProducts(prdItems);
     setProductCategories(catItems);
     setItems(serverItems);
-
-    setEditDesc((prev) => {
-      const next = { ...prev };
-      for (const it of serverItems) {
-        if (next[it.id] === undefined) next[it.id] = (it.description || "").toString();
-      }
-      return next;
-    });
 
     setPriceDraft((prev) => {
       const next = { ...prev };
@@ -621,60 +500,18 @@ export default function PricePage() {
   useEffect(() => {
     if (kind !== "product") return;
     setProductId("");
-    setNewProductName("");
-    setNewProductSlug("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productCategoryId, kind]);
-
-  async function createProduct() {
-    setErr(null);
-
-    if (!productCategoryId) {
-      setErr("Сначала выбери категорию товара.");
-      return;
-    }
-    const name = newProductName.trim();
-    const slug = newProductSlug.trim();
-
-    if (!name) {
-      setErr("Введи название товара.");
-      return;
-    }
-
-    setCreatingProduct(true);
-    try {
-      const r = await jreq(`${API}/products`, "POST", {
-        name,
-        slug: slug || undefined,
-        category_id: Number(productCategoryId),
-      });
-
-      const created: Product | undefined = r?.item;
-      if (created?.id != null) setProductId(String(created.id));
-
-      await loadAll();
-      setNewProductName("");
-      setNewProductSlug("");
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-    } finally {
-      setCreatingProduct(false);
-    }
-  }
 
   async function addItem() {
     setErr(null);
     try {
       if (kind === "product" && !productId) {
-        setErr("Сначала создай или выбери товар.");
+        setErr("Выбери товар.");
         return;
       }
       if (kind === "service" && !serviceId) {
         setErr("Выбери услугу.");
-        return;
-      }
-      if (kind === "custom" && !customTitle.trim()) {
-        setErr("Введи название своей позиции.");
         return;
       }
 
@@ -682,14 +519,10 @@ export default function PricePage() {
         kind,
         price_min: toNumOrNull(priceMin),
         price_max: null,
-        description: newDesc ? newDesc.trim() : null,
-        photos_base64: newPhotos.map((p) => p.dataUrl),
-        photos_filenames: newPhotos.map((p) => p.name),
       };
 
       if (kind === "service") body.service_id = serviceId ? Number(serviceId) : null;
       if (kind === "product") body.product_id = productId ? Number(productId) : null;
-      if (kind === "custom") body.custom_title = customTitle;
 
       await jreq(`${API}/company-items`, "POST", body);
 
@@ -723,35 +556,6 @@ export default function PricePage() {
     }
   }
 
-  async function saveItemDetails(it: CompanyItem) {
-    setErr(null);
-    setSavingId(it.id);
-    try {
-      const desc = (editDesc[it.id] ?? "").trim();
-      const picked = editPhotos[it.id] || [];
-
-      const body: any = { description: desc ? desc : null };
-
-      if (picked.length) {
-        body.photos_base64 = picked.map((p) => p.dataUrl);
-        body.photos_filenames = picked.map((p) => p.name);
-      }
-
-      await jreq(`${API}/company-items/${it.id}`, "PATCH", body);
-
-      setEditPhotos((prev) => {
-        const n = { ...prev };
-        delete n[it.id];
-        return n;
-      });
-
-      await loadAll();
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-    } finally {
-      setSavingId(null);
-    }
-  }
 
   async function delItem(id: number) {
     setErr(null);
@@ -852,11 +656,11 @@ export default function PricePage() {
   const filteredItems = useMemo(() => {
     const q = itemsQuery.trim().toLowerCase();
     return (items || []).filter((it) => {
+      if (it.kind === "custom") return false;
       if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
       if (!q) return true;
       const t = titleByItem(it).toLowerCase();
-      const d = String(it.description || "").toLowerCase();
-      return t.includes(q) || d.includes(q);
+      return t.includes(q);
     });
   }, [items, itemsQuery, itemsKindFilter, titleByItem]);
 
@@ -915,147 +719,6 @@ export default function PricePage() {
     return list;
   }, [services, catalogQuery, catalogSvcCat]);
 
-  const filteredCatalogCustom = useMemo(() => {
-    const q = catalogQuery.trim().toLowerCase();
-    let list = items.filter((x) => x.kind === "custom");
-    if (q) {
-      list = list.filter((it) => {
-        const n = String(it.custom_title || "").toLowerCase();
-        const d = String(it.description || "").toLowerCase();
-        return n.includes(q) || d.includes(q) || String(it.id).includes(q);
-      });
-    }
-    list.sort((a, b) =>
-      String(a.custom_title || "").localeCompare(String(b.custom_title || ""), "ru")
-    );
-    return list;
-  }, [items, catalogQuery]);
-
-  // ===== edit modal helpers =====
-  function openEditProduct(p: Product) {
-    setErr(null);
-    setEditMode("product");
-    setEditId(Number(p.id));
-    setEName(p.name || "");
-    setESlug(p.slug || "");
-    setECatId(p.category_id != null ? String(p.category_id) : "");
-    setESvcCat("");
-    setEDesc("");
-    setEPicked([]);
-    setEKeepServerPhotos([]);
-    setEditModalOpen(true);
-  }
-
-  function openEditService(s: Service) {
-    setErr(null);
-    setEditMode("service");
-    setEditId(Number(s.id));
-    setEName(s.name || "");
-    setESlug(s.slug || "");
-    setESvcCat(normCat(s.category));
-    setECatId("");
-    setEDesc("");
-    setEPicked([]);
-    setEKeepServerPhotos([]);
-    setEditModalOpen(true);
-  }
-
-  function openEditCustom(it: CompanyItem) {
-    setErr(null);
-    setEditMode("custom");
-    setEditId(it.id);
-    setEName(it.custom_title || "");
-    setESlug("");
-    setECatId("");
-    setESvcCat("");
-    setEDesc(String(it.description || ""));
-    setEPicked([]);
-    setEKeepServerPhotos(
-      (it.photos || []).map((p) => absPublicUrl(p)).filter(Boolean) as string[]
-    );
-    setEditModalOpen(true);
-  }
-
-  async function onPickModalPhotos(files: FileList | null) {
-    if (!files || !files.length) return;
-    setErr(null);
-
-    const existing = ePicked.slice(0);
-    const canAdd = Math.max(0, 5 - existing.length);
-    const list = Array.from(files).slice(0, canAdd);
-
-    if (!list.length) {
-      setErr("Можно прикрепить максимум 5 фото.");
-      return;
-    }
-
-    const added: PickedPhoto[] = [];
-    for (const f of list) {
-      if (!isAllowedImageType(f.type)) {
-        setErr("Фото: поддерживаются только png/jpg/webp.");
-        continue;
-      }
-      if (f.size > 3 * 1024 * 1024) {
-        setErr("Фото: файл слишком большой (макс 3MB).");
-        continue;
-      }
-      const dataUrl = await fileToDataUrl(f);
-      added.push({ name: f.name, size: f.size, type: f.type, dataUrl });
-    }
-
-    setEPicked([...existing, ...added].slice(0, 5));
-  }
-
-  function removeModalPhoto(idx: number) {
-    setEPicked((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  async function saveEditModal() {
-    if (!editId) return;
-    setErr(null);
-    setEditSaving(true);
-
-    try {
-      if (editMode === "product") {
-        const body: any = {
-          name: eName.trim(),
-          slug: eSlug.trim() || undefined,
-          category_id: eCatId ? Number(eCatId) : null,
-        };
-        await jreq(`${API}/products/${editId}`, "PATCH", body);
-      }
-
-      if (editMode === "service") {
-        const body: any = {
-          name: eName.trim(),
-          slug: eSlug.trim() || undefined,
-          category: eSvcCat ? eSvcCat.trim() : null,
-        };
-        await jreq(`${API}/services/${editId}`, "PATCH", body);
-      }
-
-      if (editMode === "custom") {
-        const body: any = {
-          custom_title: eName.trim() || null,
-          description: eDesc.trim() || null,
-        };
-
-        if (ePicked.length) {
-          body.photos_base64 = ePicked.map((p) => p.dataUrl);
-          body.photos_filenames = ePicked.map((p) => p.name);
-        }
-
-        await jreq(`${API}/company-items/${editId}`, "PATCH", body);
-      }
-
-      setEditModalOpen(false);
-      await loadAll();
-    } catch (e: any) {
-      setErr(e?.message || String(e));
-    } finally {
-      setEditSaving(false);
-    }
-  }
 
   // ===== render =====
   return (
@@ -1080,15 +743,6 @@ export default function PricePage() {
           </div>
 
           <nav className={styles.nav}>
-            <button
-              type="button"
-              className={`${styles.navItem} ${activeMainTab === "price" ? styles.navItemActive : ""}`}
-              onClick={() => setActiveMainTab("price")}
-            >
-              <span className={styles.navIcon}>💰</span>
-              <span className={styles.navLabel}>Прайс</span>
-            </button>
-
             <button
               type="button"
               className={`${styles.navItem} ${activeMainTab === "catalog" ? styles.navItemActive : ""}`}
@@ -1122,11 +776,7 @@ export default function PricePage() {
         <div className={styles.topbar}>
           <div>
             <h1 className={styles.h1}>
-              {activeMainTab === "price"
-                ? "Прайс"
-                : activeMainTab === "catalog"
-                ? "Товары и услуги"
-                : "О компании"}
+              {activeMainTab === "catalog" ? "Товары и услуги" : "О компании"}
             </h1>
             <div className={styles.sub}>
               {me ? (
@@ -1141,7 +791,7 @@ export default function PricePage() {
           </div>
 
           <div className={styles.topbarActions}>
-            {activeMainTab === "price" ? (
+            {activeMainTab === "catalog" ? (
               <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}>
                 + Добавить позицию
               </button>
@@ -1152,11 +802,28 @@ export default function PricePage() {
           </div>
         </div>
 
+        <div className={styles.mobileTabs}>
+          <button
+            type="button"
+            className={activeMainTab === "catalog" ? styles.btnPrimary : styles.btnGhost}
+            onClick={() => setActiveMainTab("catalog")}
+          >
+            Товары и услуги
+          </button>
+          <button
+            type="button"
+            className={activeMainTab === "company" ? styles.btnPrimary : styles.btnGhost}
+            onClick={() => setActiveMainTab("company")}
+          >
+            О компании
+          </button>
+        </div>
+
         <div className={styles.content}>
           {err && <div className={styles.err}>Ошибка: {err}</div>}
 
           {/* ===================== COMPANY (profile) ===================== */}
-          {(activeMainTab === "company" || activeMainTab === "price") && (
+          {activeMainTab === "company" && (
             <div className={styles.card}>
               <div className={styles.cardHead}>
                 <h2 className={styles.h2}>Профиль компании</h2>
@@ -1356,7 +1023,7 @@ export default function PricePage() {
           )}
 
           {/* ===================== PRICE ===================== */}
-          {activeMainTab === "price" && (
+          {activeMainTab === "catalog" && (
             <div className={styles.card}>
               <div className={styles.cardHead}>
                 <h2 className={styles.h2}>Позиции прайса</h2>
@@ -1373,7 +1040,6 @@ export default function PricePage() {
                     <option value="all">Все</option>
                     <option value="service">Услуги</option>
                     <option value="product">Товары</option>
-                    <option value="custom">Свои</option>
                   </select>
                 </div>
 
@@ -1383,35 +1049,19 @@ export default function PricePage() {
                     className={styles.input}
                     value={itemsQuery}
                     onChange={(e) => setItemsQuery(e.target.value)}
-                    placeholder="Название или описание…"
+                    placeholder="Название…"
                   />
                 </div>
               </div>
 
               <div className={styles.listCompact}>
                 {filteredItems.map((it) => {
-                  const isOpen = !!openItem[it.id];
-                  const serverPhotos = (it.photos || [])
-                    .map((p) => absPublicUrl(p))
-                    .filter(Boolean) as string[];
-                  const picked = editPhotos[it.id] || [];
-                  const descVal = editDesc[it.id] ?? (it.description || "");
                   const draft =
                     priceDraft[it.id] ?? (it.price_min == null ? "" : String(it.price_min));
 
                   return (
                     <div key={it.id} className={styles.row}>
                       <div className={styles.rowMain}>
-                        <button
-                          className={styles.rowExpand}
-                          type="button"
-                          onClick={() => setOpenItem((prev) => ({ ...prev, [it.id]: !prev[it.id] }))}
-                          aria-label={isOpen ? "Свернуть" : "Развернуть"}
-                          title={isOpen ? "Свернуть" : "Развернуть"}
-                        >
-                          {isOpen ? "▾" : "▸"}
-                        </button>
-
                         <div className={styles.rowTitle}>
                           <div className={styles.rowTitleTop}>
                             <span className={`${styles.badge} ${styles["badge_" + it.kind]}`}>
@@ -1456,96 +1106,6 @@ export default function PricePage() {
                           </button>
                         </div>
                       </div>
-
-                      {isOpen && (
-                        <div className={styles.rowDetails}>
-                          <div className={styles.detailsHead}>
-                            <div className={styles.detailsTitle}>Описание</div>
-                            <button
-                              className={styles.btnPrimary}
-                              onClick={() => saveItemDetails(it)}
-                              disabled={savingId === it.id}
-                            >
-                              {savingId === it.id ? "Сохранение…" : "Сохранить"}
-                            </button>
-                          </div>
-
-                          <textarea
-                            className={`${styles.input} ${styles.textarea}`}
-                            value={descVal}
-                            onChange={(e) =>
-                              setEditDesc((prev) => ({ ...prev, [it.id]: e.target.value }))
-                            }
-                            rows={3}
-                            placeholder="Добавь описание…"
-                          />
-
-                          <div className={styles.photosRow}>
-                            <label className={styles.btnGhost} style={{ cursor: "pointer" }}>
-                              Заменить фото (до 5)
-                              <input
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp"
-                                multiple
-                                onChange={(e) => onPickEditPhotos(it.id, e.target.files)}
-                                style={{ display: "none" }}
-                              />
-                            </label>
-                            <div className={styles.hint}>
-                              Если выбрать — при сохранении заменит фото у позиции.
-                            </div>
-                          </div>
-
-                          {serverPhotos.length > 0 && (
-                            <>
-                              <div className={styles.detailsTitle} style={{ marginTop: 10 }}>
-                                Текущие фото
-                              </div>
-                              <div className={styles.photosGrid}>
-                                {serverPhotos.slice(0, 5).map((u, i) => (
-                                  <a
-                                    key={i}
-                                    className={`${styles.photoCard} ${styles.linkCard}`}
-                                    href={u}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                  >
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={u} alt={`photo-${i + 1}`} />
-                                  </a>
-                                ))}
-                              </div>
-                            </>
-                          )}
-
-                          {picked.length > 0 && (
-                            <>
-                              <div className={styles.detailsTitle} style={{ marginTop: 10 }}>
-                                Новые фото (будут сохранены)
-                              </div>
-                              <div className={styles.photosGrid}>
-                                {picked.map((ph, i) => (
-                                  <div key={i} className={styles.photoCard}>
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={ph.dataUrl} alt={ph.name} />
-                                    <button
-                                      className={styles.photoDel}
-                                      type="button"
-                                      onClick={() => removeEditPhoto(it.id, i)}
-                                      title="Убрать"
-                                    >
-                                      ×
-                                    </button>
-                                    <div className={styles.photoName} title={ph.name}>
-                                      {ph.name}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -1581,19 +1141,11 @@ export default function PricePage() {
                   >
                     Услуги
                   </button>
-                  <button
-                    type="button"
-                    className={activeCatalogTab === "custom" ? styles.btnPrimary : styles.btnGhost}
-                    onClick={() => setActiveCatalogTab("custom")}
-                  >
-                    Свои
-                  </button>
                 </div>
               </div>
 
               <div className={styles.hint} style={{ marginBottom: 12 }}>
-                Эти данные используются в кабинете и на карточке компании. Для кастомных позиций можно
-                задавать описание и фото.
+                Эти данные используются в кабинете и на карточке компании.
               </div>
 
               {/* filters row */}
@@ -1604,7 +1156,7 @@ export default function PricePage() {
                     className={styles.input}
                     value={catalogQuery}
                     onChange={(e) => setCatalogQuery(e.target.value)}
-                    placeholder="Название, slug, описание…"
+                    placeholder="Название или slug…"
                   />
                 </div>
 
@@ -1654,7 +1206,6 @@ export default function PricePage() {
                       <th>Название</th>
                       <th>Категория</th>
                       <th>Slug</th>
-                      <th style={{ width: 180 }}>Действия</th>
                     </tr>
                   </thead>
 
@@ -1675,11 +1226,6 @@ export default function PricePage() {
                           <td>
                             <div className={styles.catalogSlug}>{p.slug || "—"}</div>
                           </td>
-                          <td>
-                            <button className={styles.btnGhost} onClick={() => openEditProduct(p)}>
-                              Редактировать
-                            </button>
-                          </td>
                         </tr>
                       ))}
 
@@ -1699,60 +1245,12 @@ export default function PricePage() {
                           <td>
                             <div className={styles.catalogSlug}>{s.slug || "—"}</div>
                           </td>
-                          <td>
-                            <button className={styles.btnGhost} onClick={() => openEditService(s)}>
-                              Редактировать
-                            </button>
-                          </td>
                         </tr>
                       ))}
 
-                    {activeCatalogTab === "custom" &&
-                      filteredCatalogCustom.map((it) => {
-                        const photo =
-                          (it.photos || [])
-                            .map((p) => absPublicUrl(p))
-                            .filter(Boolean)?.[0] || null;
-
-                        return (
-                          <tr key={`c-${it.id}`}>
-                            <td className={styles.catalogPhotoCell}>
-                              <div className={styles.catalogPhoto}>
-                                {photo ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    src={photo}
-                                    alt=""
-                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                  />
-                                ) : (
-                                  <span style={{ opacity: 0.55 }}>🧩</span>
-                                )}
-                              </div>
-                            </td>
-                            <td>
-                              <div className={styles.catalogName}>{it.custom_title || "Своя позиция"}</div>
-                              <div className={styles.catalogMeta}>ID: {it.id}</div>
-                            </td>
-                            <td>—</td>
-                            <td>
-                              <div className={styles.catalogSlug}>—</div>
-                            </td>
-                            <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <button className={styles.btnGhost} onClick={() => openEditCustom(it)}>
-                                Редактировать
-                              </button>
-                              <button className={styles.btnGhost} onClick={() => delItem(it.id)}>
-                                Удалить
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-
                     {activeCatalogTab === "products" && filteredCatalogProducts.length === 0 && (
                       <tr>
-                        <td colSpan={5}>
+                        <td colSpan={4}>
                           <div className={styles.empty}>Ничего не найдено.</div>
                         </td>
                       </tr>
@@ -1760,16 +1258,8 @@ export default function PricePage() {
 
                     {activeCatalogTab === "services" && filteredCatalogServices.length === 0 && (
                       <tr>
-                        <td colSpan={5}>
+                        <td colSpan={4}>
                           <div className={styles.empty}>Ничего не найдено.</div>
-                        </td>
-                      </tr>
-                    )}
-
-                    {activeCatalogTab === "custom" && filteredCatalogCustom.length === 0 && (
-                      <tr>
-                        <td colSpan={5}>
-                          <div className={styles.empty}>Кастомных позиций пока нет.</div>
                         </td>
                       </tr>
                     )}
@@ -1788,7 +1278,7 @@ export default function PricePage() {
                 <div>
                   <div className={styles.drawerTitle}>Добавить позицию</div>
                   <div className={styles.drawerSub}>
-                    Выбери тип, заполни цену и (опционально) описание/фото.
+                    Выбери товар или услугу из базы и укажи цену.
                   </div>
                 </div>
                 <button className={styles.btnGhost} onClick={() => setShowAdd(false)}>
@@ -1806,7 +1296,6 @@ export default function PricePage() {
                   >
                     <option value="service">Услуга</option>
                     <option value="product">Товар</option>
-                    <option value="custom">Своя позиция</option>
                   </select>
                 </div>
 
@@ -1863,53 +1352,13 @@ export default function PricePage() {
                     </div>
 
                     <div className={`${styles.field} ${styles.fieldWide}`}>
-                      <div className={styles.label}>Название товара</div>
-                      <input
-                        className={styles.input}
-                        value={newProductName}
-                        onChange={(e) => setNewProductName(e.target.value)}
-                        placeholder="Например: Биодека 5"
-                        disabled={!productCategoryId}
-                      />
-                      <div className={styles.hint}>
-                        Сначала создай товар в выбранной категории, потом добавь его в прайс.
-                      </div>
-                    </div>
-
-                    <div className={styles.field}>
-                      <div className={styles.label}>Slug (необязательно)</div>
-                      <input
-                        className={styles.input}
-                        value={newProductSlug}
-                        onChange={(e) => setNewProductSlug(e.target.value)}
-                        placeholder="Например: biodeka-5"
-                        disabled={!productCategoryId}
-                      />
-                    </div>
-
-                    <div className={styles.field}>
-                      <div className={styles.label}>&nbsp;</div>
-                      <button
-                        type="button"
-                        className={styles.btnPrimary}
-                        onClick={createProduct}
-                        disabled={!productCategoryId || creatingProduct}
-                      >
-                        {creatingProduct ? "Создание…" : "Создать товар"}
-                      </button>
-                    </div>
-
-                    <div className={`${styles.field} ${styles.fieldWide}`}>
-                      <div className={styles.label}>Или выбери существующий</div>
+                      <div className={styles.label}>Товар</div>
                       <select
                         className={styles.input}
                         value={productId}
                         onChange={(e) => setProductId(e.target.value)}
-                        disabled={!productCategoryId}
                       >
-                        <option value="">
-                          {productCategoryId ? "— выбери товар —" : "— сначала выбери категорию —"}
-                        </option>
+                        <option value="">— выбери товар —</option>
                         {filteredProductsForAdd.map((p) => (
                           <option key={String(p.id)} value={String(p.id)}>
                             {p.name}
@@ -1926,18 +1375,6 @@ export default function PricePage() {
                   </>
                 )}
 
-                {kind === "custom" && (
-                  <div className={`${styles.field} ${styles.fieldWide}`}>
-                    <div className={styles.label}>Название</div>
-                    <input
-                      className={styles.input}
-                      value={customTitle}
-                      onChange={(e) => setCustomTitle(e.target.value)}
-                      placeholder="Например: Выезд инженера"
-                    />
-                  </div>
-                )}
-
                 <div className={styles.field}>
                   <div className={styles.label}>Цена от, ₽</div>
                   <input
@@ -1947,58 +1384,6 @@ export default function PricePage() {
                     placeholder="Напр. 1500"
                     inputMode="decimal"
                   />
-                </div>
-
-                <div className={`${styles.field} ${styles.fieldWide}`}>
-                  <div className={styles.label}>Описание</div>
-                  <textarea
-                    className={`${styles.input} ${styles.textarea}`}
-                    value={newDesc}
-                    onChange={(e) => setNewDesc(e.target.value)}
-                    placeholder="Коротко опиши услугу/товар…"
-                    rows={4}
-                  />
-                  <div className={styles.hint}>До 5000 символов. Можно оставить пустым.</div>
-                </div>
-
-                <div className={`${styles.field} ${styles.fieldWide}`}>
-                  <div className={styles.label}>Фото (до 5)</div>
-
-                  <div className={styles.photosRow}>
-                    <label className={styles.btnGhost} style={{ cursor: "pointer" }}>
-                      Прикрепить фото
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        multiple
-                        onChange={(e) => onPickNewPhotos(e.target.files)}
-                        style={{ display: "none" }}
-                      />
-                    </label>
-                    <div className={styles.hint}>png/jpg/webp, до 3MB каждое</div>
-                  </div>
-
-                  {newPhotos.length > 0 && (
-                    <div className={styles.photosGrid}>
-                      {newPhotos.map((ph, i) => (
-                        <div key={i} className={styles.photoCard}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ph.dataUrl} alt={ph.name} />
-                          <button
-                            className={styles.photoDel}
-                            type="button"
-                            onClick={() => removeNewPhoto(i)}
-                            title="Убрать"
-                          >
-                            ×
-                          </button>
-                          <div className={styles.photoName} title={ph.name}>
-                            {ph.name}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -2020,190 +1405,6 @@ export default function PricePage() {
           </div>
         )}
 
-        {/* ===================== Modal: Edit product/service/custom ===================== */}
-        {editModalOpen && (
-          <div className={styles.drawerOverlay} role="dialog" aria-modal="true">
-            <div className={styles.drawer} style={{ width: "min(920px, 100%)" }}>
-              <div className={styles.drawerHead}>
-                <div>
-                  <div className={styles.drawerTitle}>
-                    {editMode === "product"
-                      ? "Редактировать товар"
-                      : editMode === "service"
-                      ? "Редактировать услугу"
-                      : "Редактировать свою позицию"}
-                  </div>
-                  <div className={styles.drawerSub}>
-                    {editMode === "custom"
-                      ? "Измените название, добавьте описание и фото."
-                      : "Измените название / slug / категорию."}
-                  </div>
-                </div>
-
-                <button className={styles.btnGhost} onClick={() => setEditModalOpen(false)}>
-                  Закрыть
-                </button>
-              </div>
-
-              <div style={{ padding: 16 }}>
-                <div className={styles.formGrid}>
-                  <div className={`${styles.field} ${styles.fieldWide}`}>
-                    <div className={styles.label}>Название</div>
-                    <input
-                      className={styles.input}
-                      value={eName}
-                      onChange={(e) => setEName(e.target.value)}
-                      placeholder="Название"
-                    />
-                  </div>
-
-                  {editMode !== "custom" && (
-                    <div className={styles.field}>
-                      <div className={styles.label}>Категория</div>
-
-                      {editMode === "product" ? (
-                        <select
-                          className={styles.input}
-                          value={eCatId}
-                          onChange={(e) => setECatId(e.target.value)}
-                        >
-                          <option value="">— выбери категорию —</option>
-                          {productCategoryOptions.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <select
-                          className={styles.input}
-                          value={eSvcCat}
-                          onChange={(e) => setESvcCat(e.target.value)}
-                        >
-                          <option value="">— выбери категорию —</option>
-                          {serviceCategories.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  )}
-
-                  {editMode !== "custom" && (
-                    <div className={`${styles.field} ${styles.fieldWide}`}>
-                      <div className={styles.label}>Slug (необязательно)</div>
-                      <input
-                        className={styles.input}
-                        value={eSlug}
-                        onChange={(e) => setESlug(e.target.value)}
-                        placeholder="slug"
-                      />
-                      <div className={styles.hint}>
-                        Если оставить пустым — пусть сервер сгенерирует автоматически (если поддерживается).
-                      </div>
-                    </div>
-                  )}
-
-                  {editMode === "custom" && (
-                    <>
-                      <div className={`${styles.field} ${styles.fieldWide}`}>
-                        <div className={styles.label}>Описание</div>
-                        <textarea
-                          className={`${styles.input} ${styles.textarea}`}
-                          value={eDesc}
-                          onChange={(e) => setEDesc(e.target.value)}
-                          placeholder="Описание товара…"
-                          rows={4}
-                        />
-                      </div>
-
-                      <div className={`${styles.field} ${styles.fieldWide}`}>
-                        <div className={styles.label}>Фото (до 5)</div>
-
-                        <div className={styles.photosRow}>
-                          <label className={styles.btnGhost} style={{ cursor: "pointer" }}>
-                            Прикрепить фото
-                            <input
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp"
-                              multiple
-                              onChange={(e) => onPickModalPhotos(e.target.files)}
-                              style={{ display: "none" }}
-                            />
-                          </label>
-                          <div className={styles.hint}>png/jpg/webp, до 3MB каждое</div>
-                        </div>
-
-                        {eKeepServerPhotos.length > 0 && (
-                          <>
-                            <div className={styles.detailsTitle} style={{ marginTop: 10 }}>
-                              Текущие фото
-                            </div>
-                            <div className={styles.photosGrid}>
-                              {eKeepServerPhotos.slice(0, 5).map((u, i) => (
-                                <a
-                                  key={i}
-                                  className={`${styles.photoCard} ${styles.linkCard}`}
-                                  href={u}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img src={u} alt={`server-${i + 1}`} />
-                                </a>
-                              ))}
-                            </div>
-                            <div className={styles.hint}>
-                              Если прикрепить новые — при сохранении они заменят текущие.
-                            </div>
-                          </>
-                        )}
-
-                        {ePicked.length > 0 && (
-                          <>
-                            <div className={styles.detailsTitle} style={{ marginTop: 10 }}>
-                              Новые фото (будут сохранены)
-                            </div>
-                            <div className={styles.photosGrid}>
-                              {ePicked.map((ph, i) => (
-                                <div key={i} className={styles.photoCard}>
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img src={ph.dataUrl} alt={ph.name} />
-                                  <button
-                                    className={styles.photoDel}
-                                    type="button"
-                                    onClick={() => removeModalPhoto(i)}
-                                    title="Убрать"
-                                  >
-                                    ×
-                                  </button>
-                                  <div className={styles.photoName} title={ph.name}>
-                                    {ph.name}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.drawerFooter}>
-                <button className={styles.btnGhost} onClick={() => setEditModalOpen(false)}>
-                  Отмена
-                </button>
-                <button className={styles.btnPrimary} onClick={saveEditModal} disabled={editSaving}>
-                  {editSaving ? "Сохранение…" : "Сохранить"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
