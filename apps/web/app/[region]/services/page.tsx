@@ -38,6 +38,7 @@ type ServiceItem = {
   category?: string | null;
   companies_count?: number | null;
   price_min?: number | string | null;
+  image_url?: string | null;
 };
 
 type ServiceCategoryFlat = {
@@ -84,6 +85,23 @@ function absPublicAsset(u?: string | null) {
   return path;
 }
 
+function absMedia(u?: string | null) {
+  const s = String(u || "").trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("//")) return s.replace(/^\/+/, "/");
+  if (s.startsWith("/uploads/")) return s;
+  if (s.startsWith("/")) return s;
+  return s;
+}
+
+function formatPriceFrom(v?: number | string | null) {
+  if (v === null || v === undefined) return "";
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return `от ${fmtRub(n)} ₽`;
+}
+
 // ✅ Логика подбора картинок для услуг
 function pickCategoryImage(slug: string, label: string) {
   const s = `${slug} ${label}`.toLowerCase();
@@ -117,22 +135,35 @@ function pickCategoryImage(slug: string, label: string) {
 function ServiceCard(props: {
   href: string;
   title: string;
-  priceFrom?: number | null;
-  imageUrl: string;
+  meta?: string;
+  imageUrl?: string | null;
 }) {
-  const { href, title, priceFrom, imageUrl } = props;
-  const priceStr = priceFrom != null ? `от ${fmtRub(priceFrom)} ₽` : null;
+  const { href, title, meta, imageUrl } = props;
+  const src = absMedia(imageUrl || "");
 
   return (
-    <Link href={href} className={styles.card}>
-      <div className={styles.cardThumb}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl} alt={title} loading="lazy" />
-      </div>
+    <Link href={href} className={styles.simpleCard}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className={styles.cardThumb} aria-hidden={!src}>
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={src}
+              alt={title}
+              width={38}
+              height={38}
+              loading="lazy"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <span style={{ fontSize: 16, opacity: 0.5 }}>•</span>
+          )}
+        </div>
 
-      <div className={styles.cardText}>
-        <div className={styles.cardTitle}>{title}</div>
-        {priceStr && <div className={styles.cardPrice}>{priceStr}</div>}
+        <div style={{ minWidth: 0 }}>
+          <div className={styles.simpleCardTitle}>{title}</div>
+          {meta ? <div className={styles.simpleCardMeta}>{meta}</div> : null}
+        </div>
       </div>
     </Link>
   );
@@ -285,19 +316,27 @@ export default async function ServicesPage({
           <h2 className={styles.h2}>Популярные услуги</h2>
         </div>
 
-        <div className={styles.cardsGrid}>
+        <div className={styles.grid}>
           {items.length === 0 ? (
             <div className={styles.emptyText}>Пока нет услуг.</div>
           ) : (
-            items.map((s) => (
-              <ServiceCard
-                key={s.slug || s.id}
-                href={`/${region}/services/${s.slug || s.id}`}
-                title={s.name}
-                priceFrom={toNum(s.price_min)}
-                imageUrl={pickCategoryImage(s.slug, s.name)}
-              />
-            ))
+            items.map((s) => {
+              const parts: string[] = [];
+              const price = formatPriceFrom(toNum(s.price_min));
+              if (price) parts.push(price);
+              if ((Number(s.companies_count) || 0) > 0) {
+                parts.push(`Компаний: ${s.companies_count}`);
+              }
+              return (
+                <ServiceCard
+                  key={s.slug || s.id}
+                  href={`/${region}/services/${s.slug || s.id}`}
+                  title={s.name}
+                  meta={parts.length ? parts.join(" • ") : undefined}
+                  imageUrl={s.image_url || pickCategoryImage(s.slug, s.name)}
+                />
+              );
+            })
           )}
         </div>
 
