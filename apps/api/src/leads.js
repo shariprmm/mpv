@@ -32,6 +32,37 @@ export function registerLeadsRoutes(app, pool, requireAuth) {
     return out;
   }
 
+  const isPrivateHostname = (hostname) => {
+    const host = String(hostname || "").toLowerCase();
+    if (!host) return true;
+    if (["localhost", "127.0.0.1", "::1"].includes(host)) return true;
+    if (/^10\./.test(host)) return true;
+    if (/^192\.168\./.test(host)) return true;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
+    return false;
+  };
+
+  const isSafeWebhookUrl = (value) => {
+    try {
+      const url = new URL(String(value));
+      if (url.protocol !== "https:") return false;
+      if (isPrivateHostname(url.hostname)) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function dispatchLead(companyId, lead) {
     try {
       const integrations = await getCompanyIntegrations(companyId);
@@ -53,7 +84,7 @@ export function registerLeadsRoutes(app, pool, requireAuth) {
           `Источник: ${lead.source}\n` +
           `Дата: ${lead.created_at}`;
 
-        await fetch(`https://api.telegram.org/bot${tg.config.bot_token}/sendMessage`, {
+        await fetchWithTimeout(`https://api.telegram.org/bot${tg.config.bot_token}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ chat_id: tg.config.chat_id, text }),
@@ -62,8 +93,8 @@ export function registerLeadsRoutes(app, pool, requireAuth) {
 
       // --- CRM webhook ---
       const crm = integrations.crm_webhook;
-      if (crm?.is_enabled && crm?.config?.url) {
-        await fetch(String(crm.config.url), {
+      if (crm?.is_enabled && crm?.config?.url && isSafeWebhookUrl(crm.config.url)) {
+        await fetchWithTimeout(String(crm.config.url), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ event: "lead_created", lead }),
@@ -84,6 +115,12 @@ export function registerLeadsRoutes(app, pool, requireAuth) {
 
       const company_id = Number(b.company_id ?? b.companyId ?? 0);
       if (!company_id) return res.status(400).json({ ok: false, error: "bad_company_id" });
+      const companyExists = await pool.query("SELECT id FROM companies WHERE id=$1 LIMIT 1", [
+        company_id,
+      ]);
+      if (!companyExists.rowCount) {
+        return res.status(404).json({ ok: false, error: "company_not_found" });
+      }
 
       const kind = normKind(b.kind);
       const service_id = kind === "service" ? toNumOrNull(b.service_id ?? b.serviceId) : null;
