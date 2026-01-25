@@ -310,6 +310,7 @@ export default function PricePage() {
 
   const [itemsKindFilter, setItemsKindFilter] = useState<"all" | "service" | "product">("all");
   const [itemsQuery, setItemsQuery] = useState("");
+  const [itemsCategoryFilter, setItemsCategoryFilter] = useState<string>("");
 
   // ===== Catalog (products/services) =====
   const [catalogQuery, setCatalogQuery] = useState("");
@@ -323,6 +324,11 @@ export default function PricePage() {
     for (const s of services) set.add(normCat(s.category));
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
   }, [services]);
+
+  const serviceCategoryOptions = useMemo(
+    () => serviceCategories.map((c) => ({ value: `service::${c}`, label: c })),
+    [serviceCategories]
+  );
 
   const filteredServicesForAdd = useMemo(() => {
     const cat = serviceCategory ? normCat(serviceCategory) : "";
@@ -343,6 +349,17 @@ export default function PricePage() {
       return { value: String(c.id), label: `${indent}${c.path_name}` };
     });
   }, [productCategories]);
+
+  const productCategoryFilterOptions = useMemo(() => {
+    const options = productCategoryOptions.map((o) => ({
+      value: `product::${o.value}`,
+      label: o.label,
+    }));
+    if (products.some((p) => p.category_id == null)) {
+      options.unshift({ value: "product::none", label: "Без категории" });
+    }
+    return options;
+  }, [productCategoryOptions, products]);
 
   const catChildren = useMemo(() => {
     const map = new Map<number, number[]>();
@@ -405,6 +422,47 @@ export default function PricePage() {
     for (const c of productCategories) map.set(c.id, c.path_name || c.name);
     return (id: number | null | undefined) => (id ? map.get(id) || "—" : "—");
   }, [productCategories]);
+
+  const serviceCategoryById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of services) map.set(String(s.id), normCat(s.category));
+    return map;
+  }, [services]);
+
+  const productCategoryIdById = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const p of products) map.set(String(p.id), p.category_id ?? null);
+    return map;
+  }, [products]);
+
+  const itemCategoryLabel = useMemo(() => {
+    return (it: CompanyItem) => {
+      if (it.kind === "service") {
+        const label = serviceCategoryById.get(String(it.service_id ?? "")) || "Без категории";
+        return label;
+      }
+      if (it.kind === "product") {
+        const cid = productCategoryIdById.get(String(it.product_id ?? "")) ?? null;
+        const name = cid ? catNameById(cid) : "Без категории";
+        return name === "—" ? "Без категории" : name;
+      }
+      return "—";
+    };
+  }, [serviceCategoryById, productCategoryIdById, catNameById]);
+
+  const itemCategoryKey = useMemo(() => {
+    return (it: CompanyItem) => {
+      if (it.kind === "service") {
+        const label = serviceCategoryById.get(String(it.service_id ?? "")) || "Без категории";
+        return `service::${label}`;
+      }
+      if (it.kind === "product") {
+        const cid = productCategoryIdById.get(String(it.product_id ?? "")) ?? null;
+        return cid ? `product::${cid}` : "product::none";
+      }
+      return "";
+    };
+  }, [serviceCategoryById, productCategoryIdById]);
 
   function resetNewItemForm() {
     setPriceMin("");
@@ -556,6 +614,14 @@ export default function PricePage() {
     setProductId("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productCategoryId, kind]);
+
+  useEffect(() => {
+    if (!itemsCategoryFilter) return;
+    const [filterKind] = itemsCategoryFilter.split("::");
+    if (itemsKindFilter !== "all" && filterKind !== itemsKindFilter) {
+      setItemsCategoryFilter("");
+    }
+  }, [itemsKindFilter, itemsCategoryFilter]);
 
   async function addItem() {
     setErr(null);
@@ -719,14 +785,20 @@ export default function PricePage() {
 
   const filteredItems = useMemo(() => {
     const q = itemsQuery.trim().toLowerCase();
+    const filter = itemsCategoryFilter || "";
     return (items || []).filter((it) => {
       if (it.kind === "custom") return false;
       if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
+      if (filter) {
+        const [filterKind] = filter.split("::");
+        if (filterKind !== it.kind) return false;
+        if (itemCategoryKey(it) !== filter) return false;
+      }
       if (!q) return true;
       const t = titleByItem(it).toLowerCase();
       return t.includes(q);
     });
-  }, [items, itemsQuery, itemsKindFilter, titleByItem]);
+  }, [items, itemsQuery, itemsKindFilter, titleByItem, itemsCategoryFilter, itemCategoryKey]);
 
   // ===== catalog lists =====
   const filteredCatalogProducts = useMemo(() => {
@@ -1197,6 +1269,47 @@ export default function PricePage() {
                   </select>
                 </div>
 
+                <div className={styles.field}>
+                  <div className={styles.label}>Категория</div>
+                  <select
+                    className={styles.input}
+                    value={itemsCategoryFilter}
+                    onChange={(e) => setItemsCategoryFilter(e.target.value)}
+                  >
+                    <option value="">Все категории</option>
+                    {itemsKindFilter === "service" &&
+                      serviceCategoryOptions.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    {itemsKindFilter === "product" &&
+                      productCategoryFilterOptions.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    {itemsKindFilter === "all" && (
+                      <>
+                        <optgroup label="Услуги">
+                          {serviceCategoryOptions.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Товары">
+                          {productCategoryFilterOptions.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </>
+                    )}
+                  </select>
+                </div>
+
                 <div className={`${styles.field} ${styles.fieldWide}`}>
                   <div className={styles.label}>Поиск</div>
                   <input
@@ -1222,6 +1335,7 @@ export default function PricePage() {
                               {kindLabel(it.kind)}
                             </span>
                             <span className={styles.rowName}>{titleByItem(it)}</span>
+                            <span className={styles.rowCategory}>{itemCategoryLabel(it)}</span>
                           </div>
                           <div className={styles.rowMeta}>
                             ID: {it.id}
