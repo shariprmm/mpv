@@ -401,7 +401,7 @@
 /* ===== Filters row ===== */
 .filtersRow {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -456,6 +456,17 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.rowCategory {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(31, 36, 48, 0.7);
+  border-radius: 999px;
+  padding: 4px 10px;
+  border: 1px solid rgba(31, 36, 48, 0.12);
+  background: #f6f8fc;
+  white-space: nowrap;
 }
 
 .rowMeta {
