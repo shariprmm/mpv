@@ -308,7 +308,7 @@ export default function PricePage() {
   // price list UI
   const [priceDraft, setPriceDraft] = useState<Record<number, string>>({});
 
-  const [itemsKindFilter, setItemsKindFilter] = useState<"all" | "service" | "product">("all");
+  const [itemsKindFilter, setItemsKindFilter] = useState<"service" | "product">("service");
   const [itemsQuery, setItemsQuery] = useState("");
   const [itemsCategoryFilter, setItemsCategoryFilter] = useState<string>("");
 
@@ -1263,7 +1263,6 @@ export default function PricePage() {
                     value={itemsKindFilter}
                     onChange={(e) => setItemsKindFilter(e.target.value as any)}
                   >
-                    <option value="all">Все</option>
                     <option value="service">Услуги</option>
                     <option value="product">Товары</option>
                   </select>
