@@ -1,0 +1,176 @@
+[33mcommit 4d9b46f0a0d22d78e3f7621d28a7b518d6a0b35c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: root <root@80-93-60-150.swtest.ru>
+Date:   Sat Jan 24 10:39:58 2026 +0300
+
+    Initial commit
+
+ .dockerignore                                                |    7 [32m+[m
+ .gitignore                                                   |  188 [32m+++[m[31m------[m
+ apps/admin/Dockerfile                                        |   42 [32m++[m
+ apps/admin/app/globals.css                                   |   14 [32m+[m
+ apps/admin/app/layout.tsx                                    |   23 [32m+[m
+ apps/admin/app/leads/page.tsx                                |  155 [32m+++++++[m
+ apps/admin/app/login.disabled/page.tsx                       |   42 [32m++[m
+ apps/admin/app/login/page.tsx                                |   92 [32m++++[m
+ apps/admin/app/master/blog-categories/page.tsx               |  221 [32m++++++++++[m
+ apps/admin/app/master/blog-posts/[id]/page.tsx               |  632 [32m+++++++++++++++++++++++++++[m
+ apps/admin/app/master/blog-posts/new/page.tsx                |  385 [32m+++++++++++++++++[m
+ apps/admin/app/master/blog-posts/page.tsx                    |  208 [32m+++++++++[m
+ apps/admin/app/master/companies/[id]/CompanyEditorClient.tsx |  510 [32m++++++++++++++++++++++[m
+ apps/admin/app/master/companies/[id]/page.tsx                |   41 [32m++[m
+ apps/admin/app/master/companies/page.tsx                     |  155 [32m+++++++[m
+ apps/admin/app/master/globals.css                            |   37 [32m++[m
+ apps/admin/app/master/layout.tsx                             |   97 [32m+++++[m
+ apps/admin/app/master/page.tsx                               |  103 [32m+++++[m
+ apps/admin/app/master/product-categories/page.tsx            |  798 [32m++++++++++++++++++++++++++++++++++[m
+ apps/admin/app/master/products/CopyProductButton.tsx         |   68 [32m+++[m
+ apps/admin/app/master/products/DeleteProductButton.tsx       |   65 [32m+++[m
+ apps/admin/app/master/products/ProductCategorySelect.tsx     |  108 [32m+++++[m
+ apps/admin/app/master/products/ToggleShowOnSite.tsx          |   54 [32m+++[m
+ apps/admin/app/master/products/[id]/page.tsx                 |   44 [32m++[m
+ apps/admin/app/master/products/[id]/ui.tsx                   |  819 [32m+++++++++++++++++++++++++++++++++++[m
+ apps/admin/app/master/products/new/NewProductForm.tsx        |  258 [32m+++++++++++[m
+ apps/admin/app/master/products/new/page.tsx                  |   21 [32m+[m
+ apps/admin/app/master/products/page.tsx                      |  212 [32m++++++++++[m
+ apps/admin/app/master/regions/page.tsx                       |  234 [32m++++++++++[m
+ apps/admin/app/master/service-categories/page.tsx            |  543 [32m++++++++++++++++++++++++[m
+ apps/admin/app/master/services/CreateServiceButton.tsx       |   61 [32m+++[m
+ apps/admin/app/master/services/[id]/page.tsx                 |   71 [32m++++[m
+ apps/admin/app/master/services/[id]/ui.tsx                   |  456 [32m++++++++++++++++++++[m
+ apps/admin/app/master/services/page.tsx                      |  238 [32m+++++++++++[m
+ apps/admin/app/page.tsx                                      |    8 [32m+[m
+ apps/admin/app/portfolio/page.tsx                            |  194 [32m+++++++++[m
+ apps/admin/app/postcss.config.js                             |    6 [32m+[m
+ apps/admin/app/price/page.tsx                                | 2210 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ apps/admin/app/price/price.module.css                        |  964 [32m++++++++++++++++++++++++++++++++++++++++++[m
+ apps/admin/app/register/page.tsx                             |  137 [32m++++++[m
+ apps/admin/app/tailwind.config.js                            |   11 [32m+[m
+ apps/admin/next-env.d.ts                                     |    6 [32m+[m
+ apps/admin/next.config.js                                    |    3 [32m+[m
+ apps/admin/package.json                                      |   25 [32m++[m
+ apps/admin/postcss.config.js                                 |    6 [32m+[m
+ apps/admin/public/.gitkeep                                   |    0
+ apps/admin/tailwind.config.js                                |   12 [32m+[m
+ apps/admin/tsconfig.json                                     |   35 [32m++[m
+ apps/api/Dockerfile                                          |   24 [32m++[m
+ apps/api/package-lock.json                                   |  778 [32m++++++++++++++++++++++++++++++++++[m
+ apps/api/package.json                                        |   24 [32m++[m
+ apps/api/src/admin_seo_generate.js                           |  185 [32m++++++++[m
+ apps/api/src/auth.js                                         |  152 [32m+++++++[m
+ apps/api/src/geo_redirect.js                                 |  187 [32m++++++++[m
+ apps/api/src/index.js                                        | 4273 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ apps/api/src/leads.js                                        |  221 [32m++++++++++[m
+ apps/api/src/master.js                                       | 1226 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ apps/web/Dockerfile                                          |   25 [32m++[m
+ apps/web/app/[region]/c/[id]/_components/Collapse.tsx        |   29 [32m++[m
+ apps/web/app/[region]/c/[id]/_components/Cut.tsx             |  107 [32m+++++[m
+ apps/web/app/[region]/c/[id]/_components/ReviewsBlock.tsx    |  260 [32m++++++++++++[m
+ apps/web/app/[region]/c/[id]/_components/Scroller.tsx        |  108 [32m+++++[m
+ apps/web/app/[region]/c/[id]/page.module.css                 |  989 [32m+++++++++++++++++++++++++++++++++++++++++++[m
+ apps/web/app/[region]/c/[id]/page.tsx                        |  717 [32m+++++++++++++++++++++++++++++++[m
+ apps/web/app/[region]/c/page.module.css                      |  160 [32m+++++++[m
+ apps/web/app/[region]/c/page.tsx                             |  156 [32m+++++++[m
+ apps/web/app/[region]/layout.tsx                             |   61 [32m+++[m
+ apps/web/app/[region]/page.module.css                        |  603 [32m++++++++++++++++++++++++++[m
+ apps/web/app/[region]/page.tsx                               | 1000 [32m+++++++++++++++++++++++++++++++++++++++++++[m
+ apps/web/app/[region]/products/[slug]/page.module.css        |  344 [32m+++++++++++++++[m
+ apps/web/app/[region]/products/[slug]/page.tsx               |  313 [32m++++++++++++++[m
+ apps/web/app/[region]/products/c/[category]/page.module.css  |  256 [32m+++++++++++[m
+ apps/web/app/[region]/products/c/[category]/page.tsx         |  550 [32m++++++++++++++++++++++++[m
+ apps/web/app/[region]/products/page.module.css               |  217 [32m++++++++++[m
+ apps/web/app/[region]/products/page.tsx                      |  317 [32m++++++++++++++[m
+ apps/web/app/[region]/search/page.tsx                        |  237 [32m+++++++++++[m
+ apps/web/app/[region]/services/[slug]/page.module.css        |  498 [32m++++++++++++++++++++++[m
+ apps/web/app/[region]/services/[slug]/page.tsx               |  854 [32m+++++++++++++++++++++++++++++++++++++[m
+ apps/web/app/[region]/services/c/[category]/page.module.css  |  426 [32m+++++++++++++++++++[m
+ apps/web/app/[region]/services/c/[category]/page.tsx         |  814 [32m+++++++++++++++++++++++++++++++++++[m
+ apps/web/app/[region]/services/page.module.css               |  170 [32m++++++++[m
+ apps/web/app/[region]/services/page.tsx                      |  310 [32m++++++++++++++[m
+ apps/web/app/favicon.ico                                     |  Bin [31m0[m -> [32m653[m bytes
+ apps/web/app/globals.css                                     |  312 [32m++++++++++++++[m
+ apps/web/app/icon-16x16.png                                  |  Bin [31m0[m -> [32m631[m bytes
+ apps/web/app/icon-180x180.png                                |  Bin [31m0[m -> [32m26041[m bytes
+ apps/web/app/icon-192x192.png                                |  Bin [31m0[m -> [32m29383[m bytes
+ apps/web/app/icon-32x32.png                                  |  Bin [31m0[m -> [32m1725[m bytes
+ apps/web/app/icon-48x48.png                                  |  Bin [31m0[m -> [32m3071[m bytes
+ apps/web/app/icon-512x512.png                                |  Bin [31m0[m -> [32m154336[m bytes
+ apps/web/app/icon-64x64.png                                  |  Bin [31m0[m -> [32m4387[m bytes
+ apps/web/app/journal/[slug]/page.module.css                  |  230 [32m++++++++++[m
+ apps/web/app/journal/[slug]/page.tsx                         |  283 [32m+++++++++++++[m
+ apps/web/app/journal/category/[slug]/page.module.css         |  264 [32m++++++++++++[m
+ apps/web/app/journal/category/[slug]/page.tsx                |  168 [32m++++++++[m
+ apps/web/app/journal/category/page.tsx                       |  124 [32m++++++[m
+ apps/web/app/journal/journal.module.css                      |  506 [32m++++++++++++++++++++++[m
+ apps/web/app/journal/page.tsx                                |  307 [32m++++++++++++++[m
+ apps/web/app/layout.tsx                                      |   78 [32m++++[m
+ apps/web/app/not-found.module.css                            |   79 [32m++++[m
+ apps/web/app/not-found.tsx                                   |   45 [32m++[m
+ apps/web/app/page.tsx                                        |  126 [32m++++++[m
+ apps/web/app/r/[region]/services/[service]/page.tsx          |  162 [32m+++++++[m
+ apps/web/app/robots.ts                                       |   20 [32m+[m
+ apps/web/app/sitemap.ts                                      |  152 [32m+++++++[m
+ apps/web/app/sitemap/page.tsx                                |  155 [32m+++++++[m
+ apps/web/app/sitemap/sitemap.module.css                      |  228 [32m++++++++++[m
+ apps/web/components/Breadcrumbs.tsx                          |   56 [32m+++[m
+ apps/web/components/CompanyCard/CompanyCard.module.css       |  378 [32m+++++++++++++++++[m
+ apps/web/components/CompanyCard/CompanyCard.tsx              |  283 [32m+++++++++++++[m
+ apps/web/components/GalleryLightbox.tsx                      |  162 [32m+++++++[m
+ apps/web/components/PageContainer.tsx                        |    7 [32m+[m
+ apps/web/components/SeoJsonLd.tsx                            |   17 [32m+[m
+ apps/web/components/SiteFooter.tsx                           |  287 [32m+++++++++++++[m
+ apps/web/components/SiteHeader.tsx                           |  839 [32m++++++++++++++++++++++++++++++++++++[m
+ apps/web/components/journal/JournalSidebar.tsx               |   46 [32m++[m
+ apps/web/context/RegionContext.tsx                           |   53 [32m+++[m
+ apps/web/lib/renderTemplate.ts                               |   22 [32m+[m
+ apps/web/lib/seo.ts                                          |  698 [32m++++++++++++++++++++++++++++++[m
+ apps/web/next-env.d.ts                                       |    5 [32m+[m
+ apps/web/next.config.js                                      |    3 [32m+[m
+ apps/web/package.json                                        |   21 [32m+[m
+ apps/web/public/favicon.ico                                  |  Bin [31m0[m -> [32m653[m bytes
+ apps/web/public/icon-16x16.png                               |  Bin [31m0[m -> [32m631[m bytes
+ apps/web/public/icon-180x180.png                             |  Bin [31m0[m -> [32m26041[m bytes
+ apps/web/public/icon-192x192.png                             |  Bin [31m0[m -> [32m29383[m bytes
+ apps/web/public/icon-32x32.png                               |  Bin [31m0[m -> [32m1725[m bytes
+ apps/web/public/icon-48x48.png                               |  Bin [31m0[m -> [32m3071[m bytes
+ apps/web/public/icon-512x512.png                             |  Bin [31m0[m -> [32m154336[m bytes
+ apps/web/public/icon-64x64.png                               |  Bin [31m0[m -> [32m4387[m bytes
+ apps/web/public/images/cat/product-default.png               |  Bin [31m0[m -> [32m31222[m bytes
+ apps/web/public/images/cat/product-septic.png                |  Bin [31m0[m -> [32m33118[m bytes
+ apps/web/public/images/cat/service-default.png               |  Bin [31m0[m -> [32m40606[m bytes
+ apps/web/public/images/cat/service-drenaj.webp               |  Bin [31m0[m -> [32m63918[m bytes
+ apps/web/public/images/cat/service-electrik.webp             |  Bin [31m0[m -> [32m74702[m bytes
+ apps/web/public/images/cat/service-fasad.webp                |  Bin [31m0[m -> [32m74746[m bytes
+ apps/web/public/images/cat/service-fence.png                 |  Bin [31m0[m -> [32m30600[m bytes
+ apps/web/public/images/cat/service-gas.webp                  |  Bin [31m0[m -> [32m71908[m bytes
+ apps/web/public/images/cat/service-gnb.png                   |  Bin [31m0[m -> [32m8851[m bytes
+ apps/web/public/images/cat/service-gnb.webp                  |  Bin [31m0[m -> [32m85868[m bytes
+ apps/web/public/images/cat/service-hoz.webp                  |  Bin [31m0[m -> [32m68764[m bytes
+ apps/web/public/images/cat/service-land.webp                 |  Bin [31m0[m -> [32m68570[m bytes
+ apps/web/public/images/cat/service-landscape.webp            |  Bin [31m0[m -> [32m45754[m bytes
+ apps/web/public/images/cat/service-logistic.png              |  Bin [31m0[m -> [32m6976[m bytes
+ apps/web/public/images/cat/service-otoplenie.webp            |  Bin [31m0[m -> [32m49626[m bytes
+ apps/web/public/images/cat/service-season.webp               |  Bin [31m0[m -> [32m93376[m bytes
+ apps/web/public/images/cat/service-septik.webp               |  Bin [31m0[m -> [32m69512[m bytes
+ apps/web/public/images/cat/service-sos.webp                  |  Bin [31m0[m -> [32m44354[m bytes
+ apps/web/public/images/cat/service-voda.webp                 |  Bin [31m0[m -> [32m74918[m bytes
+ apps/web/public/images/cat/service-wood.webp                 |  Bin [31m0[m -> [32m81278[m bytes
+ apps/web/public/images/cat/service-zaezd.webp                |  Bin [31m0[m -> [32m73802[m bytes
+ apps/web/public/images/logo.png                              |  Bin [31m0[m -> [32m68897[m bytes
+ apps/web/public/images/product-septic.png                    |  Bin [31m0[m -> [32m33118[m bytes
+ apps/web/tsconfig.json                                       |   44 [32m++[m
+ docker-compose.prod.yml                                      |   65 [32m+++[m
+ mpv_services_catalog_v1.json                                 | 3425 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ package-lock.json                                            | 1469 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ package.json                                                 |   17 [32m+[m
+ packages/db/migrations/001_init.sql                          |   40 [32m++[m
+ packages/db/migrations/002_seed.sql                          |   23 [32m+[m
+ packages/db/migrations/003_products.sql                      |   12 [32m+[m
+ packages/db/migrations/004_seed_products.sql                 |   11 [32m+[m
+ packages/db/migrations/005_auth_companies.sql                |   33 [32m++[m
+ packages/db/package.json                                     |    9 [32m+[m
+ packages/db/scripts/seed_services_catalog.mjs                |   75 [32m++++[m
+ packages/db/seeds/mpv_services_catalog_v1.json               | 3425 [32m++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ pnpm-lock.yaml                                               | 3055 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m
+ pnpm-workspace.yaml                                          |    3 [32m+[m
+ seed_services_catalog.mjs                                    |   75 [32m++++[m
+ 169 files changed, 44983 insertions(+), 124 deletions(-)

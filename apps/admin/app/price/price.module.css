@@ -494,9 +494,10 @@
 
 .rowPrice {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
+
 
 .miniField {
   display: flex;
@@ -899,12 +900,13 @@
     grid-template-columns: 1fr;
   }
 
+  /* ✅ FIX: grid-areas должны быть в 1 колонку (иначе ломает и “Удалить” наезжает на инпут) */
   .rowMain {
     grid-template-columns: 1fr;
     grid-template-areas:
       "title"
-      "price price"
-      "actions actions";
+      "price"
+      "actions";
     row-gap: 10px;
   }
 
@@ -920,6 +922,8 @@
   .rowActions {
     grid-area: actions;
     justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .photosGrid {
@@ -964,6 +968,11 @@
 
   .rowPrice {
     grid-template-columns: 1fr;
+  }
+
+  /* опционально: “Удалить” на всю ширину на совсем узких экранах */
+  .rowActions .btnGhost {
+    width: 100%;
   }
 
   .photosGrid {
