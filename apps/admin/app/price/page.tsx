@@ -616,8 +616,12 @@ export default function PricePage() {
   }, [productCategoryId, kind]);
 
   useEffect(() => {
-    setItemsCategoryFilter("");
-  }, [itemsKindFilter]);
+    if (!itemsCategoryFilter) return;
+    const [filterKind] = itemsCategoryFilter.split("::");
+    if (itemsKindFilter !== "all" && filterKind !== itemsKindFilter) {
+      setItemsCategoryFilter("");
+    }
+  }, [itemsKindFilter, itemsCategoryFilter]);
 
   async function addItem() {
     setErr(null);
@@ -784,7 +788,7 @@ export default function PricePage() {
     const filter = itemsCategoryFilter || "";
     return (items || []).filter((it) => {
       if (it.kind === "custom") return false;
-      if (it.kind !== itemsKindFilter) return false;
+      if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
       if (filter) {
         const [filterKind] = filter.split("::");
         if (filterKind !== it.kind) return false;
@@ -1272,17 +1276,36 @@ export default function PricePage() {
                     onChange={(e) => setItemsCategoryFilter(e.target.value)}
                   >
                     <option value="">Все категории</option>
-                    {itemsKindFilter === "service"
-                      ? serviceCategoryOptions.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))
-                      : productCategoryFilterOptions.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
+                    {itemsKindFilter === "service" &&
+                      serviceCategoryOptions.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    {itemsKindFilter === "product" &&
+                      productCategoryFilterOptions.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    {itemsKindFilter === "all" && (
+                      <>
+                        <optgroup label="Услуги">
+                          {serviceCategoryOptions.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Товары">
+                          {productCategoryFilterOptions.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </>
+                    )}
                   </select>
                 </div>
 
