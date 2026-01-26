@@ -26,6 +26,14 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   "https://api.moydompro.ru";
 
+type ProductCategoryFlat = {
+  id: number;
+  slug: string;
+  name: string;
+  parent_id?: number | null;
+  sort_order?: number | null;
+};
+
 async function apiGetWithStatus(path: string) {
   const base = String(API_BASE || "").replace(/\/$/, "");
   const url = base + path;
@@ -67,6 +75,52 @@ function normalizePublicImageUrl(u: any) {
 function asArr(v: any) {
   if (Array.isArray(v)) return v;
   return []; 
+}
+function normalizeCategoriesPayload(data: any): ProductCategoryFlat[] {
+  const items = Array.isArray(data?.result)
+    ? data.result
+    : Array.isArray(data?.items)
+      ? data.items
+      : [];
+  return items
+    .map((x: any) => ({
+      id: Number(x?.id ?? 0),
+      slug: String(x?.slug || "").trim(),
+      name: String(x?.name || "").trim(),
+      parent_id: x?.parent_id ?? null,
+      sort_order: x?.sort_order ?? null,
+    }))
+    .filter((x) => x.id > 0 && x.slug && x.name);
+}
+function resolveCategoryByProduct(categories: ProductCategoryFlat[], product: any) {
+  const productCategoryId = Number(product?.category_id ?? product?.categoryId ?? product?.category?.id ?? 0);
+  const productCategorySlug = String(
+    product?.category_slug ?? product?.categorySlug ?? product?.category?.slug ?? ""
+  ).trim();
+  const productCategoryName = String(
+    product?.category_name ?? product?.categoryName ?? product?.category?.name ?? ""
+  ).trim();
+
+  let current =
+    (productCategoryId
+      ? categories.find((c) => c.id === productCategoryId)
+      : null) ||
+    (productCategorySlug
+      ? categories.find((c) => c.slug === productCategorySlug)
+      : null) ||
+    (productCategoryName
+      ? categories.find((c) => c.name.toLowerCase() === productCategoryName.toLowerCase())
+      : null);
+
+  if (!current && productCategoryName) {
+    current = categories.find((c) => c.name.toLowerCase().includes(productCategoryName.toLowerCase()));
+  }
+
+  const parent = current?.parent_id
+    ? categories.find((c) => c.id === Number(current?.parent_id))
+    : null;
+
+  return { current, parent };
 }
 function uniq(arr: any[]) { return Array.from(new Set(arr)); }
 function companiesLabel(count: number) {
@@ -205,7 +259,10 @@ export default async function ProductPage({
   const regionName = String(region.name || "").trim();
   const regionIn = regionLoc({ slug: regionSlug, name: regionName });
 
-  const reviewsRes = await apiGetWithStatus(`/public/products/${product.id}/reviews?limit=20`);
+  const [categoriesRes, reviewsRes] = await Promise.all([
+    apiGetWithStatus(`/product-categories?flat=1`),
+    apiGetWithStatus(`/public/products/${product.id}/reviews?limit=20`),
+  ]);
   const reviews = Array.isArray(reviewsRes.data?.items) ? reviewsRes.data.items : [];
   const reviewsStats = reviewsRes.data?.stats || { reviews_count: 0, rating_avg: 0, total_count: 0 };
 
@@ -262,10 +319,29 @@ export default async function ProductPage({
   const descriptionHtmlRaw = product.description || product.short_description || "";
   const descriptionHtml = renderTemplate(descriptionHtmlRaw, ctx);
 
+  const categories = normalizeCategoriesPayload(categoriesRes.data);
+  const { current: currentCategory, parent: parentCategory } = resolveCategoryByProduct(categories, product);
+
   // Хлебные крошки
   const crumbs = [
     { label: "Главная", href: `/${regionSlug}` },
     { label: "Товары", href: `/${regionSlug}/products` },
+    ...(parentCategory
+      ? [
+          {
+            label: parentCategory.name,
+            href: `/${regionSlug}/products/c/${encodeURIComponent(parentCategory.slug)}`,
+          },
+        ]
+      : []),
+    ...(currentCategory
+      ? [
+          {
+            label: currentCategory.name,
+            href: `/${regionSlug}/products/c/${encodeURIComponent(currentCategory.slug)}`,
+          },
+        ]
+      : []),
     { label: productName },
   ];
 

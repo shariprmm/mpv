@@ -468,14 +468,32 @@ export default async function ProductsCategoryPage({
     }
   );
 
+  const currentCategory =
+    categories.find((c) => c.id === categoryId) ||
+    categories.find((c) => c.slug === categorySlug) ||
+    null;
+  const parentCategory = currentCategory?.parent_id
+    ? categories.find((c) => c.id === Number(currentCategory.parent_id))
+    : null;
+
   /** ✅ Microdata */
   const canonicalAbs = absUrl(`/${region}/products/c/${encodeURIComponent(categorySlug)}`);
 
-  const ldBreadcrumbs = jsonLdBreadcrumb([
+  const breadcrumbItems = [
     { name: "Главная", item: absUrl(`/${region}`) },
     { name: "Товары", item: absUrl(`/${region}/products`) },
+    ...(parentCategory
+      ? [
+          {
+            name: parentCategory.name,
+            item: absUrl(`/${region}/products/c/${encodeURIComponent(parentCategory.slug)}`),
+          },
+        ]
+      : []),
     { name: categoryName, item: canonicalAbs },
-  ]);
+  ];
+
+  const ldBreadcrumbs = jsonLdBreadcrumb(breadcrumbItems);
 
   const ldPage = jsonLdCollectionPage({ url: canonicalAbs, name: h1 });
 
@@ -510,6 +528,14 @@ export default async function ProductsCategoryPage({
         items={[
           { label: "Главная", href: `/${region}` },
           { label: "Товары", href: `/${region}/products` },
+          ...(parentCategory
+            ? [
+                {
+                  label: parentCategory.name,
+                  href: `/${region}/products/c/${encodeURIComponent(parentCategory.slug)}`,
+                },
+              ]
+            : []),
           { label: categoryName },
         ]}
       />
