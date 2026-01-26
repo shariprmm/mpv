@@ -115,6 +115,15 @@ type ProductCategoryFlat = {
   name: string;
   parent_id?: number | null;
   sort_order?: number | null;
+  image_url?: string | null;
+  image_thumb_url?: string | null;
+};
+
+type ProductCategoryPublic = {
+  id: number;
+  slug: string;
+  image_url?: string | null;
+  image_thumb_url?: string | null;
 };
 
 function toNum(v: any): number | null {
@@ -225,12 +234,12 @@ function pickCategoryImage(kind: "product" | "service", slug: string, label: str
 
   const product: Array<[RegExp, string]> = [
     [/septic|септик|станц/i, "/images/cat/product-septic.png"],
-    [/water|вода|насос/i, "/images/cat/product-water.png"],
-    [/heating|отопл|котел|радиат/i, "/images/cat/product-heating.png"],
-    [/electric|электр|кабел|щит/i, "/images/cat/product-electric.png"],
-    [/drain|дренаж/i, "/images/cat/product-drainage.png"],
-    [/fence|забор|ворот/i, "/images/cat/product-fence.png"],
-    [/material|материал|достав/i, "/images/cat/product-materials.png"],
+    [/water|вода|насос/i, "/images/cat/product-default.png"],
+    [/heating|отопл|котел|радиат/i, "/images/cat/product-default.png"],
+    [/electric|электр|кабел|щит/i, "/images/cat/product-default.png"],
+    [/drain|дренаж/i, "/images/cat/product-default.png"],
+    [/fence|забор|ворот/i, "/images/cat/product-default.png"],
+    [/material|материал|достав/i, "/images/cat/product-default.png"],
   ];
 
   const list = kind === "product" ? product : [];
@@ -248,7 +257,13 @@ function CategoriesTileRow({
 }: {
   title: string;
   kind: "product" | "service";
-  items: Array<{ label: string; href: string; slug?: string }>;
+  items: Array<{
+    label: string;
+    href: string;
+    slug?: string;
+    image_thumb_url?: string | null;
+    image_url?: string | null;
+  }>;
 }) {
   return (
     <section className={styles.section}>
@@ -259,7 +274,9 @@ function CategoriesTileRow({
       <div className={styles.rubricatorGrid}>
         {items.map((it) => {
           const slug = String(it.slug || "").trim();
-          const img = pickCategoryImage(kind, slug, it.label);
+          const fromDb = absImg(it.image_thumb_url || it.image_url || "");
+          const fallback = pickCategoryImage(kind, slug, it.label);
+          const img = fromDb || fallback;
 
           return (
             <Link key={it.href} href={it.href} className={styles.rubricatorTile}>
@@ -389,7 +406,7 @@ export default async function ProductsCategoryPage({
 
   if (isInvalidProductCategorySlug(categorySlug)) notFound();
 
-  const [home, catSeoResp, catsResp] = await Promise.all([
+  const [home, catSeoResp, catsResp, publicCatsResp] = await Promise.all([
     apiGetSafe(`/home?region_slug=${encodeURIComponent(region)}`),
     apiGetSafe(
       `/public/region/${encodeURIComponent(region)}/product-category/${encodeURIComponent(
@@ -397,6 +414,7 @@ export default async function ProductsCategoryPage({
       )}`
     ),
     apiGetSafe(`/product-categories?flat=1`),
+    apiGetSafe(`/public/product-categories`),
   ]);
 
   const categorySeo: ProductCategorySeo | null = catSeoResp?.category || null;
@@ -405,14 +423,40 @@ export default async function ProductsCategoryPage({
   const catsFlat: ProductCategoryFlat[] = Array.isArray(catsResp?.result)
     ? catsResp.result
     : [];
-  const categories = catsFlat
-    .map((x) => ({
-      id: Number(x?.id ?? 0),
-      slug: String(x?.slug || "").trim(),
-      name: String(x?.name || "").trim(),
-      parent_id: x?.parent_id ?? null,
-      sort_order: x?.sort_order ?? null,
+  const publicCatsRaw: ProductCategoryPublic[] = Array.isArray(publicCatsResp?.items)
+    ? publicCatsResp.items
+    : Array.isArray(publicCatsResp?.categories)
+      ? publicCatsResp.categories
+      : [];
+
+  const publicCats = publicCatsRaw
+    .map((c) => ({
+      id: Number(c?.id ?? 0),
+      slug: String(c?.slug || "").trim(),
+      image_url: c?.image_url ?? null,
+      image_thumb_url: c?.image_thumb_url ?? null,
     }))
+    .filter((c) => c.id > 0 && c.slug);
+
+  const publicBySlug = new Map(publicCats.map((c) => [c.slug, c]));
+  const publicById = new Map(publicCats.map((c) => [c.id, c]));
+
+  const categories = catsFlat
+    .map((x) => {
+      const id = Number(x?.id ?? 0);
+      const slug = String(x?.slug || "").trim();
+      const fromPublic = publicBySlug.get(slug) ?? publicById.get(id);
+
+      return {
+        id,
+        slug,
+        name: String(x?.name || "").trim(),
+        parent_id: x?.parent_id ?? null,
+        sort_order: x?.sort_order ?? null,
+        image_url: fromPublic?.image_url ?? null,
+        image_thumb_url: fromPublic?.image_thumb_url ?? null,
+      };
+    })
     .filter((x) => x.slug && x.name && x.id > 0);
 
   const parents = categories
@@ -555,6 +599,8 @@ export default async function ProductsCategoryPage({
               label: c.name,
               href: `/${region}/products/c/${encodeURIComponent(c.slug)}`,
               slug: c.slug,
+              image_thumb_url: c.image_thumb_url ?? null,
+              image_url: c.image_url ?? null,
             })),
           ]}
         />
