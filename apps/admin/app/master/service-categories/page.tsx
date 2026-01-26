@@ -134,11 +134,7 @@ export default function MasterServiceCategoriesPage() {
         apiJson(`${API}/admin/service-categories?flat=1`),
       ]);
 
-      const regionList: Region[] = Array.isArray(r1?.items)
-        ? r1.items
-        : Array.isArray(r1?.result)
-          ? r1.result
-          : [];
+      const regionList = Array.isArray(r1?.items) ? r1.items : Array.isArray(r1?.result) ? r1.result : [];
       setRegions(regionList);
 
       const list: ServiceCategory[] = Array.isArray(r2?.result) ? r2.result : Array.isArray(r2?.items) ? r2.items : [];
