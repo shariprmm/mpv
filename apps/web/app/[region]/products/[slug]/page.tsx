@@ -7,6 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import GalleryLightbox from "@/components/GalleryLightbox";
 import CompanyCard from "@/components/CompanyCard/CompanyCard";
 import { renderTemplate } from "@/lib/renderTemplate";
+import ProductReviewsBlock from "./_components/ProductReviewsBlock";
 import {
   SITE_URL,
   buildProductSeo,
@@ -204,6 +205,14 @@ export default async function ProductPage({
   const regionName = String(region.name || "").trim();
   const regionIn = regionLoc({ slug: regionSlug, name: regionName });
 
+  const reviewsRes = await apiGetWithStatus(`/public/products/${product.id}/reviews?limit=20`);
+  const reviews = Array.isArray(reviewsRes.data?.items) ? reviewsRes.data.items : [];
+  const reviewsStats = reviewsRes.data?.stats || { reviews_count: 0, rating_avg: 0, total_count: 0 };
+
+  const ratingAvgNum = Number(reviewsStats?.rating_avg);
+  const ratingAvg = Number.isFinite(ratingAvgNum) && ratingAvgNum > 0 ? ratingAvgNum : 0;
+  const ratingsCount = Number(reviewsStats?.total_count || 0);
+
   // 2. Обработка данных
   const pr = computeMinMaxFromCompanies(companies);
   
@@ -272,6 +281,8 @@ export default async function ProductPage({
       regionName,
       price: pr,
       companiesCount: companies.length,
+      rating: ratingAvg || null,
+      reviewsCount: ratingsCount || null,
     }),
     ...(allImages.length ? { image: allImages } : {}),
   };
@@ -349,6 +360,14 @@ export default async function ProductPage({
                         />
                     </section>
                 )}
+
+                <section className={styles.cardBlock} id="reviews">
+                    <ProductReviewsBlock
+                      productId={product.id}
+                      initialItems={reviews}
+                      initialStats={reviewsStats}
+                    />
+                </section>
 
             </div>
 
