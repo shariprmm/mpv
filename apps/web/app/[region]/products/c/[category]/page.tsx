@@ -505,9 +505,9 @@ export default async function ProductsCategoryPage({
     ? categories.find((c) => c.id === Number(currentCategory.parent_id))
     : null;
 
+  // ✅ JSON-LD (абсолютные ссылки)
   const canonicalAbs = absUrl(`/${region}/products/c/${encodeURIComponent(categorySlug)}`);
-
-  const breadcrumbItems = [
+  const ldItems = [
     { name: "Главная", item: absUrl(`/${region}`) },
     { name: "Товары", item: absUrl(`/${region}/products`) },
     ...(parentCategory
@@ -520,8 +520,23 @@ export default async function ProductsCategoryPage({
       : []),
     { name: categoryName, item: canonicalAbs },
   ];
+  const ldBreadcrumbs = jsonLdBreadcrumb(ldItems);
 
-  const ldBreadcrumbs = jsonLdBreadcrumb(breadcrumbItems);
+  // ✅ UI Крошки (относительные ссылки, label/href)
+  const breadcrumbUI = [
+    { label: "Главная", href: `/${region}` },
+    { label: "Товары", href: `/${region}/products` },
+    ...(parentCategory
+      ? [
+          {
+            label: parentCategory.name,
+            href: `/${region}/products/c/${encodeURIComponent(parentCategory.slug)}`,
+          },
+        ]
+      : []),
+    { label: categoryName },
+  ];
+
   const ldPage = jsonLdCollectionPage({ url: canonicalAbs, name: h1 });
   const ldList = jsonLdItemList({
     url: canonicalAbs,
@@ -550,7 +565,8 @@ export default async function ProductsCategoryPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldPage) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldList) }} />
 
-      <Breadcrumbs items={breadcrumbItems} />
+      {/* ✅ Передаем правильные объекты {label, href} */}
+      <Breadcrumbs items={breadcrumbUI} />
 
       <div className={styles.padX}>
         <h1 className={styles.h1}>{h1}</h1>
