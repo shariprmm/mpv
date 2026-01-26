@@ -1199,50 +1199,98 @@ app.get(
     const region = await getRegionBySlugOr404(res, regionSlug);
     if (!region) return;
 
-    const pr = await pool.query(
-      `
-      select
-        p.id,
-        p.slug,
-        p.name,
-        p.rating,
-        p.reviews_count,
-        p.category_id,
-        pc.slug as category_slug,
-        pc.name as category_name,
-        coalesce(p.category, pc.slug, '') as category,
+    let pr;
+    try {
+      pr = await pool.query(
+        `
+        select
+          p.id,
+          p.slug,
+          p.name,
+          p.rating,
+          p.reviews_count,
+          p.category_id,
+          pc.slug as category_slug,
+          pc.name as category_name,
+          coalesce(p.category, pc.slug, '') as category,
 
-        p.description,
-        p.cover_image,
-        p.gallery,
-        p.specs,
-        p.seo_h1,
-        p.seo_title,
-        p.seo_description,
-        p.seo_text
+          p.description,
+          p.cover_image,
+          p.gallery,
+          p.specs,
+          p.seo_h1,
+          p.seo_title,
+          p.seo_description,
+          p.seo_text
 
-      from products p
-      left join product_categories pc on pc.id = p.category_id
-      where p.slug = $1
-        and (
-          p.show_on_site = true
-          or exists (
-            -- Show product if ANY company in this region sells it, regardless of global flag
-            select 1
-            from company_items ci
-            join companies c on c.id = ci.company_id
-            where ci.product_id = p.id
-              and ci.kind = 'product'
-              and c.region_id = $2
+        from products p
+        left join product_categories pc on pc.id = p.category_id
+        where p.slug = $1
+          and (
+            p.show_on_site = true
+            or exists (
+              -- Show product if ANY company in this region sells it, regardless of global flag
+              select 1
+              from company_items ci
+              join companies c on c.id = ci.company_id
+              where ci.product_id = p.id
+                and ci.kind = 'product'
+                and c.region_id = $2
+            )
           )
-        )
-      limit 1
-      `,
-      [productSlug, region.id] // ✅ Added region.id as the second parameter
-    );
+        limit 1
+        `,
+        [productSlug, region.id] // ✅ Added region.id as the second parameter
+      );
+    } catch (e) {
+      const msg = String(e?.message || "");
+      const missingRating = msg.includes("column \"rating\"") || msg.includes("column \"reviews_count\"");
+      if (!missingRating) throw e;
+      pr = await pool.query(
+        `
+        select
+          p.id,
+          p.slug,
+          p.name,
+          p.category_id,
+          pc.slug as category_slug,
+          pc.name as category_name,
+          coalesce(p.category, pc.slug, '') as category,
+
+          p.description,
+          p.cover_image,
+          p.gallery,
+          p.specs,
+          p.seo_h1,
+          p.seo_title,
+          p.seo_description,
+          p.seo_text
+
+        from products p
+        left join product_categories pc on pc.id = p.category_id
+        where p.slug = $1
+          and (
+            p.show_on_site = true
+            or exists (
+              -- Show product if ANY company in this region sells it, regardless of global flag
+              select 1
+              from company_items ci
+              join companies c on c.id = ci.company_id
+              where ci.product_id = p.id
+                and ci.kind = 'product'
+                and c.region_id = $2
+            )
+          )
+        limit 1
+        `,
+        [productSlug, region.id]
+      );
+    }
 
     if (!pr.rowCount) return res.status(404).json({ ok: false, error: "product_not_found" });
     const product = pr.rows[0];
+    if (product.rating === undefined) product.rating = null;
+    if (product.reviews_count === undefined) product.reviews_count = null;
 
     product.specs = normalizeSpecs(parseSpecsDb(product.specs));
 
