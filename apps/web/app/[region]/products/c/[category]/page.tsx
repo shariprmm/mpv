@@ -128,15 +128,6 @@ function fmtRub(n: number | null | undefined) {
   return new Intl.NumberFormat("ru-RU").format(n);
 }
 
-function declOfNum(n: number, forms: [string, string, string]) {
-  const x = Math.abs(n) % 100;
-  const y = x % 10;
-  if (x > 10 && x < 20) return forms[2];
-  if (y > 1 && y < 5) return forms[1];
-  if (y === 1) return forms[0];
-  return forms[2];
-}
-
 /** Заглушка (положи файл в apps/web/public/images/product-placeholder.png) */
 const FALLBACK_IMG = "/images/product-placeholder.png";
 
@@ -288,43 +279,38 @@ function CategoriesTileRow({
 
 /* ====== Карточка товара ====== */
 
-function ProductBigCard(props: {
+function MediaCard(props: {
   href: string;
   title: string;
-  subtitle?: string;
-  companiesCount?: number;
-  priceFrom?: number | null;
+  meta?: string;
   imageUrl?: string | null;
 }) {
-  const { href, title, subtitle, companiesCount, priceFrom, imageUrl } = props;
-
-  const cc = Number(companiesCount ?? 0) || 0;
-  const sub2 =
-    cc > 0 ? `${cc} ${declOfNum(cc, ["компания", "компании", "компаний"])}` : "пока нет предложений";
-  const sub3 = priceFrom != null ? `от ${fmtRub(priceFrom)} ₽` : "цена по запросу";
-
+  const { href, title, meta, imageUrl } = props;
   const src = absImg(imageUrl) || FALLBACK_IMG;
 
   return (
-    <Link href={href} className={styles.card}>
-      <div className={styles.cardLeft}>
-        <div className={styles.cardThumb} aria-hidden="true">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt={title} loading="lazy" className={styles.cardThumbImg} />
+    <Link href={href} className={styles.simpleCard}>
+      <div className={styles.mediaRow}>
+        <div className={styles.cardThumb} aria-hidden={!src}>
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={src}
+              alt={title}
+              loading="lazy"
+              className={`${styles.thumbImage} ${styles.thumbImageCover}`}
+            />
+          ) : (
+            <span className={styles.thumbPlaceholder}>•</span>
+          )}
         </div>
 
-        <div className={styles.cardText}>
-          <div className={styles.cardTitle} title={title}>
+        <div className={styles.mediaContent}>
+          <div className={styles.simpleCardTitle} title={title}>
             {title}
           </div>
-          <div className={styles.cardSubtitle}>
-            {subtitle ? `${subtitle} · ${sub2} · ${sub3}` : `${sub2} · ${sub3}`}
-          </div>
+          {meta ? <div className={styles.simpleCardMeta}>{meta}</div> : null}
         </div>
-      </div>
-
-      <div className={styles.cardArrow} aria-hidden="true">
-        ›
       </div>
     </Link>
   );
@@ -429,6 +415,15 @@ export default async function ProductsCategoryPage({
     }))
     .filter((x) => x.slug && x.name && x.id > 0);
 
+  const parents = categories
+    .filter((c) => c.parent_id == null)
+    .sort((a, b) => {
+      const ao = Number(a.sort_order ?? 100);
+      const bo = Number(b.sort_order ?? 100);
+      if (ao !== bo) return ao - bo;
+      return a.name.localeCompare(b.name, "ru");
+    });
+
   const regionTitle = home?.region?.name || home?.region?.title || home?.region_name || region;
   const regionIn = toPrepositional(regionTitle);
 
@@ -458,8 +453,10 @@ export default async function ProductsCategoryPage({
   );
   const items: ProductItem[] = Array.isArray(data?.products) ? data.products : [];
 
+  const tagsParentId =
+    Number(categorySeo?.parent_id ?? 0) > 0 ? Number(categorySeo?.parent_id) : categoryId;
   const subcategories = categories
-    .filter((c) => Number(c.parent_id ?? 0) === categoryId)
+    .filter((c) => Number(c.parent_id ?? 0) === tagsParentId)
     .sort((a, b) => {
       const ao = Number(a.sort_order ?? 100);
       const bo = Number(b.sort_order ?? 100);
@@ -518,6 +515,21 @@ export default async function ProductsCategoryPage({
         {seoTextRendered ? <div className={styles.seoText}>{seoTextRendered}</div> : null}
       </div>
 
+      {parents.length ? (
+        <CategoriesTileRow
+          title="Категории товаров"
+          kind="product"
+          items={[
+            { label: "Все", href: `/${region}/products`, slug: "" },
+            ...parents.map((c) => ({
+              label: c.name,
+              href: `/${region}/products/c/${encodeURIComponent(c.slug)}`,
+              slug: c.slug,
+            })),
+          ]}
+        />
+      ) : null}
+
       {subcategories.length ? (
         <section className={styles.tagsSection}>
           <div className={styles.tagsTitle}>Подкатегории</div>
@@ -533,21 +545,6 @@ export default async function ProductsCategoryPage({
             ))}
           </div>
         </section>
-      ) : null}
-
-      {categories.length ? (
-        <CategoriesTileRow
-          title="Категории товаров"
-          kind="product"
-          items={[
-            { label: "Все", href: `/${region}/products`, slug: "" },
-            ...categories.slice(0, 60).map((c) => ({
-              label: c.name,
-              href: `/${region}/products/c/${encodeURIComponent(c.slug)}`,
-              slug: c.slug,
-            })),
-          ]}
-        />
       ) : null}
 
       <section className={styles.section}>
@@ -566,15 +563,18 @@ export default async function ProductsCategoryPage({
             items.slice(0, 18).map((p) => {
               const priceFrom = toNum(p.price_min);
               const companiesCount = Number(p.companies_count ?? 0) || 0;
+              const parts: string[] = [];
+              if (priceFrom) parts.push(`от ${fmtRub(priceFrom)} ₽`);
+              if (companiesCount > 0) {
+                parts.push(`Компаний: ${companiesCount}`);
+              }
 
               return (
-                <ProductBigCard
+                <MediaCard
                   key={p.slug || String(p.id)}
                   href={`/${region}/products/${p.slug || p.id}`}
                   title={p.name}
-                  subtitle={p.category || undefined}
-                  companiesCount={companiesCount}
-                  priceFrom={priceFrom}
+                  meta={parts.length ? parts.join(" · ") : undefined}
                   imageUrl={p.image_url || null}
                 />
               );
