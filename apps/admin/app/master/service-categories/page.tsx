@@ -85,6 +85,19 @@ export default function MasterServiceCategoriesPage() {
   const [cats, setCats] = useState<ServiceCategory[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<number | null>(null);
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
+  const [newCat, setNewCat] = useState<{
+    name: string;
+    slug: string;
+    parent_id: number | "";
+    sort_order: number;
+    is_active: boolean;
+  }>({
+    name: "",
+    slug: "",
+    parent_id: "",
+    sort_order: 0,
+    is_active: true,
+  });
 
   const [baseSeo, setBaseSeo] = useState({
     seo_h1: "",
@@ -113,35 +126,52 @@ export default function MasterServiceCategoriesPage() {
     [regions, selectedRegionId]
   );
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const [r1, r2] = await Promise.all([
-          apiJson(`${API}/admin/regions`),
-          apiJson(`${API}/admin/service-categories?flat=1`),
-        ]);
+  async function loadData(keepSelectedId?: number | null, keepRegionId?: number | null) {
+    try {
+      setLoading(true);
+      const [r1, r2] = await Promise.all([
+        apiJson(`${API}/admin/regions`),
+        apiJson(`${API}/admin/service-categories?flat=1`),
+      ]);
 
-        const regionList = Array.isArray(r1?.items) ? r1.items : Array.isArray(r1?.result) ? r1.result : [];
-        setRegions(regionList);
+      const regionList = Array.isArray(r1?.items) ? r1.items : Array.isArray(r1?.result) ? r1.result : [];
+      setRegions(regionList);
 
-        const list: ServiceCategory[] = Array.isArray(r2?.result) ? r2.result : Array.isArray(r2?.items) ? r2.items : [];
-        list.sort((a, b) => {
-          const ao = Number(a.sort_order ?? 100);
-          const bo = Number(b.sort_order ?? 100);
-          if (ao !== bo) return ao - bo;
-          return String(a.path_name || a.name).localeCompare(String(b.path_name || b.name), "ru");
-        });
-        setCats(list);
+      const list: ServiceCategory[] = Array.isArray(r2?.result) ? r2.result : Array.isArray(r2?.items) ? r2.items : [];
+      list.sort((a, b) => {
+        const ao = Number(a.sort_order ?? 100);
+        const bo = Number(b.sort_order ?? 100);
+        if (ao !== bo) return ao - bo;
+        return String(a.path_name || a.name).localeCompare(String(b.path_name || b.name), "ru");
+      });
+      setCats(list);
 
-        if (list.length) setSelectedCatId(list[0].id);
-        if (regionList.length) setSelectedRegionId(regionList[0].id);
-      } catch (e) {
-        alert(`Ошибка загрузки: ${(e as any)?.message || e}`);
-      } finally {
-        setLoading(false);
+      const nextSelectedId = keepSelectedId ?? selectedCatId;
+      if (nextSelectedId && list.some((c) => c.id === nextSelectedId)) {
+        setSelectedCatId(nextSelectedId);
+      } else if (list.length) {
+        setSelectedCatId(list[0].id);
+      } else {
+        setSelectedCatId(null);
       }
-    })();
+
+      const nextRegionId = keepRegionId ?? selectedRegionId;
+      if (nextRegionId && regionList.some((r) => r.id === nextRegionId)) {
+        setSelectedRegionId(nextRegionId);
+      } else if (regionList.length) {
+        setSelectedRegionId(regionList[0].id);
+      } else {
+        setSelectedRegionId(null);
+      }
+    } catch (e) {
+      alert(`Ошибка загрузки: ${(e as any)?.message || e}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -269,6 +299,62 @@ export default function MasterServiceCategoriesPage() {
     setCats((prev) => prev.map((c) => (c.id === selectedCatId ? { ...c, ...raw.item } : c)));
   }
 
+  async function createCategory() {
+    try {
+      if (!newCat.name.trim() || !newCat.slug.trim()) {
+        alert("Укажите название и slug");
+        return;
+      }
+      const payload = {
+        name: newCat.name.trim(),
+        slug: newCat.slug.trim(),
+        parent_id: newCat.parent_id === "" ? null : Number(newCat.parent_id),
+        sort_order: Number(newCat.sort_order || 0),
+        is_active: !!newCat.is_active,
+      };
+      const j = await apiJson(`${API}/admin/service-categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setNewCat({ name: "", slug: "", parent_id: "", sort_order: 0, is_active: true });
+      await loadData(j?.item?.id ?? selectedCatId, selectedRegionId);
+      alert("Категория добавлена");
+    } catch (e) {
+      alert(`Ошибка: ${(e as any)?.message || e}`);
+    }
+  }
+
+  async function setCategoryActive(nextActive: boolean) {
+    if (!selectedCatId) return;
+    if (!confirm(nextActive ? "Включить категорию?" : "Отключить категорию?")) return;
+    try {
+      const j = await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: nextActive }),
+      });
+      if (j?.item?.id) {
+        setCats((prev) => prev.map((c) => (c.id === j.item.id ? { ...c, ...j.item } : c)));
+      }
+    } catch (e) {
+      alert(`Ошибка: ${(e as any)?.message || e}`);
+    }
+  }
+
+  async function deleteCategory() {
+    if (!selectedCatId) return;
+    if (!confirm("Удалить категорию? Она будет отключена.")) return;
+    try {
+      await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
+        method: "DELETE",
+      });
+      await loadData(selectedCatId, selectedRegionId);
+    } catch (e) {
+      alert(`Ошибка: ${(e as any)?.message || e}`);
+    }
+  }
+
   async function generateSeoWithAssistant() {
     if (!selectedCat) return;
     if (seoMode === "override" && !selectedRegion) return alert("Выбери регион");
@@ -310,6 +396,65 @@ export default function MasterServiceCategoriesPage() {
           <span>Категории услуг</span>
           <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">{cats.length}</span>
         </div>
+        <div className="border-b border-gray-100 p-4 space-y-3">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-gray-500">
+            Новая категория
+          </div>
+          <input
+            value={newCat.name}
+            onChange={(e) => setNewCat((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Название"
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 ring-indigo-500/20"
+          />
+          <input
+            value={newCat.slug}
+            onChange={(e) => setNewCat((p) => ({ ...p, slug: e.target.value }))}
+            placeholder="Slug"
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 ring-indigo-500/20 font-mono"
+          />
+          <select
+            value={newCat.parent_id}
+            onChange={(e) =>
+              setNewCat((p) => ({
+                ...p,
+                parent_id: e.target.value ? Number(e.target.value) : "",
+              }))
+            }
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 ring-indigo-500/20 bg-white"
+          >
+            <option value="">Без родителя</option>
+            {cats.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.path_name || c.name}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={String(newCat.sort_order)}
+              onChange={(e) =>
+                setNewCat((p) => ({ ...p, sort_order: Number(e.target.value || 0) }))
+              }
+              placeholder="Сортировка"
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 ring-indigo-500/20"
+            />
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <input
+                type="checkbox"
+                checked={newCat.is_active}
+                onChange={(e) => setNewCat((p) => ({ ...p, is_active: e.target.checked }))}
+              />
+              Активна
+            </label>
+          </div>
+          <button
+            onClick={createCategory}
+            className="w-full px-4 py-2 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
+          >
+            Добавить
+          </button>
+        </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {cats.map((c) => {
             const active = c.id === selectedCatId;
@@ -323,7 +468,14 @@ export default function MasterServiceCategoriesPage() {
                 }`}
                 style={{ marginLeft: `${indent}px`, width: `calc(100% - ${indent}px)` }}
               >
-                <div className="font-bold truncate">{c.name}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-bold truncate">{c.name}</div>
+                  {c.is_active === false && (
+                    <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-600">
+                      OFF
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs opacity-60 truncate font-mono">/{c.slug}</div>
               </button>
             );
@@ -340,13 +492,29 @@ export default function MasterServiceCategoriesPage() {
               <h1 className="text-2xl font-black text-gray-900">{selectedCat?.name || "—"}</h1>
               <p className="text-sm text-gray-500 font-mono">ID: {selectedCat?.id} • slug: {selectedCat?.slug}</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => { setSeoMode("base"); setSeoAssistantOpen(true); }}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-colors border border-indigo-100"
               >
                 🧠 Помощник
               </button>
+              {selectedCat && (
+                <>
+                  <button
+                    onClick={() => setCategoryActive(selectedCat.is_active === false)}
+                    className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                  >
+                    {selectedCat.is_active === false ? "Включить" : "Отключить"}
+                  </button>
+                  <button
+                    onClick={deleteCategory}
+                    className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors border border-red-100"
+                  >
+                    Удалить
+                  </button>
+                </>
+              )}
               <button
                 onClick={saveBaseSeo}
                 disabled={baseSaving}
