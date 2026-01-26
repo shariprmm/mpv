@@ -554,6 +554,8 @@ export function jsonLdProduct(input: {
   regionName: string; // оставляем в сигнатуре, вдруг пригодится
   price: PriceInfo;
   companiesCount: number;
+  rating?: number | null;
+  reviewsCount?: number | null;
 }) {
   const cur = (input.price.currency || "RUB").toUpperCase();
 
@@ -585,6 +587,17 @@ export function jsonLdProduct(input: {
       ...(low != null ? { lowPrice: low } : {}),
       ...(high != null ? { highPrice: high } : {}),
       url: input.url,
+    };
+  }
+
+  const rating = input.rating;
+  const rc = input.reviewsCount;
+
+  if (typeof rating === "number" && Number.isFinite(rating) && typeof rc === "number" && rc > 0) {
+    obj.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: String(rating),
+      reviewCount: String(rc),
     };
   }
 
