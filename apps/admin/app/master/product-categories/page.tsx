@@ -126,6 +126,19 @@ export default function MasterProductCategoriesPage() {
 
   const [q, setQ] = useState("");
   const [selectedCatId, setSelectedCatId] = useState<IdLike | null>(null);
+  const [newCat, setNewCat] = useState<{
+    name: string;
+    slug: string;
+    parent_id: IdLike | "";
+    sort_order: number;
+    is_active: boolean;
+  }>({
+    name: "",
+    slug: "",
+    parent_id: "",
+    sort_order: 0,
+    is_active: true,
+  });
 
   // Tabs
   const [tab, setTab] = useState<"base" | "region">("base");
@@ -166,58 +179,65 @@ export default function MasterProductCategoriesPage() {
     });
   }, [cats, q]);
 
+  async function loadData(keepSelectedId?: IdLike | null) {
+    setLoading(true);
+    try {
+      const [rRegions, rCats] = await Promise.all([
+        apiJson<{ ok: true; items: Region[] }>(`${API}/admin/regions`),
+        apiJson<{ ok: true; result: ProductCategory[] }>(
+          `${API}/admin/product-categories?flat=1`
+        ),
+      ]);
+
+      const items = (rRegions.raw.items || rRegions.raw.result || []) as Region[];
+      setRegions(items);
+
+      const catRows = (rCats.raw.result || []) as ProductCategory[];
+      const byId = new Map<number, ProductCategory>();
+      catRows.forEach((c) => byId.set(c.id, c));
+
+      function computePath(id: number): string {
+        const node = byId.get(id);
+        if (!node) return "";
+        const parts: string[] = [];
+        let cur: ProductCategory | undefined = node;
+        let guard = 0;
+        while (cur && guard++ < 50) {
+          parts.unshift(cur.name);
+          cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+        }
+        return parts.join(" → ");
+      }
+
+      const withMeta = catRows.map((c) => {
+        const path_name = c.path_name || computePath(c.id);
+        const depth = path_name ? path_name.split(" → ").length - 1 : 0;
+        return { ...c, path_name, depth };
+      });
+
+      withMeta.sort((a, b) =>
+        (a.path_name || "").localeCompare(b.path_name || "", "ru")
+      );
+      setCats(withMeta);
+
+      const nextSelectedId = keepSelectedId ?? selectedCatId;
+      if (nextSelectedId && withMeta.some((c) => c.id === nextSelectedId)) {
+        setSelectedCatId(nextSelectedId);
+      } else if (withMeta.length) {
+        setSelectedCatId(withMeta[0].id);
+      } else {
+        setSelectedCatId(null);
+      }
+    } catch (e: any) {
+      alert(`Ошибка загрузки: ${e?.message || e}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Load Data
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const [rRegions, rCats] = await Promise.all([
-          apiJson<{ ok: true; items: Region[] }>(`${API}/admin/regions`),
-          apiJson<{ ok: true; result: ProductCategory[] }>(
-            `${API}/admin/product-categories?flat=1`
-          ),
-        ]);
-
-        const items = (rRegions.raw.items || rRegions.raw.result || []) as Region[];
-        setRegions(items);
-
-        const catRows = (rCats.raw.result || []) as ProductCategory[];
-        const byId = new Map<number, ProductCategory>();
-        catRows.forEach((c) => byId.set(c.id, c));
-
-        function computePath(id: number): string {
-          const node = byId.get(id);
-          if (!node) return "";
-          const parts: string[] = [];
-          let cur: ProductCategory | undefined = node;
-          let guard = 0;
-          while (cur && guard++ < 50) {
-            parts.unshift(cur.name);
-            cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
-          }
-          return parts.join(" → ");
-        }
-
-        const withMeta = catRows.map((c) => {
-          const path_name = c.path_name || computePath(c.id);
-          const depth = path_name ? path_name.split(" → ").length - 1 : 0;
-          return { ...c, path_name, depth };
-        });
-
-        withMeta.sort((a, b) =>
-          (a.path_name || "").localeCompare(b.path_name || "", "ru")
-        );
-        setCats(withMeta);
-
-        if (!selectedCatId && withMeta.length) {
-          setSelectedCatId(withMeta[0].id);
-        }
-      } catch (e: any) {
-        alert(`Ошибка загрузки: ${e?.message || e}`);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -371,6 +391,72 @@ export default function MasterProductCategoriesPage() {
     );
   }
 
+  async function createCategory() {
+    try {
+      if (!newCat.name.trim() || !newCat.slug.trim()) {
+        alert("Укажите название и slug");
+        return;
+      }
+      const payload = {
+        name: newCat.name.trim(),
+        slug: newCat.slug.trim(),
+        parent_id: newCat.parent_id === "" ? null : Number(newCat.parent_id),
+        sort_order: Number(newCat.sort_order || 0),
+        is_active: !!newCat.is_active,
+      };
+      const r = await apiJson<{ ok: true; item: ProductCategory }>(
+        `${API}/admin/product-categories`,
+        { method: "POST", body: JSON.stringify(payload) }
+      );
+      const created = r.raw.item as ProductCategory;
+      setNewCat({ name: "", slug: "", parent_id: "", sort_order: 0, is_active: true });
+      await loadData(created?.id);
+      alert("Категория добавлена");
+    } catch (e: any) {
+      alert(`Ошибка: ${e?.message || e}`);
+    }
+  }
+
+  async function setCategoryActive(nextActive: boolean) {
+    if (!selectedCatId) return;
+    if (
+      !confirm(
+        nextActive ? "Включить категорию?" : "Отключить категорию?"
+      )
+    )
+      return;
+    try {
+      const r = await apiJson<{ ok: true; item: ProductCategory }>(
+        `${API}/admin/product-categories/${selectedCatId}`,
+        { method: "PATCH", body: JSON.stringify({ is_active: nextActive }) }
+      );
+      const updated = r.raw.item as ProductCategory;
+      const old = cats.find((c) => c.id === selectedCatId);
+      setCats((prev) =>
+        prev.map((c) =>
+          c.id === selectedCatId
+            ? { ...c, ...updated, depth: old?.depth, path_name: old?.path_name }
+            : c
+        )
+      );
+    } catch (e: any) {
+      alert(`Ошибка: ${e?.message || e}`);
+    }
+  }
+
+  async function deleteCategory() {
+    if (!selectedCatId) return;
+    if (!confirm("Удалить категорию? Она будет отключена.")) return;
+    try {
+      await apiJson(`${API}/admin/product-categories/${selectedCatId}`, {
+        method: "DELETE",
+      });
+      await loadData(selectedCatId);
+    } catch (e: any) {
+      alert(`Ошибка: ${e?.message || e}`);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* HEADER */}
@@ -391,7 +477,72 @@ export default function MasterProductCategoriesPage() {
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[380px_1fr]">
           {/* LEFT: LIST */}
           <div className="flex h-[80vh] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-100 bg-gray-50/50 p-3">
+            <div className="border-b border-gray-100 bg-gray-50/50 p-3 space-y-3">
+              <div className="text-[11px] font-bold uppercase tracking-wide text-gray-500">
+                Новая категория
+              </div>
+              <input
+                value={newCat.name}
+                onChange={(e) => setNewCat((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Название"
+                className={inputBase}
+              />
+              <input
+                value={newCat.slug}
+                onChange={(e) => setNewCat((p) => ({ ...p, slug: e.target.value }))}
+                placeholder="Slug"
+                className={`${inputBase} font-mono`}
+              />
+              <div className="grid grid-cols-1 gap-2">
+                <select
+                  value={newCat.parent_id}
+                  onChange={(e) =>
+                    setNewCat((p) => ({
+                      ...p,
+                      parent_id: e.target.value ? Number(e.target.value) : "",
+                    }))
+                  }
+                  className={`${inputBase} bg-white`}
+                >
+                  <option value="">Без родителя</option>
+                  {cats.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.path_name || c.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <input
+                    type="number"
+                    value={String(newCat.sort_order)}
+                    onChange={(e) =>
+                      setNewCat((p) => ({
+                        ...p,
+                        sort_order: Number(e.target.value || 0),
+                      }))
+                    }
+                    placeholder="Сортировка"
+                    className={inputBase}
+                  />
+                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={newCat.is_active}
+                      onChange={(e) =>
+                        setNewCat((p) => ({ ...p, is_active: e.target.checked }))
+                      }
+                    />
+                    Активна
+                  </label>
+                </div>
+                <button
+                  onClick={createCategory}
+                  className={btnPrimary}
+                  type="button"
+                >
+                  Добавить
+                </button>
+              </div>
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -470,32 +621,52 @@ export default function MasterProductCategoriesPage() {
                 </div>
               </div>
 
-              {/* Tabs Pills */}
-              <div className="self-start rounded-lg bg-gray-200/50 p-1">
-                <button
-                  onClick={() => setTab("base")}
-                  className={[
-                    "rounded-md px-4 py-1.5 text-xs font-medium transition-all",
-                    tab === "base"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700",
-                  ].join(" ")}
-                  type="button"
-                >
-                  Основные & SEO
-                </button>
-                <button
-                  onClick={() => setTab("region")}
-                  className={[
-                    "rounded-md px-4 py-1.5 text-xs font-medium transition-all",
-                    tab === "region"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700",
-                  ].join(" ")}
-                  type="button"
-                >
-                  По регионам
-                </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Tabs Pills */}
+                <div className="self-start rounded-lg bg-gray-200/50 p-1">
+                  <button
+                    onClick={() => setTab("base")}
+                    className={[
+                      "rounded-md px-4 py-1.5 text-xs font-medium transition-all",
+                      tab === "base"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700",
+                    ].join(" ")}
+                    type="button"
+                  >
+                    Основные & SEO
+                  </button>
+                  <button
+                    onClick={() => setTab("region")}
+                    className={[
+                      "rounded-md px-4 py-1.5 text-xs font-medium transition-all",
+                      tab === "region"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700",
+                    ].join(" ")}
+                    type="button"
+                  >
+                    По регионам
+                  </button>
+                </div>
+                {selectedCat && (
+                  <>
+                    <button
+                      onClick={() => setCategoryActive(selectedCat.is_active === false)}
+                      className={btnSecondary}
+                      type="button"
+                    >
+                      {selectedCat.is_active === false ? "Включить" : "Отключить"}
+                    </button>
+                    <button
+                      onClick={deleteCategory}
+                      className={btnDanger}
+                      type="button"
+                    >
+                      Удалить
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
