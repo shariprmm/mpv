@@ -355,6 +355,62 @@ export default function MasterServiceCategoriesPage() {
     }
   }
 
+  async function createCategory() {
+    try {
+      if (!newCat.name.trim() || !newCat.slug.trim()) {
+        alert("Укажите название и slug");
+        return;
+      }
+      const payload = {
+        name: newCat.name.trim(),
+        slug: newCat.slug.trim(),
+        parent_id: newCat.parent_id === "" ? null : Number(newCat.parent_id),
+        sort_order: Number(newCat.sort_order || 0),
+        is_active: !!newCat.is_active,
+      };
+      const j = await apiJson(`${API}/admin/service-categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setNewCat({ name: "", slug: "", parent_id: "", sort_order: 0, is_active: true });
+      await loadData(j?.item?.id ?? selectedCatId, selectedRegionId);
+      alert("Категория добавлена");
+    } catch (e) {
+      alert(`Ошибка: ${(e as any)?.message || e}`);
+    }
+  }
+
+  async function setCategoryActive(nextActive: boolean) {
+    if (!selectedCatId) return;
+    if (!confirm(nextActive ? "Включить категорию?" : "Отключить категорию?")) return;
+    try {
+      const j = await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: nextActive }),
+      });
+      if (j?.item?.id) {
+        setCats((prev) => prev.map((c) => (c.id === j.item.id ? { ...c, ...j.item } : c)));
+      }
+    } catch (e) {
+      alert(`Ошибка: ${(e as any)?.message || e}`);
+    }
+  }
+
+  async function deleteCategory() {
+    if (!selectedCatId) return;
+    if (!confirm("Удалить категорию? Она будет отключена.")) return;
+    try {
+      await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
+        method: "DELETE",
+      });
+      await loadData(selectedCatId, selectedRegionId);
+    } catch (e) {
+      alert(`Ошибка: ${(e as any)?.message || e}`);
+    }
+  }
+
   async function generateSeoWithAssistant() {
     if (!selectedCat) return;
     if (seoMode === "override" && !selectedRegion) return alert("Выбери регион");
