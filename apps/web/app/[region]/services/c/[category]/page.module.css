@@ -44,6 +44,43 @@
   margin-bottom: 0;
 }
 
+/* ---------- SUBCATEGORY TAG CLOUD ---------- */
+
+.tagsSection {
+  margin-top: 14px;
+  padding: 0 12px;
+}
+
+.tagsTitle {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 14px;
+  text-decoration: none;
+  color: inherit;
+  background: #f7f7f7;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.tagChip:hover {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.16);
+}
+
 /* ---------- SECTIONS ---------- */
 
 .section {

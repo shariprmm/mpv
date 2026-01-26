@@ -109,6 +109,14 @@ type ProductCategorySeo = {
   seo_description?: string | null;
 };
 
+type ProductCategoryFlat = {
+  id: number;
+  slug: string;
+  name: string;
+  parent_id?: number | null;
+  sort_order?: number | null;
+};
+
 function toNum(v: any): number | null {
   if (v === null || v === undefined) return null;
   const n = Number(String(v).replace(/\s/g, "").replace(",", "."));
@@ -408,12 +416,18 @@ export default async function ProductsCategoryPage({
   const categorySeo: ProductCategorySeo | null = catSeoResp?.category || null;
   if (!categorySeo) notFound();
 
-  const catsFlat: Array<{ slug: string; name: string }> = Array.isArray(catsResp?.result)
+  const catsFlat: ProductCategoryFlat[] = Array.isArray(catsResp?.result)
     ? catsResp.result
     : [];
   const categories = catsFlat
-    .map((x) => ({ slug: String(x?.slug || "").trim(), name: String(x?.name || "").trim() }))
-    .filter((x) => x.slug && x.name);
+    .map((x) => ({
+      id: Number(x?.id ?? 0),
+      slug: String(x?.slug || "").trim(),
+      name: String(x?.name || "").trim(),
+      parent_id: x?.parent_id ?? null,
+      sort_order: x?.sort_order ?? null,
+    }))
+    .filter((x) => x.slug && x.name && x.id > 0);
 
   const regionTitle = home?.region?.name || home?.region?.title || home?.region_name || region;
   const regionIn = toPrepositional(regionTitle);
@@ -434,12 +448,24 @@ export default async function ProductsCategoryPage({
     (categorySeo?.seo_h1 && String(categorySeo.seo_h1).trim()) || `${categoryName} — в ${regionIn}`;
   const h1 = renderTemplate(h1Raw, ctx);
 
+  const categoryId = Number(categorySeo?.id ?? 0);
   const data = await apiGetSafe(
-    `/public/region/${encodeURIComponent(region)}/products?category_slug=${encodeURIComponent(
-      categorySlug
-    )}`
+    categoryId > 0
+      ? `/public/region/${encodeURIComponent(region)}/products?category_id=${categoryId}`
+      : `/public/region/${encodeURIComponent(region)}/products?category_slug=${encodeURIComponent(
+          categorySlug
+        )}`
   );
   const items: ProductItem[] = Array.isArray(data?.products) ? data.products : [];
+
+  const subcategories = categories
+    .filter((c) => Number(c.parent_id ?? 0) === categoryId)
+    .sort((a, b) => {
+      const ao = Number(a.sort_order ?? 100);
+      const bo = Number(b.sort_order ?? 100);
+      if (ao !== bo) return ao - bo;
+      return a.name.localeCompare(b.name, "ru");
+    });
 
   /** ✅ Microdata */
   const canonicalAbs = absUrl(`/${region}/products/c/${encodeURIComponent(categorySlug)}`);
@@ -491,6 +517,23 @@ export default async function ProductsCategoryPage({
         <h1 className={styles.h1}>{h1}</h1>
         {seoTextRendered ? <div className={styles.seoText}>{seoTextRendered}</div> : null}
       </div>
+
+      {subcategories.length ? (
+        <section className={styles.tagsSection}>
+          <div className={styles.tagsTitle}>Подкатегории</div>
+          <div className={styles.tagList}>
+            {subcategories.map((c) => (
+              <Link
+                key={c.id}
+                href={`/${region}/products/c/${encodeURIComponent(c.slug)}`}
+                className={styles.tagChip}
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {categories.length ? (
         <CategoriesTileRow

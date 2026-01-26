@@ -659,10 +659,13 @@ export default async function ServiceCategoryPage({
 
   const seoText = applyCityPlaceholders(seoRaw.seo_text || "", ctx);
 
+  const categoryId = Number(activeCat?.id ?? 0);
   const data =
     (catPublic && (Array.isArray(catPublic?.services) || Array.isArray(catPublic?.items)) ? catPublic : null) ||
     (await apiGetSafe(
-      `/public/region/${encodeURIComponent(region)}/services?category=${encodeURIComponent(activeSlug)}`
+      categoryId > 0
+        ? `/public/region/${encodeURIComponent(region)}/services?category_id=${categoryId}`
+        : `/public/region/${encodeURIComponent(region)}/services?category=${encodeURIComponent(activeSlug)}`
     ));
 
   const items: ServiceItem[] = Array.isArray(data?.services)
@@ -670,6 +673,15 @@ export default async function ServiceCategoryPage({
     : Array.isArray(data?.items)
       ? data.items
       : [];
+
+  const subcategories = allCats
+    .filter((c) => Number(c.parent_id ?? 0) === categoryId)
+    .sort((a, b) => {
+      const ao = Number(a.sort_order ?? 100);
+      const bo = Number(b.sort_order ?? 100);
+      if (ao !== bo) return ao - bo;
+      return String(a.name).localeCompare(String(b.name), "ru");
+    });
 
   const { apiOrigin, siteOrigin } = getApiOrigins();
   const absPublicUrl = makeAbsPublicUrlFactory(siteOrigin, apiOrigin);
@@ -716,6 +728,23 @@ export default async function ServiceCategoryPage({
         <h1 className={styles.h1}>{h1}</h1>
         <SeoTextBlock html={seoText} />
       </div>
+
+      {subcategories.length ? (
+        <section className={styles.tagsSection}>
+          <div className={styles.tagsTitle}>Подкатегории</div>
+          <div className={styles.tagList}>
+            {subcategories.map((c) => (
+              <Link
+                key={c.id}
+                href={`/${region}/services/c/${encodeURIComponent(c.slug)}`}
+                className={styles.tagChip}
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className={styles.section}>
         <h2 className={styles.h2}>Категории</h2>
