@@ -80,7 +80,7 @@ async function apiGetSafe(path: string) {
   return r.json();
 }
 
-/** ✅ жесткая валидация slug категории товара: латиница/цифры/дефис/подчёркивание */
+/** ✅ жесткая валидация slug категории товара */
 function isInvalidProductCategorySlug(v: any) {
   const s = String(v ?? "").trim();
   if (!s) return true;
@@ -137,16 +137,10 @@ function fmtRub(n: number | null | undefined) {
   return new Intl.NumberFormat("ru-RU").format(n);
 }
 
-/** Заглушка (положи файл в apps/web/public/images/product-placeholder.png) */
+/** Заглушка */
 const FALLBACK_IMG = "/images/product-placeholder.png";
 
-/**
- * ✅ Нормализация URL картинки:
- * - если прилетело уже url-encoded (https%3A%2F%2F...) → decode
- * - если прилетело //uploads/... или //moydompro.ru/... → делаем https:
- * - если прилетело uploads/... или /uploads/... → добавляем домен
- * - убираем двойные // в path (но не трогаем https://)
- */
+/** ✅ Нормализация URL картинки */
 const IMG_ORIGIN = "https://moydompro.ru";
 
 function safeDecodeMaybe(s: string) {
@@ -184,7 +178,7 @@ function absImg(input: string | null | undefined) {
   return normalizeSlashes(IMG_ORIGIN + s);
 }
 
-/** простое "в Балашихе" / "в Москве" и т.п. */
+/** простое "в Балашихе" */
 function toPrepositional(city: string) {
   const s = String(city || "").trim();
   if (!s) return s;
@@ -233,13 +227,14 @@ function pickCategoryImage(kind: "product" | "service", slug: string, label: str
   const s = `${slug} ${label}`.toLowerCase();
 
   const product: Array<[RegExp, string]> = [
+    // ✅ Обновил список, чтобы совпадал со страницей региона
     [/septic|септик|станц/i, "/images/cat/product-septic.png"],
-    [/water|вода|насос/i, "/images/cat/product-default.png"],
-    [/heating|отопл|котел|радиат/i, "/images/cat/product-default.png"],
-    [/electric|электр|кабел|щит/i, "/images/cat/product-default.png"],
-    [/drain|дренаж/i, "/images/cat/product-default.png"],
-    [/fence|забор|ворот/i, "/images/cat/product-default.png"],
-    [/material|материал|достав/i, "/images/cat/product-default.png"],
+    [/water|вода|насос/i, "/images/cat/product-water.png"],
+    [/heating|отопл|котел|радиат/i, "/images/cat/product-heating.png"],
+    [/electric|электр|кабел|щит/i, "/images/cat/product-electric.png"],
+    [/drain|дренаж/i, "/images/cat/product-drainage.png"],
+    [/fence|забор|ворот/i, "/images/cat/product-fence.png"],
+    [/material|материал|достав/i, "/images/cat/product-materials.png"],
   ];
 
   const list = kind === "product" ? product : [];
@@ -281,7 +276,6 @@ function CategoriesTileRow({
           return (
             <Link key={it.href} href={it.href} className={styles.rubricatorTile}>
               <div className={styles.rubricatorTitle}>{it.label}</div>
-
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img className={styles.rubricatorImg} src={img} alt={it.label} loading="lazy" />
             </Link>
@@ -333,11 +327,7 @@ function MediaCard(props: {
   );
 }
 
-/**
- * ✅ SEO category+region:
- * тянем из /public/region/:region/product-category/:slug
- * + 404 если slug мусорный или категории нет
- */
+/** SEO */
 export async function generateMetadata({
   params,
 }: {
@@ -365,12 +355,9 @@ export async function generateMetadata({
 
   const categoryName = categorySeo?.name || categorySlug;
 
-  // ✅ ctx для шаблонов ({{region.in}}, {{CITY_IN}} и т.п.)
   const ctx = {
     region: { slug: region, name: regionTitle, in: regionIn },
     category: { slug: categorySlug, name: categoryName },
-
-    // ✅ совместимость со старыми переменными из админки
     CITY: regionTitle,
     CITY_IN: regionIn,
   };
@@ -453,8 +440,9 @@ export default async function ProductsCategoryPage({
         name: String(x?.name || "").trim(),
         parent_id: x?.parent_id ?? null,
         sort_order: x?.sort_order ?? null,
-        image_url: fromPublic?.image_url ?? null,
-        image_thumb_url: fromPublic?.image_thumb_url ?? null,
+        // ✅ ИСПРАВЛЕНО: если в публичном API нет картинки, берем из админского ответа (x)
+        image_url: fromPublic?.image_url || x.image_url || null,
+        image_thumb_url: fromPublic?.image_thumb_url || x.image_thumb_url || null,
       };
     })
     .filter((x) => x.slug && x.name && x.id > 0);
@@ -473,12 +461,9 @@ export default async function ProductsCategoryPage({
 
   const categoryName = categorySeo?.name || categorySlug;
 
-  // ✅ ctx для шаблонов ({{region.in}}, {{CITY_IN}} и т.п.)
   const ctx = {
     region: { slug: region, name: regionTitle, in: regionIn },
     category: { slug: categorySlug, name: categoryName },
-
-    // ✅ совместимость со старыми переменными из админки
     CITY: regionTitle,
     CITY_IN: regionIn,
   };
@@ -520,7 +505,6 @@ export default async function ProductsCategoryPage({
     ? categories.find((c) => c.id === Number(currentCategory.parent_id))
     : null;
 
-  /** ✅ Microdata */
   const canonicalAbs = absUrl(`/${region}/products/c/${encodeURIComponent(categorySlug)}`);
 
   const breadcrumbItems = [
@@ -538,9 +522,7 @@ export default async function ProductsCategoryPage({
   ];
 
   const ldBreadcrumbs = jsonLdBreadcrumb(breadcrumbItems);
-
   const ldPage = jsonLdCollectionPage({ url: canonicalAbs, name: h1 });
-
   const ldList = jsonLdItemList({
     url: canonicalAbs,
     name: `Товары категории “${categoryName}”`,
@@ -568,21 +550,7 @@ export default async function ProductsCategoryPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldPage) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldList) }} />
 
-      <Breadcrumbs
-        items={[
-          { label: "Главная", href: `/${region}` },
-          { label: "Товары", href: `/${region}/products` },
-          ...(parentCategory
-            ? [
-                {
-                  label: parentCategory.name,
-                  href: `/${region}/products/c/${encodeURIComponent(parentCategory.slug)}`,
-                },
-              ]
-            : []),
-          { label: categoryName },
-        ]}
-      />
+      <Breadcrumbs items={breadcrumbItems} />
 
       <div className={styles.padX}>
         <h1 className={styles.h1}>{h1}</h1>
