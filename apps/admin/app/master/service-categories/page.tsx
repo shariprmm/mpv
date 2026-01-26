@@ -134,7 +134,8 @@ export default function MasterServiceCategoriesPage() {
         apiJson(`${API}/admin/service-categories?flat=1`),
       ]);
 
-      const regionList = Array.isArray(r1?.items) ? r1.items : Array.isArray(r1?.result) ? r1.result : [];
+      // ✅ FIX: Явно указываем тип Region[]
+      const regionList: Region[] = Array.isArray(r1?.items) ? r1.items : Array.isArray(r1?.result) ? r1.result : [];
       setRegions(regionList);
 
       const list: ServiceCategory[] = Array.isArray(r2?.result) ? r2.result : Array.isArray(r2?.items) ? r2.items : [];
@@ -297,62 +298,6 @@ export default function MasterServiceCategoriesPage() {
     const raw = await res.json().catch(() => ({}));
     if (!res.ok || !raw?.ok) throw new Error(raw?.error || "Ошибка загрузки");
     setCats((prev) => prev.map((c) => (c.id === selectedCatId ? { ...c, ...raw.item } : c)));
-  }
-
-  async function createCategory() {
-    try {
-      if (!newCat.name.trim() || !newCat.slug.trim()) {
-        alert("Укажите название и slug");
-        return;
-      }
-      const payload = {
-        name: newCat.name.trim(),
-        slug: newCat.slug.trim(),
-        parent_id: newCat.parent_id === "" ? null : Number(newCat.parent_id),
-        sort_order: Number(newCat.sort_order || 0),
-        is_active: !!newCat.is_active,
-      };
-      const j = await apiJson(`${API}/admin/service-categories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      setNewCat({ name: "", slug: "", parent_id: "", sort_order: 0, is_active: true });
-      await loadData(j?.item?.id ?? selectedCatId, selectedRegionId);
-      alert("Категория добавлена");
-    } catch (e) {
-      alert(`Ошибка: ${(e as any)?.message || e}`);
-    }
-  }
-
-  async function setCategoryActive(nextActive: boolean) {
-    if (!selectedCatId) return;
-    if (!confirm(nextActive ? "Включить категорию?" : "Отключить категорию?")) return;
-    try {
-      const j = await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: nextActive }),
-      });
-      if (j?.item?.id) {
-        setCats((prev) => prev.map((c) => (c.id === j.item.id ? { ...c, ...j.item } : c)));
-      }
-    } catch (e) {
-      alert(`Ошибка: ${(e as any)?.message || e}`);
-    }
-  }
-
-  async function deleteCategory() {
-    if (!selectedCatId) return;
-    if (!confirm("Удалить категорию? Она будет отключена.")) return;
-    try {
-      await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
-        method: "DELETE",
-      });
-      await loadData(selectedCatId, selectedRegionId);
-    } catch (e) {
-      alert(`Ошибка: ${(e as any)?.message || e}`);
-    }
   }
 
   async function createCategory() {
