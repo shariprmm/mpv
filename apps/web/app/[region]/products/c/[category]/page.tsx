@@ -453,10 +453,9 @@ export default async function ProductsCategoryPage({
   );
   const items: ProductItem[] = Array.isArray(data?.products) ? data.products : [];
 
-  const tagsParentId =
-    Number(categorySeo?.parent_id ?? 0) > 0 ? Number(categorySeo?.parent_id) : categoryId;
+  const tagsParentId = categorySeo?.parent_id ?? null;
   const subcategories = categories
-    .filter((c) => Number(c.parent_id ?? 0) === tagsParentId)
+    .filter((c) => Number(c.parent_id ?? 0) === Number(tagsParentId ?? categoryId))
     .sort((a, b) => {
       const ao = Number(a.sort_order ?? 100);
       const bo = Number(b.sort_order ?? 100);
