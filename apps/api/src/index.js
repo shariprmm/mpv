@@ -1205,6 +1205,8 @@ app.get(
         p.id,
         p.slug,
         p.name,
+        p.rating,
+        p.reviews_count,
         p.category_id,
         pc.slug as category_slug,
         pc.name as category_name,
@@ -1354,6 +1356,150 @@ app.get(
       companies,
       price: { from: priceFrom },
     });
+  })
+);
+
+
+app.get(
+  "/public/products/:id/reviews",
+  aw(async (req, res) => {
+    const productId = Number(req.params.id);
+    if (!Number.isFinite(productId) || productId <= 0) {
+      return res.status(400).json({ ok: false, error: "bad_product_id" });
+    }
+
+    const limit = Math.max(1, Math.min(50, Number(req.query.limit || 20) || 20));
+    const offset = Math.max(0, Number(req.query.offset || 0) || 0);
+
+    const itemsR = await pool.query(
+      `
+      select
+        id,
+        rating,
+        text,
+        created_at
+      from product_reviews
+      where product_id = $1
+        and is_hidden = false
+      order by created_at desc, id desc
+      limit $2 offset $3
+      `,
+      [productId, limit, offset]
+    );
+
+    const statsR = await pool.query(
+      `
+      select
+        count(*)::int as total_count,
+        count(*) filter (where nullif(trim(coalesce(text, '')), '') is null)::int as ratings_count,
+        count(*) filter (where nullif(trim(coalesce(text, '')), '') is not null)::int as reviews_count,
+        coalesce(round(avg(rating)::numeric, 2), 0) as rating_avg
+      from product_reviews
+      where product_id = $1
+        and is_hidden = false
+      `,
+      [productId]
+    );
+
+    return res.json({
+      ok: true,
+      product_id: productId,
+      stats: statsR.rows[0],
+      items: itemsR.rows,
+    });
+  })
+);
+
+app.post(
+  "/public/products/:id/reviews",
+  aw(async (req, res) => {
+    const productId = Number(req.params.id);
+    if (!Number.isFinite(productId) || productId <= 0) {
+      return res.status(400).json({ ok: false, error: "bad_product_id" });
+    }
+
+    const rating = Number(req.body?.rating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ ok: false, error: "bad_rating" });
+    }
+
+    const text = normalizeReviewText(req.body?.text, 2000);
+    if (text && hasLinks(text)) {
+      return res.status(400).json({ ok: false, error: "links_not_allowed" });
+    }
+
+    // антиспам (минимальный): 1 отзыв в сутки с одного IP на один товар
+    const ip = req.ip || null;
+    const ua = String(req.headers["user-agent"] || "").slice(0, 300) || null;
+
+    if (ip) {
+      const spamR = await pool.query(
+        `
+        select count(*)::int as cnt
+        from product_reviews
+        where product_id = $1
+          and author_ip = $2::inet
+          and created_at > now() - interval '24 hours'
+        `,
+        [productId, ip]
+      );
+      if ((spamR.rows?.[0]?.cnt || 0) >= 1) {
+        return res.status(429).json({ ok: false, error: "too_many_reviews" });
+      }
+    }
+
+    // транзакция: вставили отзыв -> пересчитали рейтинг/кол-во -> обновили products
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+
+      const ins = await client.query(
+        `
+        insert into product_reviews (product_id, rating, text, author_ip, user_agent)
+        values ($1, $2, $3, $4::inet, $5)
+        returning id, rating, text, created_at
+        `,
+        [productId, Math.trunc(rating), text, ip, ua]
+      );
+
+      const stats = await client.query(
+        `
+        select
+          count(*)::int as total_count,
+          count(*) filter (where nullif(trim(coalesce(text, '')), '') is null)::int as ratings_count,
+          count(*) filter (where nullif(trim(coalesce(text, '')), '') is not null)::int as reviews_count,
+          coalesce(round(avg(rating)::numeric, 2), 0) as rating_avg
+        from product_reviews
+        where product_id = $1
+          and is_hidden = false
+        `,
+        [productId]
+      );
+
+      await client.query(
+        `
+        update products
+        set
+          reviews_count = $2,
+          rating = $3
+        where id = $1
+        `,
+        [productId, stats.rows[0].total_count, stats.rows[0].rating_avg]
+      );
+
+      await client.query("commit");
+
+      return res.json({
+        ok: true,
+        item: ins.rows[0],
+        stats: stats.rows[0],
+      });
+    } catch (e) {
+      await client.query("rollback");
+      throw e;
+    } finally {
+      client.release();
+    }
   })
 );
 

@@ -360,3 +360,179 @@
 .emptyCompanies {
   opacity: 0.6;
 }
+
+/* --- Reviews --- */
+.ReviewsHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ReviewsTitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ReviewsAvg {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.GreyText {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.UgcCard {
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 14px;
+}
+
+.UgcTitle {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.UgcDesc {
+  margin-top: 6px;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.StarsRow {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 10px;
+}
+
+.StarBtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+.StarActive {
+  opacity: 1;
+}
+
+.ReviewForm {
+  margin-top: 10px;
+}
+
+.ReviewTextarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  outline: none;
+}
+
+.ReviewTextarea:focus {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.ReviewActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.ReviewError {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #b00020;
+}
+
+.ReviewsList {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.ReviewItem {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.ReviewMetaRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.ReviewStars {
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.ReviewStarsMuted {
+  opacity: 0.2;
+}
+
+.ReviewDate {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.ReviewText {
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.95;
+  white-space: pre-wrap;
+}
+
+.ReviewHint {
+  margin-top: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.Btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.Btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.BtnAction {
+  background: #ffcc00;
+  color: #111;
+}
+
+.BtnNormal {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #111;
+}
