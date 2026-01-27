@@ -30,11 +30,18 @@ type Post = {
   seo_description: string | null;
   category_slug: string | null;
   category_name: string | null;
+  images?: PostImage[];
 };
 
 type CategoryItem = {
   slug: string;
   name: string;
+};
+
+type PostImage = {
+  id: number;
+  image_url: string;
+  sort_order: number;
 };
 
 // --- Helpers ---
@@ -75,6 +82,14 @@ function normalizeContentImgSrc(src: string) {
   if (s.startsWith("//")) return `https:${s}`;
   if (s.startsWith("/")) return `${CONTENT_ORIGIN}${s}`;
   return `${CONTENT_ORIGIN}/${s}`;
+}
+
+function escapeHtml(value: string) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 // Проставляет alt, loading="lazy" и decoding="async" для картинок в контенте
@@ -141,6 +156,47 @@ function ensureImgAlts(html: string, articleTitle: string) {
   });
 }
 
+function buildGalleryHtml(images: PostImage[] | undefined, articleTitle: string) {
+  if (!images?.length) return "";
+  const title = escapeHtml(articleTitle);
+  const items = images
+    .map((img, idx) => {
+      const src = normalizeContentImgSrc(img.image_url);
+      const alt = `${title} — фото ${idx + 1}`;
+      return `
+        <figure class="${styles.galleryItem}">
+          <img class="${styles.galleryImg}" src="${escapeHtml(src)}" alt="${alt}" loading="lazy" decoding="async" />
+        </figure>
+      `;
+    })
+    .join("");
+
+  return `<div class="${styles.gallery}">${items}</div>`;
+}
+
+function injectGalleryAfterParagraphs(
+  html: string,
+  galleryHtml: string,
+  paragraphIndex: number
+) {
+  if (!galleryHtml) return html;
+  const raw = String(html || "");
+  if (!raw) return galleryHtml;
+
+  const re = /<\/p\s*>/gi;
+  let count = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(raw))) {
+    count += 1;
+    if (count === paragraphIndex) {
+      const insertAt = match.index + match[0].length;
+      return `${raw.slice(0, insertAt)}${galleryHtml}${raw.slice(insertAt)}`;
+    }
+  }
+
+  return `${raw}${galleryHtml}`;
+}
+
 // --- Data Fetching ---
 
 async function getPost(slug: string): Promise<Post | null> {
@@ -205,6 +261,12 @@ export default async function JournalPostPage({ params }: { params: { slug: stri
   
   // Обработка HTML контента
   const contentHtml = ensureImgAlts(post.content_html, post.title);
+  const galleryHtml = buildGalleryHtml(post.images, post.title);
+  const contentWithGallery = injectGalleryAfterParagraphs(
+    contentHtml,
+    galleryHtml,
+    4
+  );
 
   // JSON-LD
   const ldBreadcrumbs = {
@@ -282,7 +344,10 @@ export default async function JournalPostPage({ params }: { params: { slug: stri
             )}
 
             {/* ✅ Сама статья с настроенными стилями */}
-            <div className={styles.articleBody} dangerouslySetInnerHTML={{ __html: contentHtml }} />
+            <div
+              className={styles.articleBody}
+              dangerouslySetInnerHTML={{ __html: contentWithGallery }}
+            />
 
             <div className={styles.cta}>
               <div className={styles.ctaTitle}>Нужна помощь с выбором?</div>

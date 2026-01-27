@@ -28,6 +28,7 @@ const PUBLIC_SITE =
 
 type Cat = { id: number; slug: string; name: string; sort_order: number };
 type Post = Record<string, any>;
+type PostImage = { id: number; image_url: string; sort_order: number };
 
 function asStr(v: any) {
   if (v === null || v === undefined) return "";
@@ -178,6 +179,8 @@ export default function MasterBlogPostEdit() {
   const [pendingContentFiles, setPendingContentFiles] = useState<File[] | null>(
     null
   );
+  const [articleImages, setArticleImages] = useState<PostImage[]>([]);
+  const [galleryUploading, setGalleryUploading] = useState(false);
 
   const [form, setForm] = useState({
     slug: "",
@@ -362,6 +365,7 @@ export default function MasterBlogPostEdit() {
         published_at: p.published_at ? isoToDatetimeLocal(p.published_at) : "",
         content: html,
       });
+      setArticleImages(Array.isArray(p.images) ? p.images : []);
 
       setSlugTouched(false);
     } catch (e: any) {
@@ -452,6 +456,76 @@ export default function MasterBlogPostEdit() {
       setUploading(false);
     }
   }, []);
+
+  const uploadGalleryImages = useCallback(
+    async (files: File[]) => {
+      if (!files.length) return;
+      setGalleryUploading(true);
+      try {
+        const urls: string[] = [];
+        for (const file of files) {
+          const dataUrl = await fileToDataUrl(file);
+          const resp = await fetch(`${API}/master/upload-image`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              dataUrl,
+              filename: file.name,
+              prefix: "blog-gallery",
+            }),
+          });
+
+          const j = await resp.json().catch(() => ({}));
+          if (!resp.ok || !j.ok) {
+            alert(j.error || "upload_failed");
+            continue;
+          }
+
+          const url = String(j.url || "");
+          if (url) urls.push(url);
+        }
+
+        if (!urls.length) return;
+
+        const resp = await fetch(`${API}/master/blog-posts/${id}/images`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls }),
+        });
+        const j = await resp.json().catch(() => ({}));
+        if (!resp.ok || !j.ok) {
+          alert(j.error || "save_failed");
+          return;
+        }
+
+        setArticleImages((prev) => [...prev, ...(j.items || [])]);
+      } finally {
+        setGalleryUploading(false);
+      }
+    },
+    [id]
+  );
+
+  const deleteGalleryImage = useCallback(
+    async (imageId: number) => {
+      const resp = await fetch(
+        `${API}/master/blog-posts/${id}/images/${imageId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+      const j = await resp.json().catch(() => ({}));
+      if (!resp.ok || !j.ok) {
+        alert(j.error || "delete_failed");
+        return;
+      }
+      setArticleImages((prev) => prev.filter((img) => img.id !== imageId));
+    },
+    [id]
+  );
 
   const del = useCallback(async () => {
     if (!confirm("Удалить статью?")) return;
@@ -725,7 +799,67 @@ export default function MasterBlogPostEdit() {
 
         <div className="space-y-3 border-t border-gray-100 pt-8">
           <label className="text-xs font-black tracking-widest text-gray-400 uppercase">
-            Изображения для статьи
+            Галерея статьи (после 4-го абзаца)
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex items-center gap-2">
+              <span className={`${btnSecondary} cursor-pointer`}>
+                Загрузить изображения
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                disabled={galleryUploading}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  uploadGalleryImages(files);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+            {galleryUploading && (
+              <span className="text-xs font-semibold text-blue-600">
+                Загрузка...
+              </span>
+            )}
+          </div>
+
+          {articleImages.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {articleImages.map((img) => (
+                <div
+                  key={img.id}
+                  className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50"
+                >
+                  <img
+                    src={img.image_url}
+                    alt=""
+                    className="h-40 w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => deleteGalleryImage(img.id)}
+                    className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-black text-red-600 shadow-sm opacity-0 transition group-hover:opacity-100"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[11px] text-gray-400">
+            Эти изображения отображаются на сайте в блоке после 4-го абзаца.
+          </p>
+        </div>
+
+        <div className="space-y-3 border-t border-gray-100 pt-8">
+          <label className="text-xs font-black tracking-widest text-gray-400 uppercase">
+            Изображения внутри текста
           </label>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -750,7 +884,8 @@ export default function MasterBlogPostEdit() {
           </div>
 
           <p className="text-[11px] text-gray-400">
-            Картинки конвертируются в WebP и вставляются после 4-го абзаца.
+            Картинки конвертируются в WebP и вставляются после 4-го абзаца в
+            редакторе.
           </p>
         </div>
       </div>
