@@ -3592,7 +3592,100 @@ app.get(
     );
 
     if (!r.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
-    return res.json({ ok: true, item: r.rows[0] });
+    const images = await pool.query(
+      `select id, image_url, sort_order
+       from blog_post_images
+       where post_id=$1
+       order by sort_order asc, id asc`,
+      [id]
+    );
+    return res.json({ ok: true, item: { ...r.rows[0], images: images.rows } });
+  })
+);
+
+app.get(
+  "/master/blog-posts/:id/images",
+  requireMaster,
+  aw(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ ok: false, error: "bad_id" });
+
+    const r = await pool.query(
+      `select id, image_url, sort_order
+       from blog_post_images
+       where post_id=$1
+       order by sort_order asc, id asc`,
+      [id]
+    );
+
+    return res.json({ ok: true, items: r.rows });
+  })
+);
+
+app.post(
+  "/master/blog-posts/:id/images",
+  requireMaster,
+  aw(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ ok: false, error: "bad_id" });
+
+    const urls = Array.isArray(req.body?.urls)
+      ? req.body.urls.map((u) => String(u || "").trim()).filter(Boolean)
+      : [];
+
+    if (!urls.length) return res.status(400).json({ ok: false, error: "no_urls" });
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const maxRes = await client.query(
+        `select coalesce(max(sort_order), 0) as max_sort
+         from blog_post_images
+         where post_id=$1`,
+        [id]
+      );
+      let sort = Number(maxRes.rows[0]?.max_sort || 0);
+      const inserted = [];
+
+      for (const url of urls) {
+        sort += 1;
+        const ins = await client.query(
+          `insert into blog_post_images (post_id, image_url, sort_order)
+           values ($1, $2, $3)
+           returning id, image_url, sort_order`,
+          [id, url, sort]
+        );
+        inserted.push(ins.rows[0]);
+      }
+
+      await client.query("COMMIT");
+      return res.json({ ok: true, items: inserted });
+    } catch (e) {
+      await client.query("ROLLBACK").catch(() => {});
+      return res.status(500).json({ ok: false, error: "insert_failed" });
+    } finally {
+      client.release();
+    }
+  })
+);
+
+app.delete(
+  "/master/blog-posts/:id/images/:imageId",
+  requireMaster,
+  aw(async (req, res) => {
+    const id = Number(req.params.id);
+    const imageId = Number(req.params.imageId);
+    if (!id || !imageId) return res.status(400).json({ ok: false, error: "bad_id" });
+
+    const r = await pool.query(
+      `delete from blog_post_images
+       where id=$1 and post_id=$2
+       returning id`,
+      [imageId, id]
+    );
+
+    if (!r.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
+    return res.json({ ok: true });
   })
 );
 
@@ -4570,7 +4663,16 @@ app.get(
 
     if (!r.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
 
-    return res.json({ ok: true, post: r.rows[0] });
+    const post = r.rows[0];
+    const images = await pool.query(
+      `select id, image_url, sort_order
+       from blog_post_images
+       where post_id=$1
+       order by sort_order asc, id asc`,
+      [post.id]
+    );
+
+    return res.json({ ok: true, post: { ...post, images: images.rows } });
   })
 );
 
