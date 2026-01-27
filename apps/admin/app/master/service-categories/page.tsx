@@ -106,6 +106,8 @@ export default function MasterServiceCategoriesPage() {
     seo_text: "",
   });
   const [baseSaving, setBaseSaving] = useState(false);
+  const [baseMeta, setBaseMeta] = useState({ name: "" });
+  const [baseMetaDirty, setBaseMetaDirty] = useState(false);
 
   const [ovr, setOvr] = useState<RegionSeo | null>(null);
   const [ovrLoading, setOvrLoading] = useState(false);
@@ -183,6 +185,8 @@ export default function MasterServiceCategoriesPage() {
         seo_description: String(selectedCat.seo_description ?? ""),
         seo_text: String(selectedCat.seo_text ?? ""),
       });
+      setBaseMeta({ name: String(selectedCat.name ?? "") });
+      setBaseMetaDirty(false);
     }
   }, [selectedCatId, selectedCat]);
 
@@ -235,6 +239,33 @@ export default function MasterServiceCategoriesPage() {
       if (j?.item?.id) {
         setCats((prev) => prev.map((c) => (c.id === j.item.id ? { ...c, ...j.item } : c)));
         alert("Базовое SEO сохранено");
+      }
+    } catch (e) {
+      alert(`Ошибка сохранения: ${(e as any)?.message || e}`);
+    } finally {
+      setBaseSaving(false);
+    }
+  }
+
+  async function saveBaseMeta() {
+    if (!selectedCatId) return;
+    if (!baseMeta.name.trim()) {
+      alert("Укажите название категории");
+      return;
+    }
+    try {
+      setBaseSaving(true);
+      const payload = { name: clean(baseMeta.name) };
+      const j = await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (j?.item?.id) {
+        setCats((prev) => prev.map((c) => (c.id === j.item.id ? { ...c, ...j.item } : c)));
+        setBaseMeta({ name: String(j.item.name ?? "") });
+        setBaseMetaDirty(false);
+        alert("Название обновлено");
       }
     } catch (e) {
       alert(`Ошибка сохранения: ${(e as any)?.message || e}`);
@@ -345,12 +376,12 @@ export default function MasterServiceCategoriesPage() {
 
   async function deleteCategory() {
     if (!selectedCatId) return;
-    if (!confirm("Удалить категорию? Она будет отключена.")) return;
+    if (!confirm("Удалить категорию? Это действие необратимо.")) return;
     try {
       await apiJson(`${API}/admin/service-categories/${selectedCatId}`, {
         method: "DELETE",
       });
-      await loadData(selectedCatId, selectedRegionId);
+      await loadData(null, selectedRegionId);
     } catch (e) {
       alert(`Ошибка: ${(e as any)?.message || e}`);
     }
@@ -517,6 +548,13 @@ export default function MasterServiceCategoriesPage() {
                 </>
               )}
               <button
+                onClick={saveBaseMeta}
+                disabled={!baseMetaDirty || baseSaving}
+                className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Сохранить название
+              </button>
+              <button
                 onClick={saveBaseSeo}
                 disabled={baseSaving}
                 className="px-6 py-2 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 disabled:opacity-50 transition-all shadow-md active:scale-95"
@@ -525,6 +563,17 @@ export default function MasterServiceCategoriesPage() {
               </button>
             </div>
           </header>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <InputField
+              label="Название категории"
+              value={baseMeta.name}
+              onChange={(v) => {
+                setBaseMeta((p) => ({ ...p, name: v }));
+                setBaseMetaDirty(true);
+              }}
+            />
+          </div>
 
           {/* Image Block */}
           {selectedCat && (

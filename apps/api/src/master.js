@@ -807,8 +807,22 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: "bad_id" });
 
-      await pool.query(`update product_categories set is_active=false where id=$1`, [id]);
-      return res.json({ ok: true });
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query(`update product_categories set parent_id=null where parent_id=$1`, [id]);
+        await client.query(`update products set category_id=null where category_id=$1`, [id]);
+        await client.query(`delete from product_category_region_seo where category_id=$1`, [id]);
+        const del = await client.query(`delete from product_categories where id=$1`, [id]);
+        await client.query("commit");
+        if (!del.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
+        return res.json({ ok: true });
+      } catch (e) {
+        await client.query("rollback");
+        throw e;
+      } finally {
+        client.release();
+      }
     } catch (e) {
       return next(e);
     }
@@ -1128,8 +1142,22 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
       const id = Number(req.params.id);
       if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: "bad_id" });
 
-      await pool.query(`update service_categories set is_active=false where id=$1`, [id]);
-      return res.json({ ok: true });
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query(`update service_categories set parent_id=null where parent_id=$1`, [id]);
+        await client.query(`update services set category_id=null where category_id=$1`, [id]);
+        await client.query(`delete from service_category_region_seo where category_id=$1`, [id]);
+        const del = await client.query(`delete from service_categories where id=$1`, [id]);
+        await client.query("commit");
+        if (!del.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
+        return res.json({ ok: true });
+      } catch (e) {
+        await client.query("rollback");
+        throw e;
+      } finally {
+        client.release();
+      }
     } catch (e) {
       return next(e);
     }

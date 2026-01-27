@@ -446,12 +446,12 @@ export default function MasterProductCategoriesPage() {
 
   async function deleteCategory() {
     if (!selectedCatId) return;
-    if (!confirm("Удалить категорию? Она будет отключена.")) return;
+    if (!confirm("Удалить категорию? Это действие необратимо.")) return;
     try {
       await apiJson(`${API}/admin/product-categories/${selectedCatId}`, {
         method: "DELETE",
       });
-      await loadData(selectedCatId);
+      await loadData(null);
     } catch (e: any) {
       alert(`Ошибка: ${e?.message || e}`);
     }
