@@ -738,7 +738,7 @@ export default function MasterBlogPostEdit() {
                 accept="image/*"
                 multiple
                 className="hidden"
-                disabled={contentUploading}
+                disabled={contentUploading || !isEditorReady}
                 onChange={(e) => {
                   const files = Array.from(e.target.files || []);
                   if (!files.length) return;
