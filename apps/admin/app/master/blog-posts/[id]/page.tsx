@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type ReactQuillType from "react-quill";
 import type { ReactQuillProps } from "react-quill";
+import { Quill } from "react-quill";
 
 import "react-quill/dist/quill.snow.css";
 
@@ -159,6 +160,8 @@ const btnDanger =
   "inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-2 text-xs font-extrabold text-red-600 " +
   "transition hover:bg-red-50 hover:border-red-300 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none";
 
+const CONTENT_IMAGE_PARAGRAPH_INDEX = 4;
+
 export default function MasterBlogPostEdit() {
   const router = useRouter();
   const params = useParams();
@@ -193,59 +196,81 @@ export default function MasterBlogPostEdit() {
     return s ? `${PUBLIC_SITE}/journal/${s}` : "";
   }, [form.slug, item?.slug]);
 
-  const handleImageUpload = useCallback(async () => {
-    const input = document.createElement("input");
-    input.setAttribute("type", "file");
-    input.setAttribute("accept", "image/*");
-    input.click();
+  const getContentImageInsertIndex = useCallback((editor: any) => {
+    const paragraphs = Array.from(editor.root.querySelectorAll("p"));
+    if (paragraphs.length < CONTENT_IMAGE_PARAGRAPH_INDEX) {
+      return editor.getLength();
+    }
 
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
+    const target = paragraphs[CONTENT_IMAGE_PARAGRAPH_INDEX - 1];
+    const blot = Quill.find(target);
+    if (!blot) return editor.getLength();
 
-      const defaultAlt = file.name.replace(/\.[^/.]+$/, "") || "image";
-      const altPrompt = window.prompt("Alt для изображения", defaultAlt);
-      const altText = (altPrompt ?? defaultAlt).trim() || defaultAlt;
+    return editor.getIndex(blot) + blot.length();
+  }, []);
+
+  const insertContentImageAt = useCallback(
+    (editor: any, url: string, altText: string, insertAt: number) => {
+      editor.insertEmbed(insertAt, "image", url, "user");
+      editor.insertText(insertAt + 1, "\n", "user");
+      editor.setSelection(insertAt + 2, 0, "silent");
+
+      requestAnimationFrame(() => {
+        const images = editor.root.querySelectorAll(`img[src="${url}"]`);
+        const img = images[images.length - 1] as HTMLImageElement | undefined;
+        if (img) img.setAttribute("alt", altText);
+      });
+
+      return insertAt + 2;
+    },
+    []
+  );
+
+  const uploadContentImages = useCallback(
+    async (files: File[]) => {
+      const editor = editorRef.current?.getEditor();
+      if (!editor) {
+        alert("Редактор не готов для загрузки изображений.");
+        return;
+      }
 
       setContentUploading(true);
       try {
-        const dataUrl = await fileToDataUrl(file);
-        const resp = await fetch(`${API}/master/upload-image`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            dataUrl,
-            filename: file.name,
-            prefix: "blog-content",
-          }),
-        });
+        let insertAt = getContentImageInsertIndex(editor);
 
-        const j = await resp.json().catch(() => ({}));
-        if (!resp.ok || !j.ok) {
-          alert(j.error || "upload_failed");
-          return;
+        for (const file of files) {
+          const defaultAlt = file.name.replace(/\.[^/.]+$/, "") || "image";
+          const altText = defaultAlt;
+
+          const dataUrl = await fileToDataUrl(file);
+          const resp = await fetch(`${API}/master/upload-image`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              dataUrl,
+              filename: file.name,
+              prefix: "blog-content",
+            }),
+          });
+
+          const j = await resp.json().catch(() => ({}));
+          if (!resp.ok || !j.ok) {
+            alert(j.error || "upload_failed");
+            continue;
+          }
+
+          const url = String(j.url || "");
+          if (!url) continue;
+
+          insertAt = insertContentImageAt(editor, url, altText, insertAt);
         }
-
-        const url = String(j.url || "");
-        const editor = editorRef.current?.getEditor();
-        if (!editor || !url) return;
-
-        const range = editor.getSelection(true);
-        const insertAt = range ? range.index : editor.getLength();
-        editor.insertEmbed(insertAt, "image", url, "user");
-        editor.setSelection(insertAt + 1, 0, "silent");
-
-        requestAnimationFrame(() => {
-          const images = editor.root.querySelectorAll(`img[src="${url}"]`);
-          const img = images[images.length - 1] as HTMLImageElement | undefined;
-          if (img) img.setAttribute("alt", altText);
-        });
       } finally {
         setContentUploading(false);
       }
-    };
-  }, []);
+    },
+    [getContentImageInsertIndex, insertContentImageAt]
+  );
 
   const modules = useMemo(
     () => ({
@@ -254,14 +279,11 @@ export default function MasterBlogPostEdit() {
           [{ header: [2, 3, false] }],
           ["bold", "italic", "underline", "strike"],
           [{ list: "ordered" }, { list: "bullet" }],
-          ["link", "image", "clean"],
+          ["link", "clean"],
         ],
-        handlers: {
-          image: handleImageUpload,
-        },
       },
     }),
-    [handleImageUpload]
+    []
   );
 
   const loadAll = useCallback(async () => {
@@ -669,6 +691,37 @@ export default function MasterBlogPostEdit() {
             Подсказка: если нужно подстроить внешний вид Quill под Tailwind — лучше
             добавить глобальные CSS-переопределения в общий файл (globals.css), а не через
             &lt;style jsx&gt;.
+          </p>
+        </div>
+
+        <div className="space-y-3 border-t border-gray-100 pt-8">
+          <label className="text-xs font-black tracking-widest text-gray-400 uppercase">
+            Изображения для статьи
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex items-center gap-2">
+              <span className={`${btnSecondary} cursor-pointer`}>
+                Загрузить изображения
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                disabled={contentUploading}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  uploadContentImages(files);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+
+          <p className="text-[11px] text-gray-400">
+            Картинки конвертируются в WebP и вставляются после 4-го абзаца.
           </p>
         </div>
       </div>
