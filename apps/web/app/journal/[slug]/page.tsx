@@ -6,7 +6,16 @@ import styles from "./page.module.css";
 
 // Конфиг
 const API = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || "https://api.moydompro.ru";
-const SITE_URL = "https://moydompro.ru";
+const SITE_URL =
+  (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://moydompro.ru").replace(/\/+$/, "");
+const CONTENT_ORIGIN =
+  (
+    process.env.NEXT_PUBLIC_CONTENT_ORIGIN ||
+    process.env.NEXT_PUBLIC_BLOG_CONTENT_ORIGIN ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    "https://moydompro.ru"
+  ).replace(/\/+$/, "");
 
 // Типы
 type Post = {
@@ -54,6 +63,20 @@ function srcToHuman(src: string) {
   }
 }
 
+function normalizeContentImgSrc(src: string) {
+  const s = String(src || "").trim();
+  if (!s) return s;
+  if (/^https?:\/\//i.test(s)) {
+    if (/^https?:\/\/rdm-spb\.ru\//i.test(s) && CONTENT_ORIGIN) {
+      return s.replace(/^https?:\/\/rdm-spb\.ru/i, CONTENT_ORIGIN);
+    }
+    return s;
+  }
+  if (s.startsWith("//")) return `https:${s}`;
+  if (s.startsWith("/")) return `${CONTENT_ORIGIN}${s}`;
+  return `${CONTENT_ORIGIN}/${s}`;
+}
+
 // Проставляет alt, loading="lazy" и decoding="async" для картинок в контенте
 function ensureImgAlts(html: string, articleTitle: string) {
   const raw = String(html || "");
@@ -95,11 +118,19 @@ function ensureImgAlts(html: string, articleTitle: string) {
     out = ensureAttr(out, "loading", "lazy");
     out = ensureAttr(out, "decoding", "async");
 
+    const src = pickAttr(out, "src") || pickAttr(out, "data-src") || "";
+    const normalizedSrc = normalizeContentImgSrc(src);
+    if (normalizedSrc && normalizedSrc !== src) {
+      out = setOrReplaceAttr(out, "src", normalizedSrc);
+      if (hasAttr(out, "data-src")) {
+        out = setOrReplaceAttr(out, "data-src", normalizedSrc);
+      }
+    }
+
     const existingAlt = pickAttr(out, "alt");
     if (existingAlt) return out;
 
-    const src = pickAttr(out, "src") || pickAttr(out, "data-src") || "";
-    const human = srcToHuman(src);
+    const human = srcToHuman(normalizedSrc || src);
     const generated = (human ? `${articleTitle} — ${human}` : `${articleTitle} — фото ${idx}`)
       .replace(/\s+/g, " ")
       .trim()
