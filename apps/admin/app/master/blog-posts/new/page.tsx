@@ -4,14 +4,15 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import type ReactQuillType from "react-quill";
 
 import "react-quill/dist/quill.snow.css";
 
 // ✅ Dynamic import of ReactQuill without SSR
-const ReactQuill = dynamic(() => import("react-quill"), {
+const ReactQuill = dynamic(async () => (await import("react-quill")).default, {
   ssr: false,
   loading: () => <p className="p-4 text-gray-400 italic">Загрузка редактора...</p>,
-});
+}) as unknown as typeof ReactQuillType;
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -98,7 +99,7 @@ export default function MasterBlogPostNew() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [contentUploading, setContentUploading] = useState(false);
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<ReactQuillType | null>(null);
 
   const [form, setForm] = useState({
     slug: "",
