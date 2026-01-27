@@ -1,7 +1,7 @@
 // apps/admin/app/master/blog-posts/new/page.tsx
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -98,6 +98,7 @@ export default function MasterBlogPostNew() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [contentUploading, setContentUploading] = useState(false);
+  const editorRef = useRef<any>(null);
 
   const [form, setForm] = useState({
     slug: "",
@@ -126,7 +127,7 @@ export default function MasterBlogPostNew() {
     })();
   }, []);
 
-  const handleImageUpload = useCallback(async (editor: any) => {
+  const handleImageUpload = useCallback(async () => {
     const input = document.createElement("input");
     input.setAttribute("type", "file");
     input.setAttribute("accept", "image/*");
@@ -161,6 +162,7 @@ export default function MasterBlogPostNew() {
         }
 
         const url = String(j.url || "");
+        const editor = editorRef.current?.getEditor();
         if (!editor || !url) return;
 
         const range = editor.getSelection(true);
@@ -189,9 +191,7 @@ export default function MasterBlogPostNew() {
           ["link", "image", "clean"],
         ],
         handlers: {
-          image(this: { quill: any }) {
-            void handleImageUpload(this.quill);
-          },
+          image: handleImageUpload,
         },
       },
     }),
@@ -418,6 +418,7 @@ export default function MasterBlogPostNew() {
                 value={form.content}
                 onChange={(val: string) => setForm({ ...form, content: val })}
                 modules={modules}
+                ref={editorRef}
                 className="h-[340px]"
               />
             </div>

@@ -1,7 +1,7 @@
 // apps/admin/app/master/blog-posts/[id]/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -169,6 +169,7 @@ export default function MasterBlogPostEdit() {
   const [coverPreview, setCoverPreview] = useState<string>("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const editorRef = useRef<any>(null);
 
   const [form, setForm] = useState({
     slug: "",
@@ -188,7 +189,7 @@ export default function MasterBlogPostEdit() {
     return s ? `${PUBLIC_SITE}/journal/${s}` : "";
   }, [form.slug, item?.slug]);
 
-  const handleImageUpload = useCallback(async (editor: any) => {
+  const handleImageUpload = useCallback(async () => {
     const input = document.createElement("input");
     input.setAttribute("type", "file");
     input.setAttribute("accept", "image/*");
@@ -223,6 +224,7 @@ export default function MasterBlogPostEdit() {
         }
 
         const url = String(j.url || "");
+        const editor = editorRef.current?.getEditor();
         if (!editor || !url) return;
 
         const range = editor.getSelection(true);
@@ -251,9 +253,7 @@ export default function MasterBlogPostEdit() {
           ["link", "image", "clean"],
         ],
         handlers: {
-          image(this: { quill: any }) {
-            void handleImageUpload(this.quill);
-          },
+          image: handleImageUpload,
         },
       },
     }),
@@ -651,6 +651,7 @@ export default function MasterBlogPostEdit() {
               value={form.content}
               onChange={(val: string) => setForm({ ...form, content: val })}
               modules={modules}
+              ref={editorRef}
               className="h-[400px] mb-12"
             />
             {contentUploading && (
