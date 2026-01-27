@@ -174,6 +174,10 @@ export default function MasterBlogPostEdit() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const editorRef = useRef<any>(null);
+  const [isEditorReady, setIsEditorReady] = useState(false);
+  const [pendingContentFiles, setPendingContentFiles] = useState<File[] | null>(
+    null
+  );
 
   const [form, setForm] = useState({
     slug: "",
@@ -224,11 +228,26 @@ export default function MasterBlogPostEdit() {
     []
   );
 
+  useEffect(() => {
+    if (isEditorReady) return;
+    let raf = 0;
+    const checkReady = () => {
+      const editor = editorRef.current?.getEditor?.();
+      if (editor) {
+        setIsEditorReady(true);
+        return;
+      }
+      raf = requestAnimationFrame(checkReady);
+    };
+    checkReady();
+    return () => cancelAnimationFrame(raf);
+  }, [isEditorReady]);
+
   const uploadContentImages = useCallback(
     async (files: File[]) => {
       const editor = editorRef.current?.getEditor();
       if (!editor) {
-        alert("Редактор не готов для загрузки изображений.");
+        setPendingContentFiles(files);
         return;
       }
 
@@ -269,6 +288,12 @@ export default function MasterBlogPostEdit() {
     },
     [getContentImageInsertIndex, insertContentImageAt]
   );
+
+  useEffect(() => {
+    if (!pendingContentFiles?.length || !isEditorReady) return;
+    setPendingContentFiles(null);
+    uploadContentImages(pendingContentFiles);
+  }, [pendingContentFiles, isEditorReady, uploadContentImages]);
 
   const modules = useMemo(
     () => ({
@@ -708,7 +733,7 @@ export default function MasterBlogPostEdit() {
                 accept="image/*"
                 multiple
                 className="hidden"
-                disabled={contentUploading}
+                disabled={contentUploading || !isEditorReady}
                 onChange={(e) => {
                   const files = Array.from(e.target.files || []);
                   if (!files.length) return;
