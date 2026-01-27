@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type ReactQuillType from "react-quill";
 import { Quill } from "react-quill";
+import type QuillType from "quill";
 
 import "react-quill/dist/quill.snow.css";
 
@@ -135,7 +136,7 @@ export default function MasterBlogPostNew() {
     })();
   }, []);
 
-  const getContentImageInsertIndex = useCallback((editor: any) => {
+  const getContentImageInsertIndex = useCallback((editor: QuillType) => {
     const paragraphs = Array.from(editor.root.querySelectorAll("p"));
     if (paragraphs.length < CONTENT_IMAGE_PARAGRAPH_INDEX) {
       return editor.getLength();
@@ -149,7 +150,7 @@ export default function MasterBlogPostNew() {
   }, []);
 
   const insertContentImageAt = useCallback(
-    (editor: any, url: string, altText: string, insertAt: number) => {
+    (editor: QuillType, url: string, altText: string, insertAt: number) => {
       editor.insertEmbed(insertAt, "image", url, "user");
       editor.insertText(insertAt + 1, "\n", "user");
       editor.setSelection(insertAt + 2, 0, "silent");
