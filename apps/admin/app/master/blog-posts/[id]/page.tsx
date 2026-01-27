@@ -165,6 +165,7 @@ export default function MasterBlogPostEdit() {
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [contentUploading, setContentUploading] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string>("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -187,16 +188,76 @@ export default function MasterBlogPostEdit() {
     return s ? `${PUBLIC_SITE}/journal/${s}` : "";
   }, [form.slug, item?.slug]);
 
+  const handleImageUpload = useCallback(async (editor: any) => {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      const defaultAlt = file.name.replace(/\.[^/.]+$/, "") || "image";
+      const altPrompt = window.prompt("Alt для изображения", defaultAlt);
+      const altText = (altPrompt ?? defaultAlt).trim() || defaultAlt;
+
+      setContentUploading(true);
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const resp = await fetch(`${API}/master/upload-image`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dataUrl,
+            filename: file.name,
+            prefix: "blog-content",
+          }),
+        });
+
+        const j = await resp.json().catch(() => ({}));
+        if (!resp.ok || !j.ok) {
+          alert(j.error || "upload_failed");
+          return;
+        }
+
+        const url = String(j.url || "");
+        if (!editor || !url) return;
+
+        const range = editor.getSelection(true);
+        const insertAt = range ? range.index : editor.getLength();
+        editor.insertEmbed(insertAt, "image", url, "user");
+        editor.setSelection(insertAt + 1, 0, "silent");
+
+        requestAnimationFrame(() => {
+          const images = editor.root.querySelectorAll(`img[src="${url}"]`);
+          const img = images[images.length - 1] as HTMLImageElement | undefined;
+          if (img) img.setAttribute("alt", altText);
+        });
+      } finally {
+        setContentUploading(false);
+      }
+    };
+  }, []);
+
   const modules = useMemo(
     () => ({
-      toolbar: [
-        [{ header: [2, 3, false] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link", "clean"],
-      ],
+      toolbar: {
+        container: [
+          [{ header: [2, 3, false] }],
+          ["bold", "italic", "underline", "strike"],
+          [{ list: "ordered" }, { list: "bullet" }],
+          ["link", "image", "clean"],
+        ],
+        handlers: {
+          image(this: { quill: any }) {
+            void handleImageUpload(this.quill);
+          },
+        },
+      },
     }),
-    []
+    [handleImageUpload]
   );
 
   const loadAll = useCallback(async () => {
@@ -592,6 +653,11 @@ export default function MasterBlogPostEdit() {
               modules={modules}
               className="h-[400px] mb-12"
             />
+            {contentUploading && (
+              <div className="mt-2 text-xs font-semibold text-blue-600">
+                Загрузка изображения...
+              </div>
+            )}
           </div>
 
           <p className="text-[11px] text-gray-400">
