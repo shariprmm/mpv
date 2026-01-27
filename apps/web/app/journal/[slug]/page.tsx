@@ -163,20 +163,10 @@ function buildGalleryHtml(images: PostImage[] | undefined, articleTitle: string)
     .map((img, idx) => {
       const src = normalizeContentImgSrc(img.image_url);
       const alt = `${title} — фото ${idx + 1}`;
-      const lightboxId = `gallery-image-${img.id}`;
       return `
         <figure class="${styles.galleryItem}">
-          <a class="${styles.galleryLink}" href="#${lightboxId}">
-            <img class="${styles.galleryImg}" src="${escapeHtml(src)}" alt="${alt}" loading="lazy" decoding="async" />
-          </a>
+          <img class="${styles.galleryImg}" src="${escapeHtml(src)}" alt="${alt}" loading="lazy" decoding="async" />
         </figure>
-        <div id="${lightboxId}" class="${styles.lightbox}">
-          <a class="${styles.lightboxBackdrop}" href="#" aria-label="Закрыть"></a>
-          <div class="${styles.lightboxBody}">
-            <img class="${styles.lightboxImg}" src="${escapeHtml(src)}" alt="${alt}" loading="lazy" decoding="async" />
-            <a class="${styles.lightboxClose}" href="#" aria-label="Закрыть">×</a>
-          </div>
-        </div>
       `;
     })
     .join("");

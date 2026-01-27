@@ -164,77 +164,12 @@
   box-shadow: 0 6px 18px rgba(0,0,0,0.08);
 }
 
-.galleryLink {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  cursor: zoom-in;
-}
-
 .galleryImg {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   aspect-ratio: 4 / 3;
-}
-
-.lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-  background: rgba(0, 0, 0, 0.78);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.lightbox:target {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.lightboxBackdrop {
-  position: absolute;
-  inset: 0;
-}
-
-.lightboxBody {
-  position: relative;
-  max-width: 1100px;
-  max-height: 80vh;
-  width: min(92vw, 1100px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lightboxImg {
-  max-width: 100%;
-  max-height: 80vh;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  cursor: zoom-out;
-}
-
-.lightboxClose {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #fff;
-  color: #000;
-  font-size: 24px;
-  line-height: 36px;
-  text-align: center;
-  text-decoration: none;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
 }
 
 @media (max-width: 900px) {
