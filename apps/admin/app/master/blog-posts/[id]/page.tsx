@@ -200,7 +200,8 @@ export default function MasterBlogPostEdit() {
     }
 
     const target = paragraphs[CONTENT_IMAGE_PARAGRAPH_INDEX - 1];
-    const blot = Quill.find(target);
+    // ✅ FIX: Приведение типа к any для Quill.find
+    const blot = Quill.find(target as any);
     if (!blot) return editor.getLength();
 
     return editor.getIndex(blot) + blot.length();
