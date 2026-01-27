@@ -5,7 +5,6 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import type ReactQuillType from "react-quill";
 import type { ReactQuillProps } from "react-quill";
 import { Quill } from "react-quill";
 
@@ -17,9 +16,7 @@ const ReactQuill = dynamic(() => import("react-quill"), {
   loading: () => (
     <p className="p-4 text-gray-400 italic">Загрузка редактора...</p>
   ),
-}) as unknown as React.ForwardRefExoticComponent<
-  ReactQuillProps & React.RefAttributes<ReactQuillType>
->;
+});
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -176,7 +173,7 @@ export default function MasterBlogPostEdit() {
   const [coverPreview, setCoverPreview] = useState<string>("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const editorRef = useRef<ReactQuillType | null>(null);
+  const editorRef = useRef<any>(null);
 
   const [form, setForm] = useState({
     slug: "",
@@ -197,9 +194,7 @@ export default function MasterBlogPostEdit() {
   }, [form.slug, item?.slug]);
 
   const getContentImageInsertIndex = useCallback((editor: any) => {
-    const paragraphs = Array.from(
-      editor.root?.querySelectorAll?.("p") ?? []
-    ) as Element[];
+    const paragraphs = Array.from(editor.root.querySelectorAll("p"));
     if (paragraphs.length < CONTENT_IMAGE_PARAGRAPH_INDEX) {
       return editor.getLength();
     }
@@ -679,6 +674,7 @@ export default function MasterBlogPostEdit() {
               value={form.content}
               onChange={(val: string) => setForm({ ...form, content: val })}
               modules={modules}
+              // @ts-expect-error: ReactQuill types issue with forwardRef/dynamic
               ref={editorRef}
               className="h-[400px] mb-12"
             />
