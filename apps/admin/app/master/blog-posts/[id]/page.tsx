@@ -5,7 +5,8 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import type ReactQuillType, { ReactQuillProps } from "react-quill";
+import type ReactQuillType from "react-quill";
+import type { ReactQuillProps } from "react-quill";
 
 import "react-quill/dist/quill.snow.css";
 
