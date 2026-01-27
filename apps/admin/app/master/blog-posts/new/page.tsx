@@ -1,7 +1,7 @@
 // apps/admin/app/master/blog-posts/new/page.tsx
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -25,6 +25,15 @@ function datetimeLocalToIso(v: string) {
   const d = new Date(v);
   if (!Number.isFinite(d.getTime())) return null;
   return d.toISOString();
+}
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ""));
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
 }
 
 function slugifyRu(input: string) {
@@ -88,6 +97,8 @@ export default function MasterBlogPostNew() {
   const [cats, setCats] = useState<Cat[]>([]);
   const [slugTouched, setSlugTouched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [contentUploading, setContentUploading] = useState(false);
+  const editorRef = useRef<any>(null);
 
   const [form, setForm] = useState({
     slug: "",
@@ -116,16 +127,75 @@ export default function MasterBlogPostNew() {
     })();
   }, []);
 
+  const handleImageUpload = useCallback(async () => {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      const defaultAlt = file.name.replace(/\.[^/.]+$/, "") || "image";
+      const altPrompt = window.prompt("Alt для изображения", defaultAlt);
+      const altText = (altPrompt ?? defaultAlt).trim() || defaultAlt;
+
+      setContentUploading(true);
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const resp = await fetch(`${API}/master/upload-image`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dataUrl,
+            filename: file.name,
+            prefix: "blog-content",
+          }),
+        });
+
+        const j = await resp.json().catch(() => ({}));
+        if (!resp.ok || !j.ok) {
+          alert(j.error || "upload_failed");
+          return;
+        }
+
+        const url = String(j.url || "");
+        const editor = editorRef.current?.getEditor();
+        if (!editor || !url) return;
+
+        const range = editor.getSelection(true);
+        const insertAt = range ? range.index : editor.getLength();
+        editor.insertEmbed(insertAt, "image", url, "user");
+        editor.setSelection(insertAt + 1, 0, "silent");
+
+        requestAnimationFrame(() => {
+          const images = editor.root.querySelectorAll(`img[src="${url}"]`);
+          const img = images[images.length - 1] as HTMLImageElement | undefined;
+          if (img) img.setAttribute("alt", altText);
+        });
+      } finally {
+        setContentUploading(false);
+      }
+    };
+  }, []);
+
   const modules = useMemo(
     () => ({
-      toolbar: [
-        [{ header: [2, 3, false] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link", "clean"],
-      ],
+      toolbar: {
+        container: [
+          [{ header: [2, 3, false] }],
+          ["bold", "italic", "underline", "strike"],
+          [{ list: "ordered" }, { list: "bullet" }],
+          ["link", "image", "clean"],
+        ],
+        handlers: {
+          image: handleImageUpload,
+        },
+      },
     }),
-    []
+    [handleImageUpload]
   );
 
   function onTitleChange(v: string) {
@@ -348,9 +418,15 @@ export default function MasterBlogPostNew() {
                 value={form.content}
                 onChange={(val: string) => setForm({ ...form, content: val })}
                 modules={modules}
+                ref={editorRef}
                 className="h-[340px]"
               />
             </div>
+            {contentUploading && (
+              <div className="text-xs font-semibold text-blue-600">
+                Загрузка изображения...
+              </div>
+            )}
           </div>
         </div>
       </div>
