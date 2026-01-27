@@ -4,7 +4,8 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Quill } from "react-quill";
+// ❌ Удален статический импорт Quill, так как он ломает SSR
+// import { Quill } from "react-quill";
 
 import "react-quill/dist/quill.snow.css";
 
@@ -101,7 +102,6 @@ export default function MasterBlogPostNew() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [contentUploading, setContentUploading] = useState(false);
-  // ✅ FIX: Use 'any' for ref to avoid typing issues with dynamic import
   const editorRef = useRef<any>(null);
 
   const [form, setForm] = useState({
@@ -129,21 +129,6 @@ export default function MasterBlogPostNew() {
         console.error("Failed to load categories", e);
       }
     })();
-  }, []);
-
-  // ✅ FIX: Use 'any' for editor type
-  const getContentImageInsertIndex = useCallback((editor: any) => {
-    const paragraphs = Array.from(editor.root.querySelectorAll("p"));
-    if (paragraphs.length < CONTENT_IMAGE_PARAGRAPH_INDEX) {
-      return editor.getLength();
-    }
-
-    const target = paragraphs[CONTENT_IMAGE_PARAGRAPH_INDEX - 1];
-    // ✅ FIX: Cast target to any/Node for Quill.find
-    const blot = Quill.find(target as any);
-    if (!blot) return editor.getLength();
-
-    return editor.getIndex(blot) + blot.length();
   }, []);
 
   const insertContentImageAt = useCallback(
@@ -177,8 +162,26 @@ export default function MasterBlogPostNew() {
       const altPrompt = window.prompt("Alt для изображения", defaultAlt);
       const altText = (altPrompt ?? defaultAlt).trim() || defaultAlt;
 
+      const editor = editorRef.current?.getEditor();
+      if (!editor) return;
+
       setContentUploading(true);
       try {
+        // ✅ FIX: Динамический импорт Quill, чтобы избежать ReferenceError: document is not defined при сборке
+        const { Quill } = await import("react-quill");
+
+        // Логика поиска позиции вставки (перенесена внутрь, чтобы использовать импортированный Quill)
+        const getInsertIndex = () => {
+          const paragraphs = Array.from(editor.root.querySelectorAll("p"));
+          if (paragraphs.length < CONTENT_IMAGE_PARAGRAPH_INDEX) {
+            return editor.getLength();
+          }
+          const target = paragraphs[CONTENT_IMAGE_PARAGRAPH_INDEX - 1];
+          const blot = Quill.find(target as any);
+          if (!blot) return editor.getLength();
+          return editor.getIndex(blot) + blot.length();
+        };
+
         const dataUrl = await fileToDataUrl(file);
         const resp = await fetch(`${API}/master/upload-image`, {
           method: "POST",
@@ -198,24 +201,15 @@ export default function MasterBlogPostNew() {
         }
 
         const url = String(j.url || "");
-        const editor = editorRef.current?.getEditor();
-        if (!editor || !url) return;
+        if (!url) return;
 
-        const range = editor.getSelection(true);
-        const insertAt = range ? range.index : editor.getLength();
-        editor.insertEmbed(insertAt, "image", url, "user");
-        editor.setSelection(insertAt + 1, 0, "silent");
-
-        requestAnimationFrame(() => {
-          const images = editor.root.querySelectorAll(`img[src="${url}"]`);
-          const img = images[images.length - 1] as HTMLImageElement | undefined;
-          if (img) img.setAttribute("alt", altText);
-        });
+        const insertAt = getInsertIndex();
+        insertContentImageAt(editor, url, altText, insertAt);
       } finally {
         setContentUploading(false);
       }
     };
-  }, []);
+  }, [insertContentImageAt]);
 
   const modules = useMemo(
     () => ({
