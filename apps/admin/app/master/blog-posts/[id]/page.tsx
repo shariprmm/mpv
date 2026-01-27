@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import type ReactQuillType, { ReactQuillProps } from "react-quill";
 
 import "react-quill/dist/quill.snow.css";
 
@@ -14,7 +15,9 @@ const ReactQuill = dynamic(() => import("react-quill"), {
   loading: () => (
     <p className="p-4 text-gray-400 italic">Загрузка редактора...</p>
   ),
-});
+}) as unknown as React.ForwardRefExoticComponent<
+  ReactQuillProps & React.RefAttributes<ReactQuillType>
+>;
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -169,7 +172,7 @@ export default function MasterBlogPostEdit() {
   const [coverPreview, setCoverPreview] = useState<string>("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<ReactQuillType | null>(null);
 
   const [form, setForm] = useState({
     slug: "",
