@@ -267,13 +267,13 @@ export default function MasterBlogPostEdit() {
   }, [id, loadAll]);
 
   useEffect(() => {
-    if (!slugTouched && form.title) {
+    if (!slugTouched && form.title && !form.slug) {
       setForm((prev) => ({
         ...prev,
         slug: normalizeSlug(translitRuToLat(form.title)),
       }));
     }
-  }, [form.title, slugTouched]);
+  }, [form.title, form.slug, slugTouched]);
 
   const save = useCallback(
     async (patch?: Partial<typeof form>) => {

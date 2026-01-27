@@ -3704,7 +3704,17 @@ app.post(
     const seo_description = b.seo_description ? String(b.seo_description).trim() : null;
 
     const is_published = Boolean(b.is_published);
-    const published_at = is_published ? new Date().toISOString() : null;
+    let published_at = null;
+    if (is_published) {
+      if (b.published_at) {
+        const parsed = new Date(b.published_at);
+        published_at = Number.isFinite(parsed.getTime())
+          ? parsed.toISOString()
+          : new Date().toISOString();
+      } else {
+        published_at = new Date().toISOString();
+      }
+    }
 
     const r = await pool.query(
       `insert into blog_posts
@@ -3775,10 +3785,27 @@ app.patch(
     if (b.seo_description !== undefined)
       put("seo_description", String(b.seo_description ?? "").trim() || null);
 
+    const hasPublishedAt = b.published_at !== undefined;
     if (b.is_published !== undefined) {
       const pub = Boolean(b.is_published);
       put("is_published", pub);
-      put("published_at", pub ? new Date().toISOString() : null);
+      if (!pub) {
+        put("published_at", null);
+      } else if (!hasPublishedAt) {
+        put("published_at", new Date().toISOString());
+      }
+    }
+
+    if (hasPublishedAt) {
+      if (b.published_at) {
+        const parsed = new Date(b.published_at);
+        put(
+          "published_at",
+          Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null
+        );
+      } else {
+        put("published_at", null);
+      }
     }
 
     if (!sets.length) return res.json({ ok: true });
