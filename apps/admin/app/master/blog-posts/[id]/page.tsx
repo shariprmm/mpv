@@ -698,7 +698,12 @@ export default function MasterBlogPostEdit() {
             <ReactQuill
               theme="snow"
               value={form.content}
-              onChange={(val: string) => setForm({ ...form, content: val })}
+              onChange={(val: string) => {
+                if (!isEditorReady && editorRef.current?.getEditor?.()) {
+                  setIsEditorReady(true);
+                }
+                setForm({ ...form, content: val });
+              }}
               modules={modules}
               // @ts-expect-error: ReactQuill types issue with forwardRef/dynamic
               ref={editorRef}
