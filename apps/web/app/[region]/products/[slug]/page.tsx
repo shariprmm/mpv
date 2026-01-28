@@ -393,8 +393,6 @@ export default async function ProductPage({
                 
                 {/* 1. БЛОК ФОТОГРАФИЙ */}
                 <section className={styles.galleryBlock}>
-                    <h2 className={styles.h2}>Фотографии {productName}</h2>
-                    
                     {allImages.length > 0 ? (
                         <>
                             <div className={styles.heroImgWrap}>
@@ -407,51 +405,12 @@ export default async function ProductPage({
                                 />
                             </div>
                             
-                            {allImages.length > 1 && (
-                                <div className={styles.thumbsWrap}>
-                                    <GalleryLightbox images={allImages} altBase={productName} />
-                                </div>
-                            )}
                         </>
                     ) : (
                         <div className={styles.missingImage}>
                             Изображение отсутствует
                         </div>
                     )}
-                </section>
-
-                {/* 2. БЛОК ХАРАКТЕРИСТИКИ */}
-                {specs.length > 0 && (
-                    <section className={styles.specsBlock} id="specs">
-                        <h2 className={styles.h2}>Характеристики {productName}</h2>
-                        <div className={styles.specTable}>
-                            {specs.map((s, idx) => (
-                                <div key={idx} className={styles.specRow}>
-                                    <div className={styles.specName}>{s.name}</div>
-                                    <div className={styles.specVal}>{s.value}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* 3. БЛОК ОПИСАНИЕ */}
-                {descriptionHtml && (
-                    <section className={styles.descBlock} id="desc">
-                        <h2 className={styles.h2}>Описание {productName}</h2>
-                        <div 
-                            className={styles.descText}
-                            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                        />
-                    </section>
-                )}
-
-                <section className={styles.cardBlock} id="reviews">
-                    <ProductReviewsBlock
-                      productId={product.id}
-                      initialItems={reviews}
-                      initialStats={reviewsStats}
-                    />
                 </section>
 
             </div>
@@ -487,6 +446,51 @@ export default async function ProductPage({
             </aside>
 
         </div>
+
+        {allImages.length > 1 && (
+            <section className={`${styles.galleryWide} ${styles.wideSection}`}>
+                <h2 className={styles.h2}>Фотографии {productName}</h2>
+                <GalleryLightbox
+                    images={allImages}
+                    altBase={productName}
+                    className={styles.galleryGrid}
+                />
+            </section>
+        )}
+
+        {/* 2. БЛОК ХАРАКТЕРИСТИКИ */}
+        {specs.length > 0 && (
+            <section className={`${styles.specsBlock} ${styles.wideSection}`} id="specs">
+                <h2 className={styles.h2}>Характеристики {productName}</h2>
+                <div className={styles.specTable}>
+                    {specs.map((s, idx) => (
+                        <div key={idx} className={styles.specRow}>
+                            <div className={styles.specName}>{s.name}</div>
+                            <div className={styles.specVal}>{s.value}</div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+        )}
+
+        {/* 3. БЛОК ОПИСАНИЕ */}
+        {descriptionHtml && (
+            <section className={`${styles.descBlock} ${styles.wideSection}`} id="desc">
+                <h2 className={styles.h2}>Описание {productName}</h2>
+                <div 
+                    className={styles.descText}
+                    dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                />
+            </section>
+        )}
+
+        <section className={`${styles.cardBlock} ${styles.wideSection}`} id="reviews">
+            <ProductReviewsBlock
+              productId={product.id}
+              initialItems={reviews}
+              initialStats={reviewsStats}
+            />
+        </section>
 
         {/* --- НИЖНЯЯ СЕКЦИЯ: СПИСОК КОМПАНИЙ --- */}
         <section className={styles.companiesSection} id="companies">

@@ -7,6 +7,7 @@
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: #111;
   box-sizing: border-box;
+  font-weight: 300;
 }
 
 /* --- Заголовки --- */
@@ -17,14 +18,14 @@
 .h1 {
   margin: 0;
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
 
 .h2 {
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 400;
   margin: 0 0 16px 0;
   line-height: 1.3;
 }
@@ -35,6 +36,7 @@
   grid-template-columns: minmax(0, 1fr) 360px; /* Контент + Сайдбар */
   gap: 24px;
   align-items: start;
+  margin-bottom: 32px;
 }
 
 .mainColumn {
@@ -60,6 +62,13 @@
 
 /* --- Блок Фотографий --- */
 .galleryBlock {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.galleryWide {
   composes: cardBlock;
 }
 
@@ -85,32 +94,32 @@
   display: block;
 }
 
-/* миниатюры — лента как у маркетплейса */
-.thumbsWrap {
-  margin-top: 8px;
+/* Gallery grid (увеличенные превью) */
+.galleryGrid {
+  margin-top: 12px;
+}
+
+.galleryGrid :global(.mpvGalleryGrid) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.galleryGrid :global(.mpvGalleryItem) {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  display: block;
+}
+
+.galleryGrid :global(.mpvGalleryImg) {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 6px;
-}
-
-/* подхватываем любые img внутри GalleryLightbox */
-/* Стили ТОЛЬКО для миниатюр (обычно они внутри button/a). 
-   Модалка (открытая фотка) не должна попадать под эти правила. */
-.thumbsWrap :global(button img),
-.thumbsWrap :global(a img) {
-  width: 96px !important;
-  height: 72px !important;
+  height: 260px;
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-/* на всякий — сами кнопки/ссылки в ленте */
-.thumbsWrap :global(button),
-.thumbsWrap :global(a) {
-  display: inline-flex;
+  display: block;
 }
 
 
@@ -169,7 +178,7 @@
 }
 .descText h3 {
   margin: 24px 0 12px;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 18px;
 }
 .descText ul {
@@ -195,6 +204,7 @@
   padding: 24px;
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06); /* Более выраженная тень */
+  box-sizing: border-box;
 }
 
 .priceRow {
@@ -226,6 +236,7 @@
   font-weight: 600;
   margin-bottom: 20px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .summaryBtn {
@@ -241,6 +252,7 @@
   text-decoration: none;
   font-size: 16px;
   transition: opacity 0.2s, transform 0.1s;
+  box-sizing: border-box;
 }
 
 .summaryBtn:hover {
@@ -318,6 +330,10 @@
   .h1 {
     font-size: 24px;
   }
+
+  .galleryGrid :global(.mpvGalleryGrid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 600px) {
@@ -331,16 +347,14 @@
     border-radius: 8px;
     height: min(360px, 52vh);
   }
-}
 
-.thumbsWrap :global(.mpvGalleryImg) {
-  width: 96px !important;
-  height: 72px !important;
-  object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  background: #f3f3f3;
-  display: block;
+  .galleryGrid :global(.mpvGalleryGrid) {
+    grid-template-columns: 1fr;
+  }
+
+  .galleryGrid :global(.mpvGalleryImg) {
+    height: 220px;
+  }
 }
 
 .missingImage {
@@ -359,6 +373,12 @@
 
 .emptyCompanies {
   opacity: 0.6;
+}
+
+.wideSection {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto 24px;
 }
 
 /* --- Reviews --- */
