@@ -13,27 +13,27 @@
   margin: 0 auto;
   padding: 0 16px;
   width: 100%;
-  overflow-x: hidden; /* ✅ Предотвращает растягивание страницы */
+  overflow-x: hidden;
 }
 
 /* Grid Layout */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 300px; /* Контент + Сайдбар */
+  grid-template-columns: 1fr 300px;
   gap: 40px;
   padding-top: 30px;
-  min-width: 0; /* Важно для флекс/грид контейнеров */
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
   .grid {
-    grid-template-columns: 1fr; /* На мобилках в одну колонку */
+    grid-template-columns: 1fr;
   }
 }
 
 /* --- Content Section --- */
 .content {
-  min-width: 0; /* Важно, чтобы контент не растягивал грид */
+  min-width: 0;
 }
 
 .crumbs {
@@ -63,7 +63,7 @@
   font-weight: 800;
   margin: 0 0 20px 0;
   letter-spacing: -0.02em;
-  overflow-wrap: break-word; /* Перенос длинных слов */
+  overflow-wrap: break-word;
 }
 
 .lead {
@@ -152,18 +152,28 @@
   cursor: zoom-in;
 }
 
-/* ✅ Галерея (Горизонтальный скролл) */
+/* ✅ Галерея: скрываем скроллбар, но оставляем скролл */
 .gallery {
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
   gap: 16px;
   margin: 32px 0;
-  padding-bottom: 12px;
-  width: 100%; /* Занимаем всю доступную ширину */
-  max-width: 100%; /* Не больше родителя */
+  padding-bottom: 0; /* Убираем лишний отступ */
+  
+  /* Скрытие скроллбара */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Скрытие скроллбара для Chrome/Safari/Webkit */
+.gallery::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .galleryItem {
