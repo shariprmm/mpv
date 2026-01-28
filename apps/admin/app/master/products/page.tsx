@@ -22,11 +22,18 @@ type Item = {
   id: number;
   slug: string;
   name: string;
+  category_id?: number | null;
   category_name?: string | null;
   cover_image?: string | null;
   description_preview?: string | null;
   updated_at?: string | null;
   show_on_site?: boolean | null;
+};
+
+type Category = {
+  id: number;
+  name: string;
+  path_name?: string | null;
 };
 
 async function apiGet(path: string) {
@@ -61,9 +68,45 @@ function fmtDate(s?: string | null) {
   });
 }
 
-export default async function MasterProductsPage() {
+function categoryLabel(cat: Category) {
+  const label = String(cat.path_name || "").trim();
+  return label || cat.name;
+}
+
+export default async function MasterProductsPage({
+  searchParams,
+}: {
+  searchParams?: { category?: string };
+}) {
   const data = await apiGet(`/master/products`);
   const items: Item[] = Array.isArray(data?.items) ? data.items : [];
+  const categoriesData = await apiGet(`/product-categories?flat=1`);
+  const categories: Category[] = Array.isArray(categoriesData?.result)
+    ? categoriesData.result
+    : Array.isArray(categoriesData?.items)
+      ? categoriesData.items
+      : [];
+
+  categories.sort((a, b) =>
+    categoryLabel(a).localeCompare(categoryLabel(b), "ru")
+  );
+
+  const rawCategory = typeof searchParams?.category === "string" ? searchParams.category : "";
+  const selectedCategoryId = rawCategory ? Number(rawCategory) : null;
+  const selectedCategory = Number.isFinite(selectedCategoryId)
+    ? categories.find((cat) => cat.id === selectedCategoryId) || null
+    : null;
+
+  const filteredItems =
+    selectedCategory && Number.isFinite(selectedCategoryId)
+      ? items.filter((it) => {
+          if (it.category_id != null) {
+            return Number(it.category_id) === selectedCategoryId;
+          }
+          if (!it.category_name || !selectedCategory) return false;
+          return it.category_name === selectedCategory.name;
+        })
+      : items;
 
   return (
     <div className="space-y-6">
@@ -91,6 +134,42 @@ export default async function MasterProductsPage() {
         </div>
       </div>
 
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4">
+        <form className="flex flex-wrap items-end gap-3" method="get">
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+              Категория
+            </span>
+            <select
+              name="category"
+              defaultValue={selectedCategoryId ? String(selectedCategoryId) : ""}
+              className="min-w-[240px] rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">Все категории</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {categoryLabel(cat)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="inline-flex items-center px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition-all active:scale-95 shadow-sm text-sm"
+          >
+            Показать
+          </button>
+          {selectedCategory ? (
+            <Link
+              href="/master/products"
+              className="inline-flex items-center px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-all"
+            >
+              Сбросить
+            </Link>
+          ) : null}
+        </form>
+      </div>
+
       {/* TABLE CONTAINER */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -108,14 +187,14 @@ export default async function MasterProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {items.length === 0 ? (
+              {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-20 text-center text-gray-400 font-medium italic">
                     Список товаров пуст
                   </td>
                 </tr>
               ) : (
-                items.map((it) => {
+                filteredItems.map((it) => {
                   const coverUrl = toPublicUploadsUrl(it.cover_image);
                   const updated = fmtDate(it.updated_at);
 
