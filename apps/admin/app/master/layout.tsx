@@ -14,6 +14,7 @@ const MENU_ITEMS = [
   { title: "Категории услуг", href: "/master/service-categories" }, // Добавил, так как делали ранее
   { title: "Услуги (каноника)", href: "/master/services" },
   { title: "Компании", href: "/master/companies" },
+  { title: "Заявки", href: "/master/leads" },
   { title: "Статьи блога", href: "/master/blog-posts" },
   { title: "Категории блога", href: "/master/blog-categories" },
 ];

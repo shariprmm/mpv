@@ -1256,4 +1256,63 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
       return next(e);
     }
   });
+
+  // =========================
+  // ADMIN: leads (all companies)
+  // =========================
+  app.get("/admin/leads", requireSuperadmin, async (req, res, next) => {
+    try {
+      const status = String(req.query.status ?? "").trim();
+      const companyId = Number(req.query.company_id ?? 0);
+      const limit = Math.min(200, Math.max(1, Number(req.query.limit ?? 50)));
+      const offset = Math.max(0, Number(req.query.offset ?? 0));
+
+      const where = [];
+      const args = [];
+      if (status) {
+        args.push(status);
+        where.push(`l.status=$${args.length}`);
+      }
+      if (companyId) {
+        args.push(companyId);
+        where.push(`l.company_id=$${args.length}`);
+      }
+
+      const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+      const q = `
+        SELECT l.*, c.name as company_name
+        FROM leads l
+        LEFT JOIN companies c ON c.id = l.company_id
+        ${whereSql}
+        ORDER BY l.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      const r = await pool.query(q, args);
+      return res.json({ ok: true, items: r.rows });
+    } catch (e) {
+      return next(e);
+    }
+  });
+
+  app.patch("/admin/leads/:id", requireSuperadmin, async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ ok: false, error: "bad_id" });
+
+      const status = String(req.body?.status ?? "").trim();
+      if (!["new", "in_work", "done", "spam"].includes(status)) {
+        return res.status(400).json({ ok: false, error: "bad_status" });
+      }
+
+      const r = await pool.query(
+        "UPDATE leads SET status=$1 WHERE id=$2 RETURNING *",
+        [status, id]
+      );
+      if (!r.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
+      return res.json({ ok: true, lead: r.rows[0] });
+    } catch (e) {
+      return next(e);
+    }
+  });
 }
