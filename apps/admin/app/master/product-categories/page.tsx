@@ -2,6 +2,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill"), {
+  ssr: false,
+  loading: () => <p>Загрузка редактора...</p>,
+});
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -792,15 +800,18 @@ export default function MasterProductCategoriesPage() {
                         </Field>
 
                         <Field label="SEO Текст (HTML)">
-                          <textarea
-                            value={baseForm.seo_text}
-                            onChange={(e) => {
-                              setBaseForm((p) => ({ ...p, seo_text: e.target.value }));
-                              setBaseDirty(true);
-                            }}
-                            className={`${inputBase} h-40 resize-y font-mono text-sm`}
-                            placeholder="<p>Текст описания...</p>"
-                          />
+                          <div className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-inner">
+                            <ReactQuill
+                              theme="snow"
+                              value={baseForm.seo_text}
+                              onChange={(value: string) => {
+                                setBaseForm((p) => ({ ...p, seo_text: value }));
+                                setBaseDirty(true);
+                              }}
+                              className="min-h-[240px]"
+                              placeholder="Введите SEO-текст..."
+                            />
+                          </div>
                         </Field>
                       </div>
 
