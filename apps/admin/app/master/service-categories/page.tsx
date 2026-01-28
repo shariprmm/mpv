@@ -2,6 +2,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+
+import "react-quill/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill"), {
+  ssr: false,
+  loading: () => <p>Загрузка редактора...</p>,
+});
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -613,7 +621,7 @@ export default function MasterServiceCategoriesPage() {
             <InputField label="SEO H1" value={baseSeo.seo_h1} onChange={(v) => setBaseSeo(p => ({ ...p, seo_h1: v }))} />
             <InputField label="SEO Title" value={baseSeo.seo_title} onChange={(v) => setBaseSeo(p => ({ ...p, seo_title: v }))} />
             <TextareaField label="Meta Description" rows={3} value={baseSeo.seo_description} onChange={(v) => setBaseSeo(p => ({ ...p, seo_description: v }))} />
-            <TextareaField label="SEO Текст (HTML)" rows={8} value={baseSeo.seo_text} onChange={(v) => setBaseSeo(p => ({ ...p, seo_text: v }))} />
+            <RichTextField label="SEO Текст (HTML)" value={baseSeo.seo_text} onChange={(v) => setBaseSeo(p => ({ ...p, seo_text: v }))} />
           </div>
         </section>
 
@@ -664,7 +672,7 @@ export default function MasterServiceCategoriesPage() {
               <InputField label="Override H1" value={ovr?.seo_h1 || ""} onChange={(v) => setOvr(p => p ? { ...p, seo_h1: v } : p)} />
               <InputField label="Override Title" value={ovr?.seo_title || ""} onChange={(v) => setOvr(p => p ? { ...p, seo_title: v } : p)} />
               <TextareaField label="Override Description" rows={3} value={ovr?.seo_description || ""} onChange={(v) => setOvr(p => p ? { ...p, seo_description: v } : p)} />
-              <TextareaField label="Override SEO Текст" rows={8} value={ovr?.seo_text || ""} onChange={(v) => setOvr(p => p ? { ...p, seo_text: v } : p)} />
+              <RichTextField label="Override SEO Текст" value={ovr?.seo_text || ""} onChange={(v) => setOvr(p => p ? { ...p, seo_text: v } : p)} />
             </div>
           )}
         </section>
@@ -756,6 +764,23 @@ function TextareaField({ label, value, onChange, rows }: { label: string; value:
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-indigo-400 focus:ring-4 ring-indigo-50 transition-all text-gray-800 font-medium resize-none"
       />
+    </label>
+  );
+}
+
+function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block space-y-2">
+      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">{label}</div>
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-inner">
+        <ReactQuill
+          theme="snow"
+          value={value}
+          onChange={(val: string) => onChange(val)}
+          className="min-h-[240px]"
+          placeholder="Введите SEO-текст..."
+        />
+      </div>
     </label>
   );
 }
