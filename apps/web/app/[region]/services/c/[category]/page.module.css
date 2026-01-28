@@ -179,22 +179,6 @@
   font-weight: 400;
 }
 
-/* ---------- BACK LINK ---------- */
-
-.backRow {
-  margin-top: 18px;
-}
-
-.backLink {
-  text-decoration: none;
-  color: inherit;
-  font-weight: 400;
-}
-
-.backLink:hover {
-  text-decoration: underline;
-}
-
 /* ---------- CARDS GRID ---------- */
 
 .grid {
