@@ -4252,6 +4252,7 @@ app.patch(
 
     // ✅ каноника
     const name = b.name !== undefined ? sanitizeText(b.name, 500) : undefined;
+    const slugRaw = b.slug !== undefined ? cleanStr(b.slug) : undefined;
     const category_id =
       b.category_id !== undefined ? (b.category_id ? Number(b.category_id) : null) : undefined;
 
@@ -4280,6 +4281,84 @@ app.patch(
     const seo_text = b.seo_text !== undefined ? sanitizeText(b.seo_text, 50000) : undefined;
 const show_on_site = b.show_on_site === undefined ? undefined : !!b.show_on_site; // ✅ NEW
 
+    // ✅ NEW: ru -> lat translit (минимально достаточный для slug)
+    function translitRuToLat(input) {
+      const map = {
+        а: "a",
+        б: "b",
+        в: "v",
+        г: "g",
+        д: "d",
+        е: "e",
+        ё: "e",
+        ж: "zh",
+        з: "z",
+        и: "i",
+        й: "y",
+        к: "k",
+        л: "l",
+        м: "m",
+        н: "n",
+        о: "o",
+        п: "p",
+        р: "r",
+        с: "s",
+        т: "t",
+        у: "u",
+        ф: "f",
+        х: "h",
+        ц: "ts",
+        ч: "ch",
+        ш: "sh",
+        щ: "sch",
+        ъ: "",
+        ы: "y",
+        ь: "",
+        э: "e",
+        ю: "yu",
+        я: "ya",
+      };
+
+      return String(input || "")
+        .trim()
+        .toLowerCase()
+        .split("")
+        .map((ch) => map[ch] ?? ch)
+        .join("");
+    }
+
+    // ✅ NEW: normalize slug to safe format (lat/digits/-)
+    function normalizeSlug(v) {
+      const s = String(v || "").trim().toLowerCase();
+      return s
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+    }
+
+    let slug = undefined;
+    if (slugRaw !== undefined) {
+      slug = normalizeSlug(translitRuToLat(slugRaw));
+
+      if (!slug && name) slug = normalizeSlug(translitRuToLat(name));
+
+      if (!slug) {
+        return res.status(400).json({ ok: false, error: "bad_slug" });
+      }
+
+      // ✅ uniqueness check (exclude current id)
+      let candidate = slug;
+      for (let i = 0; i < 50; i++) {
+        const dupe = await pool.query(`select id from products where slug=$1 and id<>$2 limit 1`, [
+          candidate,
+          id,
+        ]);
+        if (!dupe.rowCount) break;
+        candidate = i === 0 ? `${slug}-${id}` : `${slug}-${id}-${i + 1}`;
+      }
+      slug = candidate;
+    }
+
     const sets = [];
     const vals = [];
 
@@ -4293,6 +4372,7 @@ const show_on_site = b.show_on_site === undefined ? undefined : !!b.show_on_site
     };
 
     if (name !== undefined) put("name", name);
+    if (slug !== undefined) put("slug", slug);
     if (category_id !== undefined) put("category_id", Number.isFinite(category_id) ? category_id : null);
 
     if (description !== undefined) put("description", description);
