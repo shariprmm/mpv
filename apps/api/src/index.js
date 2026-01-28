@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
@@ -534,6 +535,24 @@ async function sendEmail({ to, subject, text, html }) {
   await smtpSend(socket, "QUIT");
 
   socket.end();
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: MAIL_FROM,
+    to,
+    subject,
+    text,
+    html,
+  });
+
   return { ok: true };
 }
 
