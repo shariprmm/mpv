@@ -555,12 +555,7 @@ export default async function ProductsCategoryPage({
     categorySeo?.seo_text && String(categorySeo.seo_text).trim()
       ? renderTemplate(String(categorySeo.seo_text), ctx)
       : "";
-  const seoParagraphs = seoTextRendered
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const seoTop = seoParagraphs[0] ?? "";
-  const seoBottom = seoParagraphs.slice(1).join("\n\n");
+  const { top: seoTop, bottom: seoBottom } = splitSeoText(seoTextRendered);
 
   return (
     <div className={styles.container}>
