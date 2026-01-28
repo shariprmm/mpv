@@ -126,6 +126,51 @@ type ProductCategoryPublic = {
   image_thumb_url?: string | null;
 };
 
+function SeoTextBlock({ html }: { html?: string | null }) {
+  const s = String(html || "").trim();
+  if (!s) return null;
+
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(s);
+
+  const out = looksLikeHtml
+    ? s
+    : s
+        .split(/\n{2,}/g)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+        .join("");
+
+  return <div className={styles.seoText} dangerouslySetInnerHTML={{ __html: out }} />;
+}
+
+function splitSeoText(input: string) {
+  const s = String(input || "").trim();
+  if (!s) return { top: "", bottom: "" };
+
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(s);
+  if (looksLikeHtml) {
+    const match = s.match(/<p[\s\S]*?<\/p>/i);
+    if (match?.index !== undefined) {
+      const top = match[0].trim();
+      const rest = `${s.slice(0, match.index)}${s.slice(match.index + match[0].length)}`
+        .trim()
+        .replace(/^\s+|\s+$/g, "");
+      return { top, bottom: rest };
+    }
+    return { top: s, bottom: "" };
+  }
+
+  const paragraphs = s
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return {
+    top: paragraphs[0] ?? "",
+    bottom: paragraphs.slice(1).join("\n\n"),
+  };
+}
+
 function toNum(v: any): number | null {
   if (v === null || v === undefined) return null;
   const n = Number(String(v).replace(/\s/g, "").replace(",", "."));
@@ -555,12 +600,7 @@ export default async function ProductsCategoryPage({
     categorySeo?.seo_text && String(categorySeo.seo_text).trim()
       ? renderTemplate(String(categorySeo.seo_text), ctx)
       : "";
-  const seoParagraphs = seoTextRendered
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const seoTop = seoParagraphs[0] ?? "";
-  const seoBottom = seoParagraphs.slice(1).join("\n\n");
+  const { top: seoTop, bottom: seoBottom } = splitSeoText(seoTextRendered);
 
   return (
     <div className={styles.container}>
@@ -576,7 +616,7 @@ export default async function ProductsCategoryPage({
 
       <div className={styles.padX}>
         <h1 className={styles.h1}>{h1}</h1>
-        {seoTop ? <div className={styles.seoText}>{seoTop}</div> : null}
+        <SeoTextBlock html={seoTop} />
       </div>
 
       {parents.length ? (
@@ -651,7 +691,7 @@ export default async function ProductsCategoryPage({
 
       {seoBottom ? (
         <div className={styles.padX}>
-          <div className={styles.seoText}>{seoBottom}</div>
+          <SeoTextBlock html={seoBottom} />
         </div>
       ) : null}
     </div>
