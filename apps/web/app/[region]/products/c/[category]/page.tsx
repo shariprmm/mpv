@@ -576,7 +576,7 @@ export default async function ProductsCategoryPage({
 
       <div className={styles.padX}>
         <h1 className={styles.h1}>{h1}</h1>
-        {seoTop ? <div className={styles.seoText}>{seoTop}</div> : null}
+        <SeoTextBlock html={seoTop} />
       </div>
 
       {parents.length ? (
@@ -651,9 +651,27 @@ export default async function ProductsCategoryPage({
 
       {seoBottom ? (
         <div className={styles.padX}>
-          <div className={styles.seoText}>{seoBottom}</div>
+          <SeoTextBlock html={seoBottom} />
         </div>
       ) : null}
     </div>
   );
+}
+
+function SeoTextBlock({ html }: { html?: string | null }) {
+  const s = String(html || "").trim();
+  if (!s) return null;
+
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(s);
+
+  const out = looksLikeHtml
+    ? s
+    : s
+        .split(/\n{2,}/g)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+        .join("");
+
+  return <div className={styles.seoText} dangerouslySetInnerHTML={{ __html: out }} />;
 }
