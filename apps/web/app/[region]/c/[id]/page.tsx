@@ -16,6 +16,7 @@ import Collapse from "./_components/Collapse";
 
 import GalleryLightbox from "@/components/GalleryLightbox";
 import ReviewsBlock from "./_components/ReviewsBlock";
+import OfferLeadModal from "./_components/OfferLeadModal";
 
 export async function generateMetadata({
   params,
@@ -393,12 +394,7 @@ export default async function CompanyProfilePage({
                           Чат
                         </Link>
 
-                        <Link
-                          className={`${styles.Btn} ${styles.BtnNormal}`}
-                          href={`/${regionSlug}/c/${company.id}?offer=1`}
-                        >
-                          Предложить заказ
-                        </Link>
+                        <OfferLeadModal companyId={company.id} companyName={company.name} />
                       </div>
 
                       <button className={styles.ComplainBtn} title="Ещё" aria-label="Ещё">
