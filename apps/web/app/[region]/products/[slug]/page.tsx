@@ -450,11 +450,9 @@ export default async function ProductPage({
         {allImages.length > 1 && (
             <section className={`${styles.galleryWide} ${styles.wideSection}`}>
                 <h2 className={styles.h2}>Фотографии {productName}</h2>
-                <GalleryLightbox
-                    images={allImages}
-                    altBase={productName}
-                    className={styles.galleryGrid}
-                />
+                <div className={styles.thumbsWrap}>
+                    <GalleryLightbox images={allImages} altBase={productName} />
+                </div>
             </section>
         )}
 

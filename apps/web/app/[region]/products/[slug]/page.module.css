@@ -62,10 +62,7 @@
 
 /* --- Блок Фотографий --- */
 .galleryBlock {
-  padding: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  composes: cardBlock;
 }
 
 .galleryWide {
@@ -94,32 +91,35 @@
   display: block;
 }
 
-/* Gallery grid (увеличенные превью) */
-.galleryGrid {
-  margin-top: 12px;
-}
-
-.galleryGrid :global(.mpvGalleryGrid) {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.galleryGrid :global(.mpvGalleryItem) {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  display: block;
-}
-
-.galleryGrid :global(.mpvGalleryImg) {
+/* миниатюры — лента как у маркетплейса */
+.thumbsWrap {
+  margin-top: 8px;
   width: 100%;
-  height: 260px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  display: flex;
+  gap: 12px;
+}
+
+/* подхватываем любые img внутри GalleryLightbox */
+/* Стили ТОЛЬКО для миниатюр (обычно они внутри button/a). 
+   Модалка (открытая фотка) не должна попадать под эти правила. */
+.thumbsWrap :global(button img),
+.thumbsWrap :global(a img) {
+  width: 140px !important;
+  height: 104px !important;
   object-fit: cover;
-  display: block;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* на всякий — сами кнопки/ссылки в ленте */
+.thumbsWrap :global(button),
+.thumbsWrap :global(a) {
+  display: inline-flex;
+  flex: 0 0 auto;
 }
 
 
@@ -347,14 +347,16 @@
     border-radius: 8px;
     height: min(360px, 52vh);
   }
+}
 
-  .galleryGrid :global(.mpvGalleryGrid) {
-    grid-template-columns: 1fr;
-  }
-
-  .galleryGrid :global(.mpvGalleryImg) {
-    height: 220px;
-  }
+.thumbsWrap :global(.mpvGalleryImg) {
+  width: 96px !important;
+  height: 72px !important;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #f3f3f3;
+  display: block;
 }
 
 .missingImage {
