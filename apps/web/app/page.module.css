@@ -6,12 +6,14 @@
 }
 
 .title {
-  font-size: 32px;
+  font-size: 40px;
+  font-weight: 400;
   margin-bottom: 8px;
 }
 
 .errorTitle {
-  font-size: 28px;
+  font-size: 40px;
+  font-weight: 400;
 }
 
 .muted {
@@ -46,8 +48,20 @@
 }
 
 .sectionTitle {
-  font-size: 22px;
+  font-size: 26px;
+  font-weight: 400;
   margin-top: 28px;
+}
+
+@media (max-width: 600px) {
+  .title,
+  .errorTitle {
+    font-size: 26px;
+  }
+
+  .sectionTitle {
+    font-size: 22px;
+  }
 }
 
 .grid {

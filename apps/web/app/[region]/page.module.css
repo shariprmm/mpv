@@ -16,7 +16,7 @@
 
 .h2 {
   margin: 0;
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 400;
 }
 
@@ -213,7 +213,7 @@
 
 .badRegionTitle {
   margin: 0;
-  font-size: 24px;
+  font-size: 40px;
   font-weight: 400;
 }
 
@@ -226,10 +226,19 @@
 
 @media (max-width: 560px) {
   .h1 {
-    font-size: 28px;
+    font-size: 26px;
   }
   .h2 {
     font-size: 22px;
+  }
+  .blogTitle {
+    font-size: 22px;
+  }
+  .badRegionTitle {
+    font-size: 26px;
+  }
+  .blogCardTitle {
+    font-size: 18px;
   }
   .btnAction {
     padding: 6px 14px;
@@ -252,7 +261,7 @@
 
 .blogTitle {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   line-height: 1.15;
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -359,9 +368,9 @@
 
 .blogCardTitle {
   margin: 0 0 10px;
-  font-size: 18px; /* Чуть меньше шрифт заголовка */
+  font-size: 22px;
   line-height: 1.3;
-  font-weight: 500; /* Жирнее */
+  font-weight: 400;
 
   display: -webkit-box;
   -webkit-line-clamp: 2; /* Ограничим 2 строками */

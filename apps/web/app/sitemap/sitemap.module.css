@@ -29,8 +29,8 @@
 }
 
 .h1 {
-  font-size: 36px;
-  font-weight: 800;
+  font-size: 40px;
+  font-weight: 400;
   margin: 0 0 10px;
   letter-spacing: -0.02em;
 }
@@ -117,8 +117,8 @@
 
 .cardTitle {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 400;
   color: #111;
 }
 
@@ -214,7 +214,10 @@
   }
   
   .h1 {
-    font-size: 28px;
+    font-size: 26px;
+  }
+  .cardTitle {
+    font-size: 22px;
   }
   
   .anchors {

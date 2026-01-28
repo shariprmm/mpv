@@ -71,7 +71,7 @@
 
 .h2 {
   margin: 0;
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 400;
   letter-spacing: -0.01em;
 }
@@ -286,9 +286,6 @@
   .h1 {
     font-size: 32px;
   }
-  .h2 {
-    font-size: 24px;
-  }
 
   .rubricatorGrid {
     grid-auto-columns: 140px; /* держим размеры как на главной */
@@ -296,6 +293,12 @@
 }
 
 @media (max-width: 520px) {
+  .h1 {
+    font-size: 26px;
+  }
+  .h2 {
+    font-size: 22px;
+  }
   .grid {
     grid-template-columns: 1fr;
     gap: 8px;
