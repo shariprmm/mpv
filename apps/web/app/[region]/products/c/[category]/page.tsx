@@ -697,21 +697,3 @@ export default async function ProductsCategoryPage({
     </div>
   );
 }
-
-function SeoTextBlock({ html }: { html?: string | null }) {
-  const s = String(html || "").trim();
-  if (!s) return null;
-
-  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(s);
-
-  const out = looksLikeHtml
-    ? s
-    : s
-        .split(/\n{2,}/g)
-        .map((p) => p.trim())
-        .filter(Boolean)
-        .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
-        .join("");
-
-  return <div className={styles.seoText} dangerouslySetInnerHTML={{ __html: out }} />;
-}
