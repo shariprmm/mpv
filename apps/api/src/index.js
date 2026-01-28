@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
@@ -31,6 +32,9 @@ const app = express();
 // после app = express()
 registerGeoRedirect(app);
 app.set("trust proxy", 1);
+
+const ADMIN_BASE_URL = (process.env.ADMIN_BASE_URL || "https://admin.moydompro.ru").replace(/\/+$/, "");
+const API_BASE_URL = (process.env.API_BASE_URL || "https://api.moydompro.ru").replace(/\/+$/, "");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -417,6 +421,44 @@ const COOKIE_SECURE = String(process.env.COOKIE_SECURE || "1") !== "0";
 
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+}
+
+function signEmailToken(payload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
+}
+
+const SMTP_HOST = process.env.SMTP_HOST || "smtp.timeweb.ru";
+const SMTP_PORT = Number(process.env.SMTP_PORT || "465");
+const SMTP_SECURE = String(process.env.SMTP_SECURE || "1") !== "0";
+const SMTP_USER = process.env.SMTP_USER || "no-reply@moydompro.ru";
+const SMTP_PASS = process.env.SMTP_PASS || "";
+const MAIL_FROM = process.env.MAIL_FROM || `МойДомПро <${SMTP_USER}>`;
+
+async function sendEmail({ to, subject, text, html }) {
+  if (!SMTP_PASS) {
+    console.warn("SMTP_PASS is not configured. Skip sending email.");
+    return { ok: false, error: "smtp_not_configured" };
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: MAIL_FROM,
+    to,
+    subject,
+    text,
+    html,
+  });
+
+  return { ok: true };
 }
 
 function setAuthCookie(res, token) {
@@ -2203,17 +2245,75 @@ app.post(
       );
       const user = u.rows[0];
 
-      const token = signToken({ sub: user.id, company_id: user.company_id, role: user.role });
-      setAuthCookie(res, token);
+      const emailToken = signEmailToken({
+        sub: user.id,
+        company_id: user.company_id,
+        email: user.email,
+        type: "email_verify",
+      });
+      const verifyUrl = `${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(emailToken)}`;
+      const subject = "Подтверждение регистрации компании";
+      const text = `Здравствуйте!\n\nВы зарегистрировали компанию "${company.name}". Подтвердите email по ссылке:\n${verifyUrl}\n\nЕсли это были не вы, просто проигнорируйте письмо.`;
+      const html = `<p>Здравствуйте!</p>
+<p>Вы зарегистрировали компанию <strong>${company.name}</strong>. Подтвердите email по ссылке:</p>
+<p><a href="${verifyUrl}">${verifyUrl}</a></p>
+<p>Если это были не вы, просто проигнорируйте письмо.</p>`;
+
+      let emailSent = false;
+      try {
+        const sendResult = await sendEmail({ to: user.email, subject, text, html });
+        emailSent = sendResult.ok;
+      } catch (e) {
+        console.error("register-company email failed", e);
+        emailSent = false;
+      }
 
       return res.json({
         ok: true,
         user,
         company: { ...company, region_slug: region.slug, region_name: region.name },
+        email_sent: emailSent,
       });
     } catch (e) {
       console.error("register-company error", e);
       return res.status(500).json({ ok: false, error: "server_error" });
+    }
+  })
+);
+
+app.get(
+  "/auth/verify-email",
+  aw(async (req, res) => {
+    const token = String(req.query?.token || "");
+    if (!token) return res.status(400).send("Missing token");
+
+    try {
+      const payload = jwt.verify(token, JWT_SECRET);
+      if (!payload || payload.type !== "email_verify") {
+        return res.status(400).send("Invalid token");
+      }
+
+      const userId = Number(payload.sub);
+      const companyId = Number(payload.company_id);
+      if (!Number.isFinite(userId) || !Number.isFinite(companyId)) {
+        return res.status(400).send("Invalid token");
+      }
+
+      const r = await pool.query(
+        "SELECT company_id FROM company_users WHERE id=$1 LIMIT 1",
+        [userId]
+      );
+      const userCompanyId = Number(r.rows?.[0]?.company_id || 0);
+      if (!r.rowCount || userCompanyId !== companyId) {
+        return res.status(400).send("Invalid token");
+      }
+
+      await pool.query("UPDATE companies SET is_verified=true WHERE id=$1", [companyId]);
+
+      return res.redirect(`${ADMIN_BASE_URL}/login?verified=1`);
+    } catch (e) {
+      console.error("verify-email error", e);
+      return res.status(400).send("Invalid or expired token");
     }
   })
 );

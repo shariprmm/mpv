@@ -16,6 +16,7 @@ export default function RegisterPage() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -32,6 +33,7 @@ export default function RegisterPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
+    setSuccess(null);
     setLoading(true);
     try {
       const r = await fetch(`${API}/auth/register-company`, {
@@ -47,7 +49,11 @@ export default function RegisterPage() {
 
       if (!r.ok) throw new Error(data?.error || data?.message || `HTTP ${r.status}`);
 
-      location.href = "/price";
+      if (data?.email_sent === false) {
+        setSuccess("Компания создана, но письмо подтвердить не удалось. Напишите в поддержку.");
+      } else {
+        setSuccess("Письмо для подтверждения регистрации отправлено. Проверьте почту.");
+      }
     } catch (e: any) {
       setErr(e?.message || String(e));
     } finally {
@@ -125,6 +131,12 @@ export default function RegisterPage() {
         <a href="/login" style={{ fontSize: 14, color: "#333" }}>
           Уже есть аккаунт? Войти
         </a>
+
+        {success && (
+          <div style={{ background: "#eef7ff", border: "1px solid #8cc4ff", padding: 10, borderRadius: 10 }}>
+            {success}
+          </div>
+        )}
 
         {err && (
           <div style={{ background: "#fee", border: "1px solid #f99", padding: 10, borderRadius: 10 }}>
