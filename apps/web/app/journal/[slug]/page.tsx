@@ -39,6 +39,17 @@ type CategoryItem = {
   name: string;
 };
 
+type RelatedPost = {
+  id: number;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  cover_image: string | null;
+  published_at: string | null;
+  category_slug: string | null;
+  category_name: string | null;
+};
+
 type PostImage = {
   id: number;
   image_url: string;
@@ -91,6 +102,17 @@ function escapeHtml(value: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function formatRuDate(d?: string | null) {
+  const s = String(d || "").trim();
+  if (!s) return "";
+  const dt = new Date(s);
+  if (Number.isNaN(dt.getTime())) return "";
+  const dd = String(dt.getDate()).padStart(2, "0");
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const yyyy = String(dt.getFullYear());
+  return `${dd}.${mm}.${yyyy}`;
 }
 
 // Проставляет alt, loading="lazy" и decoding="async" для картинок в контенте
@@ -225,6 +247,22 @@ async function getCategories(): Promise<CategoryItem[]> {
   }
 }
 
+async function getRelatedPosts(categorySlug: string | null, currentSlug: string): Promise<RelatedPost[]> {
+  if (!categorySlug) return [];
+  try {
+    const r = await fetch(
+      `${API}/public/blog?limit=12&page=1&category=${encodeURIComponent(categorySlug)}`,
+      { next: { revalidate: 120 } }
+    );
+    if (!r.ok) return [];
+    const j = await r.json().catch(() => null);
+    const items = (j?.items || []) as RelatedPost[];
+    return items.filter((item) => item.slug !== currentSlug).slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
 // --- Metadata ---
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -251,11 +289,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 // --- Page Component ---
 
 export default async function JournalPostPage({ params }: { params: { slug: string } }) {
-  const [post, categories] = await Promise.all([getPost(params.slug), getCategories()]);
+  const post = await getPost(params.slug);
 
   if (!post) {
     notFound(); 
   }
+
+  const [categories, relatedPosts] = await Promise.all([
+    getCategories(),
+    getRelatedPosts(post.category_slug, post.slug),
+  ]);
 
   const cover = toAbsPublicUrl(post.cover_image);
   const url = `${SITE_URL}/journal/${post.slug}`;
@@ -356,6 +399,63 @@ export default async function JournalPostPage({ params }: { params: { slug: stri
               <div className={styles.ctaTitle}>Нужна помощь с выбором?</div>
               <p>Оставьте заявку, и проверенные компании свяжутся с вами.</p>
             </div>
+
+            {relatedPosts.length ? (
+              <section className={styles.blogSection}>
+                <div className={styles.blogHead}>
+                  <h2 className={styles.blogTitle}>Еще в категории</h2>
+                  {post.category_slug ? (
+                    <Link
+                      href={`/journal/category/${post.category_slug}`}
+                      className={styles.btnAction}
+                    >
+                      Все статьи
+                    </Link>
+                  ) : null}
+                </div>
+
+                <div className={styles.blogRowScroll}>
+                  {relatedPosts.map((p) => {
+                    const img = toAbsPublicUrl(p.cover_image);
+                    const date = formatRuDate(p.published_at);
+
+                    return (
+                      <article key={p.id || p.slug} className={styles.blogCard}>
+                        <Link href={`/journal/${p.slug}`} className={styles.blogMedia}>
+                          {img ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={img} alt={p.title} className={styles.blogImg} loading="lazy" />
+                          ) : (
+                            <div className={styles.blogImgPh} />
+                          )}
+
+                          {(p.category_name || p.category_slug) && (
+                            <div className={styles.blogBadge}>{p.category_name || "Статья"}</div>
+                          )}
+                        </Link>
+
+                        <div className={styles.blogBody}>
+                          <h3 className={styles.blogCardTitle}>
+                            <Link href={`/journal/${p.slug}`} className={styles.blogCardLink}>
+                              {p.title}
+                            </Link>
+                          </h3>
+
+                          {p.excerpt ? <p className={styles.blogExcerpt}>{p.excerpt}</p> : null}
+
+                          <div className={styles.blogBottom}>
+                            {date ? <div className={styles.blogDate}>{date}</div> : <div />}
+                            <Link href={`/journal/${p.slug}`} className={styles.blogMore}>
+                              Подробнее →
+                            </Link>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
           </section>
 
           {/* Sidebar */}
