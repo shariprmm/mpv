@@ -2440,6 +2440,10 @@ app.post(
       const ok = await bcrypt.compare(password, row.password_hash);
       if (!ok) return res.status(401).json({ ok: false, error: "bad_credentials" });
 
+      if (!row.is_verified) {
+        return res.status(403).json({ ok: false, error: "email_not_verified" });
+      }
+
       const token = signToken({ sub: row.id, company_id: row.company_id, role: row.role });
       setAuthCookie(res, token);
 
