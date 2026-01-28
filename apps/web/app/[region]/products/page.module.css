@@ -12,7 +12,7 @@
 
 .h1 {
   margin: 0;
-  font-size: 44px;
+  font-size: 40px;
   font-weight: 400;
   letter-spacing: -0.02em;
 }
@@ -30,7 +30,7 @@
 
 .h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 400;
 }
 
@@ -211,7 +211,8 @@
 
 /* Мобильная адаптация */
 @media (max-width: 600px) {
-  .h1 { font-size: 32px; }
+  .h1 { font-size: 26px; }
+  .h2 { font-size: 22px; }
   .grid { grid-template-columns: 1fr; } /* Одна колонка на мобильном */
   .rubricatorGrid { gap: 8px; grid-auto-columns: 130px; }
 }

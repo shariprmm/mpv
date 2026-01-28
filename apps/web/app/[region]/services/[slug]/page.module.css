@@ -21,7 +21,7 @@
 
 .h1 {
   margin: 0;
-  font-size: 32px;
+  font-size: 40px;
   letter-spacing: -0.02em;
   line-height: 1.15;
   font-weight: 400;
@@ -29,9 +29,9 @@
 
 .h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 26px;
   line-height: 1.25;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* ====== NEW: unified section card (Gallery / Specs / Companies / SEO) ====== */
@@ -242,7 +242,7 @@
 .shortDesc h2, 
 .shortDesc h3 {
   margin: 16px 0 8px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.25;
 }
 
@@ -467,6 +467,9 @@
 @media (max-width: 640px) {
   .h1 {
     font-size: 26px;
+  }
+  .h2 {
+    font-size: 22px;
   }
 
   .sectionCard {

@@ -22,7 +22,7 @@
 
 .h2 {
   margin: 0;
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 400;
   letter-spacing: -0.01em;
 }
@@ -214,7 +214,7 @@
 
 @media (max-width: 560px) {
   .h1 {
-    font-size: 28px;
+    font-size: 26px;
   }
   .h2 {
     font-size: 22px;

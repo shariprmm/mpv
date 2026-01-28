@@ -5,15 +5,22 @@
 }
 
 .title {
-  font-size: 36px;
-  font-weight: 900;
+  font-size: 40px;
+  font-weight: 400;
   line-height: 1.15;
   margin-bottom: 10px;
 }
 
 .errorTitle {
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 40px;
+  font-weight: 400;
+}
+
+@media (max-width: 600px) {
+  .title,
+  .errorTitle {
+    font-size: 26px;
+  }
 }
 
 .backRow {

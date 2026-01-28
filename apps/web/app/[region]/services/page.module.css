@@ -16,7 +16,7 @@
 
 .h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 400;
 }
 
@@ -157,7 +157,8 @@
 .backLink:hover { text-decoration: underline; color: #111; }
 
 @media (max-width: 600px) {
-  .h1 { font-size: 32px; }
+  .h1 { font-size: 26px; }
+  .h2 { font-size: 22px; }
   .grid { grid-template-columns: 1fr; gap: 8px; }
   .simpleCard { padding: 10px; }
 }

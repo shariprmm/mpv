@@ -29,8 +29,8 @@
 }
 
 .title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 40px;
+  font-weight: 400;
   margin-bottom: 8px;
 }
 
@@ -45,6 +45,12 @@
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .title {
+    font-size: 26px;
+  }
 }
 
 .btn {

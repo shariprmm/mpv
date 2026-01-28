@@ -58,9 +58,9 @@
 }
 
 .h1 {
-  font-size: 36px;
+  font-size: 40px;
   line-height: 1.2;
-  font-weight: 800;
+  font-weight: 400;
   margin: 0 0 20px 0;
   letter-spacing: -0.02em;
   overflow-wrap: break-word;
@@ -102,7 +102,7 @@
 
 .articleBody h2 {
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 400;
   margin-top: 40px;
   margin-bottom: 16px;
   line-height: 1.3;
@@ -110,7 +110,7 @@
 
 .articleBody h3 {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 400;
   margin-top: 32px;
   margin-bottom: 12px;
 }
@@ -206,6 +206,15 @@
 @media (max-width: 600px) {
   .galleryItem {
     width: 85vw; 
+  }
+  .h1 {
+    font-size: 26px;
+  }
+  .articleBody h2 {
+    font-size: 22px;
+  }
+  .articleBody h3 {
+    font-size: 18px;
   }
 }
 
@@ -304,7 +313,7 @@
 
 .blogTitle {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   line-height: 1.15;
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -420,9 +429,9 @@
 
 .blogCardTitle {
   margin: 0 0 10px;
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1.3;
-  font-weight: 500;
+  font-weight: 400;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -478,6 +487,12 @@
   .blogRowScroll .blogCard {
     flex: 0 0 280px;
     width: 280px;
+  }
+  .blogTitle {
+    font-size: 22px;
+  }
+  .blogCardTitle {
+    font-size: 18px;
   }
 }
 
