@@ -283,26 +283,6 @@
   line-height: 1.4;
 }
 
-@media (max-width: 720px){
-  .LeadModalOverlay{
-    padding: 16px;
-  }
-
-  .LeadModal{
-    width: 100%;
-    padding: 16px;
-  }
-
-  .LeadModalGrid{
-    grid-template-columns: 1fr;
-  }
-
-  .LeadModalActions{
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
 .WorkerAbout2Item{
   margin-top: 14px;
   font-size: 15px;

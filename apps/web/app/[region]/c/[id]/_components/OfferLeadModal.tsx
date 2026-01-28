@@ -35,55 +35,19 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const getDigits = (value: string) => value.replace(/\D/g, "");
-
-  const formatPhone = (value: string) => {
-    const raw = getDigits(value);
-    let digits = raw;
-
-    if (digits.startsWith("8")) digits = `7${digits.slice(1)}`;
-    if (digits.startsWith("7")) digits = digits.slice(1);
-
-    digits = digits.slice(0, 10);
-
-    const p1 = digits.slice(0, 3);
-    const p2 = digits.slice(3, 6);
-    const p3 = digits.slice(6, 10);
-
-    let out = "+7";
-    if (p1) out += ` (${p1}`;
-    if (p1.length === 3) out += ")";
-    if (p2) out += ` ${p2}`;
-    if (p3) out += `-${p3}`;
-    return out;
-  };
-
-  const isPhoneComplete = (value: string) => {
-    const digits = getDigits(value);
-    if (!digits) return false;
-    if (digits.startsWith("8")) return digits.length === 11;
-    if (digits.startsWith("7")) return digits.length === 11;
-    return digits.length === 10;
-  };
-
   useEffect(() => {
     if (searchParams?.get("offer") === "1") {
       setIsOpen(true);
     }
   }, [searchParams]);
 
-  const canSubmit = useMemo(() => isPhoneComplete(form.phone), [form.phone]);
+  const canSubmit = useMemo(() => {
+    return Boolean(form.phone.trim() || form.email.trim());
+  }, [form.phone, form.email]);
 
-  const onChange =
-    (key: keyof LeadFormState) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = event.target.value;
-      if (key === "phone") {
-        setForm((prev) => ({ ...prev, [key]: formatPhone(value) }));
-        return;
-      }
-      setForm((prev) => ({ ...prev, [key]: value }));
-    };
+  const onChange = (key: keyof LeadFormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  };
 
   const reset = () => {
     setForm(DEFAULT_FORM);
@@ -101,7 +65,7 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
     setError("");
 
     if (!canSubmit) {
-      setError("Укажите корректный номер телефона.");
+      setError("Укажите телефон или email для связи.");
       return;
     }
 
@@ -191,10 +155,7 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
                       className={styles.LeadModalInput}
                       value={form.phone}
                       onChange={onChange("phone")}
-                      placeholder="+7 (___) ___-____"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      required
+                      placeholder="+7 (___) ___-__-__"
                     />
                   </label>
                   <label className={styles.LeadModalField}>
@@ -220,7 +181,7 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
                 </div>
 
                 {error ? <div className={styles.LeadModalError}>{error}</div> : null}
-                <div className={styles.LeadModalHint}>* Телефон обязателен для связи.</div>
+                <div className={styles.LeadModalHint}>* Укажите телефон или email, чтобы компания могла связаться.</div>
 
                 <div className={styles.LeadModalActions}>
                   <button type="button" className={`${styles.Btn} ${styles.BtnNormal}`} onClick={onClose}>
