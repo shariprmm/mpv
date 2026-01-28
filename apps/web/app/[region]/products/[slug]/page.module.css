@@ -330,6 +330,10 @@
   .h1 {
     font-size: 24px;
   }
+
+  .galleryGrid :global(.mpvGalleryGrid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 600px) {
