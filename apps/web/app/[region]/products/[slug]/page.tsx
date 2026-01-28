@@ -361,6 +361,15 @@ export default async function ProductPage({
       reviewsCount: ratingsCount || null,
     }),
     ...(allImages.length ? { image: allImages } : {}),
+    ...(specs.length
+      ? {
+          additionalProperty: specs.map((spec) => ({
+            "@type": "PropertyValue",
+            name: spec.name,
+            value: spec.value,
+          })),
+        }
+      : {}),
   };
 
   return (
