@@ -670,30 +670,3 @@ function SeoTextBlock({ html }: { html?: string | null }) {
 
   return <div className={styles.seoText} dangerouslySetInnerHTML={{ __html: out }} />;
 }
-
-function splitSeoText(input: string) {
-  const s = String(input || "").trim();
-  if (!s) return { top: "", bottom: "" };
-
-  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(s);
-  if (looksLikeHtml) {
-    const match = s.match(/<p[\s\S]*?<\/p>/i);
-    if (match?.index !== undefined) {
-      const top = match[0].trim();
-      const rest = `${s.slice(0, match.index)}${s.slice(match.index + match[0].length)}`
-        .trim()
-        .replace(/^\s+|\s+$/g, "");
-      return { top, bottom: rest };
-    }
-    return { top: s, bottom: "" };
-  }
-
-  const paragraphs = s
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  return {
-    top: paragraphs[0] ?? "",
-    bottom: paragraphs.slice(1).join("\n\n"),
-  };
-}
