@@ -1,33 +1,36 @@
 // apps/web/app/journal/[slug]/ArticleViewer.tsx
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import styles from "./page.module.css";
+
+// Иконки (можно вынести в отдельные компоненты, но для компактности оставим тут)
+const CloseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+);
+const ChevronLeftIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+);
+const ChevronRightIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+);
 
 export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
-  
   const [isOpen, setIsOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [images, setImages] = useState<string[]>([]);
 
+  // Парсинг картинок и навешивание обработчиков
   useEffect(() => {
     if (!contentRef.current) return;
-
-    // 1. Находим все картинки внутри контента
     const imgNodes = contentRef.current.querySelectorAll("img");
-    
-    // Фильтруем картинки (например, исключаем смайлики или слишком мелкие, если нужно)
     const imgArray = Array.from(imgNodes).filter(img => 
-      !img.classList.contains("emoji") && 
-      img.getAttribute("src")
+      !img.classList.contains("emoji") && img.getAttribute("src")
     );
-
-    // 2. Собираем массив URL
     const urls = imgArray.map(img => img.getAttribute("src") || "");
     setImages(urls);
 
-    // 3. Вешаем обработчик клика
     imgArray.forEach((img, index) => {
       img.style.cursor = "zoom-in";
       img.onclick = (e) => {
@@ -37,99 +40,89 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
       };
     });
 
-    // Очистка при размонтировании
     return () => {
-      imgArray.forEach(img => {
-        img.onclick = null;
-      });
+      imgArray.forEach(img => img.onclick = null);
     };
   }, [htmlContent]);
 
-  const closeLightbox = () => setIsOpen(false);
-  
-  const nextPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Управление лайтбоксом
+  const closeLightbox = useCallback(() => setIsOpen(false), []);
+  const nextPhoto = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setPhotoIndex((prev) => (prev + 1) % images.length);
-  };
-  
-  const prevPhoto = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  }, [images.length]);
+  const prevPhoto = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setPhotoIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  }, [images.length]);
 
-  // Обработка клавиш (Escape, стрелки)
+  // Обработка клавиш
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
-      if (e.key === "ArrowRight") setPhotoIndex((prev) => (prev + 1) % images.length);
-      if (e.key === "ArrowLeft") setPhotoIndex((prev) => (prev - 1 + images.length) % images.length);
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowRight") nextPhoto();
+      if (e.key === "ArrowLeft") prevPhoto();
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, images.length]);
+    // Блокируем скролл страницы
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, nextPhoto, prevPhoto, closeLightbox]);
+
+  // Общие стили для кнопок
+  const buttonStyle: React.CSSProperties = {
+    position: 'absolute',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'rgba(255, 255, 255, 0.15)',
+    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    border: 'none', borderRadius: '50%', color: '#fff', cursor: 'pointer', zIndex: 10002,
+    transition: 'background 0.2s',
+  };
 
   return (
     <>
-      <div
-        ref={contentRef}
-        className={styles.articleBody}
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
-      />
+      <div ref={contentRef} className={styles.articleBody} dangerouslySetInnerHTML={{ __html: htmlContent }} />
 
       {/* Встроенный Lightbox */}
       {isOpen && (
         <div 
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            backgroundColor: 'rgba(0,0,0,0.9)',
+            backgroundColor: 'rgba(0,0,0,0.92)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(5px)'
+            backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)',
           }}
           onClick={closeLightbox}
         >
-          {/* Кнопка закрытия */}
+          {/* Кнопка закрытия (Слева вверху) */}
           <button
             onClick={closeLightbox}
-            style={{
-              position: 'absolute', top: 20, right: 20,
-              background: 'none', border: 'none', color: '#fff',
-              fontSize: '40px', cursor: 'pointer', zIndex: 10002,
-              lineHeight: 1
-            }}
+            style={{ ...buttonStyle, top: '20px', left: '20px', width: '44px', height: '44px' }}
             aria-label="Закрыть"
           >
-            &times;
+            <CloseIcon />
           </button>
 
-          {/* Навигация (если больше 1 фото) */}
+          {/* Навигация */}
           {images.length > 1 && (
             <>
               <button
                 onClick={prevPhoto}
-                style={{
-                  position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-                  background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
-                  fontSize: '30px', cursor: 'pointer', padding: '15px', borderRadius: '50%',
-                  zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 50, height: 50
-                }}
+                style={{ ...buttonStyle, left: '20px', top: '50%', transform: 'translateY(-50%)', width: '56px', height: '56px' }}
                 aria-label="Назад"
               >
-                &#10094;
+                <ChevronLeftIcon />
               </button>
               <button
                 onClick={nextPhoto}
-                style={{
-                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                  background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
-                  fontSize: '30px', cursor: 'pointer', padding: '15px', borderRadius: '50%',
-                  zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 50, height: 50
-                }}
+                style={{ ...buttonStyle, right: '20px', top: '50%', transform: 'translateY(-50%)', width: '56px', height: '56px' }}
                 aria-label="Вперед"
               >
-                &#10095;
+                <ChevronRightIcon />
               </button>
             </>
           )}
@@ -138,20 +131,22 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={images[photoIndex]}
-            alt={`Full size ${photoIndex + 1}`}
+            alt={`Фото ${photoIndex + 1}`}
             style={{
-              maxWidth: '90vw', maxHeight: '90vh',
+              maxWidth: '92vw', maxHeight: '92vh',
               objectFit: 'contain', userSelect: 'none',
-              boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
             }}
-            onClick={(e) => e.stopPropagation()} // Клик по картинке не закрывает
+            onClick={(e) => e.stopPropagation()} 
           />
           
-          {/* Счетчик */}
+          {/* Счетчик (Слева внизу) */}
           <div style={{
-            position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
-            color: '#fff', fontSize: '14px', opacity: 0.8,
-            background: 'rgba(0,0,0,0.5)', padding: '4px 12px', borderRadius: '20px'
+            position: 'absolute', bottom: '20px', left: '20px',
+            color: '#fff', fontSize: '14px', fontWeight: 600,
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            padding: '8px 16px', borderRadius: '30px'
           }}>
             {photoIndex + 1} / {images.length}
           </div>
