@@ -75,6 +75,22 @@ type CompanyProfile = {
   logo_url: string | null;
 };
 
+type LeadItem = {
+  id: number;
+  company_id: number;
+  kind: "service" | "product" | "custom";
+  service_id: number | null;
+  product_id: number | null;
+  custom_title: string | null;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  message: string | null;
+  status: "new" | "in_work" | "done" | "spam";
+  source: string;
+  created_at: string;
+};
+
 type PickedPhoto = {
   name: string;
   size: number;
@@ -278,8 +294,14 @@ export default function PricePage() {
   const [savingProfile, setSavingProfile] = useState<boolean>(false);
 
   // ===== sections/tabs =====
-  const [activeMainTab, setActiveMainTab] = useState<"catalog" | "company">("catalog");
+  const [activeMainTab, setActiveMainTab] = useState<"catalog" | "company" | "leads">("catalog");
   const [activeCatalogTab, setActiveCatalogTab] = useState<"products" | "services">("products");
+
+  // ===== Leads =====
+  const [leads, setLeads] = useState<LeadItem[]>([]);
+  const [leadsStatus, setLeadsStatus] = useState<string>("");
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [leadsError, setLeadsError] = useState<string>("");
 
   // ===== Company profile form =====
   const [pName, setPName] = useState("");
@@ -550,6 +572,30 @@ export default function PricePage() {
     setCatalogSvcCat((prev) => prev || firstSvcCat);
   }
 
+  async function loadLeads() {
+    setLeadsError("");
+    setLeadsLoading(true);
+    try {
+      const q = leadsStatus ? `?status=${encodeURIComponent(leadsStatus)}` : "";
+      const data = await jget(`${API}/company-leads${q}`);
+      setLeads(Array.isArray(data?.items) ? data.items : []);
+    } catch (e: any) {
+      setLeadsError(e?.message || String(e));
+    } finally {
+      setLeadsLoading(false);
+    }
+  }
+
+  async function setLeadStatus(id: number, status: LeadItem["status"]) {
+    setLeadsError("");
+    try {
+      await jreq(`${API}/company-leads/${id}`, "PATCH", { status });
+      await loadLeads();
+    } catch (e: any) {
+      setLeadsError(e?.message || String(e));
+    }
+  }
+
   useEffect(() => {
     (async () => {
       try {
@@ -574,6 +620,12 @@ export default function PricePage() {
     if (kind !== "product") return;
     setProductId("");
   }, [productCategoryId, kind]);
+
+  useEffect(() => {
+    if (activeMainTab !== "leads") return;
+    loadLeads();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMainTab, leadsStatus]);
 
   async function addItem() {
     setErr(null);
@@ -736,6 +788,9 @@ export default function PricePage() {
             <button type="button" className={`${styles.navItem} ${activeMainTab === "company" ? styles.navItemActive : ""}`} onClick={() => setActiveMainTab("company")}>
               <span className={styles.navIcon}>🏢</span><span className={styles.navLabel}>О компании</span>
             </button>
+            <button type="button" className={`${styles.navItem} ${activeMainTab === "leads" ? styles.navItemActive : ""}`} onClick={() => setActiveMainTab("leads")}>
+              <span className={styles.navIcon}>📨</span><span className={styles.navLabel}>Заявки</span>
+            </button>
           </nav>
           <div className={styles.sidebarBottom}>
             <div className={styles.progressTitle}>Заполненность профиля</div>
@@ -747,7 +802,9 @@ export default function PricePage() {
       <main className={styles.main}>
         <div className={styles.topbar}>
           <div>
-            <h1 className={styles.h1}>{activeMainTab === "catalog" ? "Товары и услуги" : "О компании"}</h1>
+            <h1 className={styles.h1}>
+              {activeMainTab === "catalog" ? "Товары и услуги" : activeMainTab === "company" ? "О компании" : "Заявки"}
+            </h1>
             <div className={styles.sub}>{me ? <><b>{companyTitle}</b> · {me.company.region_name} · {verified ? "✅ проверенная" : "⏳ не проверенная"}</> : "Загрузка…"}</div>
           </div>
           <div className={styles.topbarActions}>
@@ -759,6 +816,7 @@ export default function PricePage() {
         <div className={styles.mobileTabs}>
           <button type="button" className={activeMainTab === "catalog" ? styles.btnPrimary : styles.btnGhost} onClick={() => setActiveMainTab("catalog")}>Товары и услуги</button>
           <button type="button" className={activeMainTab === "company" ? styles.btnPrimary : styles.btnGhost} onClick={() => setActiveMainTab("company")}>О компании</button>
+          <button type="button" className={activeMainTab === "leads" ? styles.btnPrimary : styles.btnGhost} onClick={() => setActiveMainTab("leads")}>Заявки</button>
         </div>
 
         <div className={styles.content}>
@@ -911,6 +969,77 @@ export default function PricePage() {
                   );
                 })}
                 {!filteredItems.length && <div className={styles.empty}>Пока нет позиций (или фильтр всё скрыл).</div>}
+              </div>
+            </div>
+          )}
+
+          {/* ===================== LEADS ===================== */}
+          {activeMainTab === "leads" && (
+            <div className={styles.card}>
+              <div className={styles.cardHead}>
+                <h2 className={styles.h2}>Заявки</h2>
+                <div className={styles.leadsControls}>
+                  <select className={styles.input} value={leadsStatus} onChange={(e) => setLeadsStatus(e.target.value)}>
+                    <option value="">Все</option>
+                    <option value="new">Новые</option>
+                    <option value="in_work">В работе</option>
+                    <option value="done">Закрытые</option>
+                    <option value="spam">Спам</option>
+                  </select>
+                  <button type="button" className={styles.btnGhost} onClick={loadLeads}>Обновить</button>
+                </div>
+              </div>
+
+              {leadsError ? <div className={styles.err}>Ошибка: {leadsError}</div> : null}
+              {leadsLoading ? <div className={styles.hint}>Загрузка…</div> : null}
+
+              <div style={{ width: "100%", overflowX: "auto" }}>
+                <table className={styles.catalogTable}>
+                  <thead className={styles.catalogThead}>
+                    <tr>
+                      <th>ID</th>
+                      <th>Дата</th>
+                      <th>Контакт</th>
+                      <th>Сообщение</th>
+                      <th>Статус</th>
+                      <th>Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody className={styles.catalogTbody}>
+                    {leads.map((lead) => {
+                      const contact = [lead.contact_name, lead.phone, lead.email].filter(Boolean).join(" · ") || "—";
+                      const created = lead.created_at ? new Date(lead.created_at).toLocaleString() : "—";
+                      return (
+                        <tr key={lead.id}>
+                          <td>#{lead.id}</td>
+                          <td>{created}</td>
+                          <td>{contact}</td>
+                          <td>{lead.message || lead.custom_title || "—"}</td>
+                          <td>
+                            <span className={`${styles.leadStatus} ${styles[`leadStatus_${lead.status}`]}`}>
+                              {lead.status}
+                            </span>
+                          </td>
+                          <td>
+                            <div className={styles.leadsActions}>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "new")}>new</button>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "in_work")}>in_work</button>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "done")}>done</button>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "spam")}>spam</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!leads.length && !leadsLoading ? (
+                      <tr>
+                        <td colSpan={6}>
+                          <div className={styles.empty}>Пока заявок нет.</div>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

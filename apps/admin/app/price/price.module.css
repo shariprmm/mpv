@@ -810,6 +810,49 @@
   border-bottom: none;
 }
 
+.leadsControls {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.leadsActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.leadStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.leadStatus_new {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.leadStatus_in_work {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.leadStatus_done {
+  background: rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+.leadStatus_spam {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
 .catalogPhotoCell {
   width: 64px;
 }
