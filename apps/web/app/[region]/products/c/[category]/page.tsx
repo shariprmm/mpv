@@ -555,6 +555,12 @@ export default async function ProductsCategoryPage({
     categorySeo?.seo_text && String(categorySeo.seo_text).trim()
       ? renderTemplate(String(categorySeo.seo_text), ctx)
       : "";
+  const seoParagraphs = seoTextRendered
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const seoTop = seoParagraphs[0] ?? "";
+  const seoBottom = seoParagraphs.slice(1).join("\n\n");
 
   return (
     <div className={styles.container}>
@@ -570,7 +576,7 @@ export default async function ProductsCategoryPage({
 
       <div className={styles.padX}>
         <h1 className={styles.h1}>{h1}</h1>
-        {seoTextRendered ? <div className={styles.seoText}>{seoTextRendered}</div> : null}
+        {seoTop ? <div className={styles.seoText}>{seoTop}</div> : null}
       </div>
 
       {parents.length ? (
@@ -641,13 +647,13 @@ export default async function ProductsCategoryPage({
             })
           )}
         </div>
-
-        <div className={styles.backRow}>
-          <Link href={`/${region}`} className={styles.backLink}>
-            ← На главную региона
-          </Link>
-        </div>
       </section>
+
+      {seoBottom ? (
+        <div className={styles.padX}>
+          <div className={styles.seoText}>{seoBottom}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -266,21 +266,6 @@
   text-overflow: ellipsis;
 }
 
-/* низ */
-.backRow {
-  margin-top: 18px;
-}
-
-.backLink {
-  text-decoration: none;
-  color: inherit;
-  font-weight: 400;
-}
-
-.backLink:hover {
-  text-decoration: underline;
-}
-
 /* адаптив */
 @media (max-width: 700px) {
   .h1 {
