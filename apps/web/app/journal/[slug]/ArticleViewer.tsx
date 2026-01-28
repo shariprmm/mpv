@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import styles from "./page.module.css";
 
-// Иконки (можно вынести в отдельные компоненты, но для компактности оставим тут)
+// Иконки
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 );
@@ -21,29 +21,49 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [images, setImages] = useState<string[]>([]);
 
-  // Парсинг картинок и навешивание обработчиков
+  // 1. Собираем массив картинок при загрузке контента
   useEffect(() => {
     if (!contentRef.current) return;
     const imgNodes = contentRef.current.querySelectorAll("img");
+    
+    // Исключаем системные/мелкие картинки
     const imgArray = Array.from(imgNodes).filter(img => 
-      !img.classList.contains("emoji") && img.getAttribute("src")
+      !img.classList.contains("emoji") && 
+      img.getAttribute("src")
     );
+    
     const urls = imgArray.map(img => img.getAttribute("src") || "");
     setImages(urls);
+  }, [htmlContent]);
 
-    imgArray.forEach((img, index) => {
-      img.style.cursor = "zoom-in";
-      img.onclick = (e) => {
-        e.preventDefault();
+  // 2. Обработчик клика через ДЕЛЕГИРОВАНИЕ (вешаем на контейнер)
+  const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    
+    // Проверяем, кликнули ли по картинке
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      
+      // Пропускаем смайлики
+      if (img.classList.contains("emoji")) return;
+
+      e.preventDefault();
+      
+      // Находим индекс этой картинки в нашем массиве images
+      const src = img.getAttribute("src") || "";
+      const index = images.findIndex(url => url === src);
+      
+      if (index !== -1) {
         setPhotoIndex(index);
         setIsOpen(true);
-      };
-    });
-
-    return () => {
-      imgArray.forEach(img => img.onclick = null);
-    };
-  }, [htmlContent]);
+      } else {
+        // Если вдруг не нашли (например, динамическая подгрузка), открываем эту одну
+        setImages([src]);
+        setPhotoIndex(0);
+        setIsOpen(true);
+      }
+    }
+  }, [images]);
 
   // Управление лайтбоксом
   const closeLightbox = useCallback(() => setIsOpen(false), []);
@@ -65,7 +85,6 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
       if (e.key === "ArrowLeft") prevPhoto();
     };
     window.addEventListener("keydown", handler);
-    // Блокируем скролл страницы
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener("keydown", handler);
@@ -73,7 +92,7 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
     };
   }, [isOpen, nextPhoto, prevPhoto, closeLightbox]);
 
-  // Общие стили для кнопок
+  // Стили кнопок
   const buttonStyle: React.CSSProperties = {
     position: 'absolute',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -85,9 +104,14 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
 
   return (
     <>
-      <div ref={contentRef} className={styles.articleBody} dangerouslySetInnerHTML={{ __html: htmlContent }} />
+      <div 
+        ref={contentRef} 
+        className={styles.articleBody} 
+        onClickCapture={handleContentClick} // ✅ Перехватываем клик на уровне контейнера
+        dangerouslySetInnerHTML={{ __html: htmlContent }} 
+      />
 
-      {/* Встроенный Lightbox */}
+      {/* Лайтбокс */}
       {isOpen && (
         <div 
           style={{
@@ -98,7 +122,6 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
           }}
           onClick={closeLightbox}
         >
-          {/* Кнопка закрытия (Слева вверху) */}
           <button
             onClick={closeLightbox}
             style={{ ...buttonStyle, top: '20px', left: '20px', width: '44px', height: '44px' }}
@@ -107,7 +130,6 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
             <CloseIcon />
           </button>
 
-          {/* Навигация */}
           {images.length > 1 && (
             <>
               <button
@@ -127,7 +149,6 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
             </>
           )}
 
-          {/* Изображение */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={images[photoIndex]}
@@ -140,7 +161,6 @@ export function ArticleViewer({ htmlContent }: { htmlContent: string }) {
             onClick={(e) => e.stopPropagation()} 
           />
           
-          {/* Счетчик (Слева внизу) */}
           <div style={{
             position: 'absolute', bottom: '20px', left: '20px',
             color: '#fff', fontSize: '14px', fontWeight: 600,
