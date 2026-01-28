@@ -36,6 +36,7 @@
   grid-template-columns: minmax(0, 1fr) 360px; /* Контент + Сайдбар */
   gap: 24px;
   align-items: start;
+  margin-bottom: 32px;
 }
 
 .mainColumn {
@@ -98,6 +99,8 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 6px;
+  display: flex;
+  gap: 12px;
 }
 
 /* подхватываем любые img внутри GalleryLightbox */
@@ -105,8 +108,8 @@
    Модалка (открытая фотка) не должна попадать под эти правила. */
 .thumbsWrap :global(button img),
 .thumbsWrap :global(a img) {
-  width: 96px !important;
-  height: 72px !important;
+  width: 140px !important;
+  height: 104px !important;
   object-fit: cover;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -116,6 +119,7 @@
 .thumbsWrap :global(button),
 .thumbsWrap :global(a) {
   display: inline-flex;
+  flex: 0 0 auto;
 }
 
 
@@ -200,6 +204,7 @@
   padding: 24px;
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06); /* Более выраженная тень */
+  box-sizing: border-box;
 }
 
 .priceRow {
@@ -231,6 +236,7 @@
   font-weight: 600;
   margin-bottom: 20px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .summaryBtn {
@@ -246,6 +252,7 @@
   text-decoration: none;
   font-size: 16px;
   transition: opacity 0.2s, transform 0.1s;
+  box-sizing: border-box;
 }
 
 .summaryBtn:hover {
