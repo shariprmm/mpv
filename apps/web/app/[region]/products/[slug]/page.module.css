@@ -62,10 +62,7 @@
 
 /* --- Блок Фотографий --- */
 .galleryBlock {
-  padding: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+  composes: cardBlock;
 }
 
 .galleryWide {
@@ -349,8 +346,8 @@
 }
 
 .thumbsWrap :global(.mpvGalleryImg) {
-  width: 140px !important;
-  height: 104px !important;
+  width: 96px !important;
+  height: 72px !important;
   object-fit: cover;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);
