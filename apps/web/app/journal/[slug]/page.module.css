@@ -146,50 +146,42 @@
   border-radius: 8px;
   margin: 24px 0;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  cursor: zoom-in; /* ✅ Курсор лупы */
 }
 
-/* apps/web/app/journal/[slug]/page.module.css */
-
-/* ... (предыдущие стили без изменений до .articleBody img) ... */
-
-/* Картинки внутри текста */
-.articleBody img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin: 24px 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  cursor: zoom-in; /* ✅ Показываем, что можно кликнуть */
-}
-
-/* Галерея после 4-го абзаца */
+/* Галерея после 4-го абзаца (Горизонтальный скролл) */
 .gallery {
-  display: flex; /* ✅ В один ряд */
-  overflow-x: auto; /* ✅ Горизонтальный скролл */
+  display: flex; /* ✅ В ряд */
+  flex-wrap: nowrap; /* Запрет переноса */
+  overflow-x: auto; /* Горизонтальный скролл */
   gap: 16px;
-  margin: 28px 0 36px;
+  margin: 32px 0;
   padding-bottom: 12px; /* Место под скроллбар */
+  max-width: 100%; /* Ограничение ширины контейнера */
   
-  /* Скролл-снаппинг для удобства на мобильных */
-  scroll-snap-type: x mandatory; 
+  /* Плавность скролла */
+  scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   
-  /* Скрываем скроллбар, если хочется эстетики, но оставим для доступности */
-  /* scrollbar-width: thin; */
+  /* Опционально: скрыть скроллбар для эстетики */
+  /* scrollbar-width: none; */
 }
+
+/* Опционально: скрыть скроллбар в Chrome/Safari */
+/* .gallery::-webkit-scrollbar { display: none; } */
 
 .galleryItem {
   margin: 0;
-  flex: 0 0 auto; /* ✅ Не сжимать */
-  width: 280px; /* ✅ Фиксированная ширина карточки */
-  aspect-ratio: 4 / 3;
+  flex: 0 0 auto; /* ✅ Не сжимать элементы */
+  width: 280px; /* ✅ Фиксированная ширина картинки */
+  aspect-ratio: 4 / 3; /* Соотношение сторон */
   
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #f5f5f5;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  scroll-snap-align: center; /* Центрируем при скролле */
-  cursor: zoom-in;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  scroll-snap-align: start;
+  cursor: zoom-in; /* ✅ Курсор лупы */
 }
 
 .galleryImg {
@@ -200,21 +192,19 @@
   transition: transform 0.3s ease;
 }
 
-/* Эффект при наведении (только для десктопа) */
+/* Эффект при наведении (только десктоп) */
 @media (hover: hover) {
   .galleryItem:hover .galleryImg {
     transform: scale(1.05);
   }
 }
 
-/* На мобильных галерея на всю ширину */
+/* На мобильных чуть шире, чтобы было видно, что есть продолжение */
 @media (max-width: 600px) {
   .galleryItem {
-    width: 85vw; /* Почти на весь экран */
+    width: 85vw; 
   }
 }
-
-/* ... (остальные стили: цитаты, cta, sidebar...) */
 
 /* Цитаты */
 .articleBody blockquote {
@@ -259,7 +249,6 @@
 }
 
 .sideTitle {
-  font-size: 16px;
   font-weight: 700;
   margin-bottom: 16px;
   text-transform: uppercase;
@@ -296,4 +285,3 @@
   border-top: 1px solid #eee;
   border-radius: 0 0 8px 8px;
 }
-
