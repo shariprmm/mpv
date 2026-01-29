@@ -98,6 +98,8 @@ type PickedPhoto = {
   dataUrl: string;
 };
 
+type SpecRow = { name: string; value: string };
+
 async function jget(url: string) {
   const r = await fetch(url, { credentials: "include", cache: "no-store" });
   const txt = await r.text();
@@ -140,6 +142,60 @@ function toNumOrNull(v: any): number | null {
 function fmtRub(n: number | null | undefined) {
   if (n === null || n === undefined) return "—";
   return String(n);
+}
+
+function slugifyRu(input: string) {
+  const s = String(input || "").trim().toLowerCase();
+  const map: Record<string, string> = {
+    а: "a",
+    б: "b",
+    в: "v",
+    г: "g",
+    д: "d",
+    е: "e",
+    ё: "e",
+    ж: "zh",
+    з: "z",
+    и: "i",
+    й: "y",
+    к: "k",
+    л: "l",
+    м: "m",
+    н: "n",
+    о: "o",
+    п: "p",
+    р: "r",
+    с: "s",
+    т: "t",
+    у: "u",
+    ф: "f",
+    х: "h",
+    ц: "ts",
+    ч: "ch",
+    ш: "sh",
+    щ: "sch",
+    ъ: "",
+    ы: "y",
+    ь: "",
+    э: "e",
+    ю: "yu",
+    я: "ya",
+  };
+
+  return (
+    s
+      .split("")
+      .map((ch) => map[ch] ?? ch)
+      .join("")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+  );
+}
+
+function formatPriceForSeo(price: number | null) {
+  if (price == null) return "";
+  return new Intl.NumberFormat("ru-RU").format(price);
 }
 
 const SITE =
@@ -326,6 +382,12 @@ export default function PricePage() {
   const [productId, setProductId] = useState<string>("");
   const [priceMin, setPriceMin] = useState<string>("");
   const [showAdd, setShowAdd] = useState(false);
+  const [createNewProduct, setCreateNewProduct] = useState(false);
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductSlug, setNewProductSlug] = useState("");
+  const [newProductDescription, setNewProductDescription] = useState("");
+  const [newProductSpecs, setNewProductSpecs] = useState<SpecRow[]>([]);
+  const [newProductCover, setNewProductCover] = useState<PickedPhoto | null>(null);
 
   // price list UI
   const [priceDraft, setPriceDraft] = useState<Record<number, string>>({});
@@ -477,6 +539,12 @@ export default function PricePage() {
     setPriceMin("");
     setServiceId("");
     setProductId("");
+    setCreateNewProduct(false);
+    setNewProductName("");
+    setNewProductSlug("");
+    setNewProductDescription("");
+    setNewProductSpecs([]);
+    setNewProductCover(null);
   }
 
   async function onPickCompanyPhotos(files: FileList | null) {
@@ -502,6 +570,36 @@ export default function PricePage() {
   }
   function removePickedCompanyPhoto(idx: number) {
     setPickedCompanyPhotos((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function onPickProductCover(file: File | null) {
+    if (!file) return;
+    setErr(null);
+    const fileType = String(file.type || "").toLowerCase();
+    if (!["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"].includes(fileType)) {
+      setErr("Поддерживаются только изображения PNG/JPG/WEBP/SVG.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErr("Размер файла не должен превышать 5 МБ.");
+      return;
+    }
+    const dataUrl = await fileToDataUrl(file);
+    setNewProductCover({ name: file.name, size: file.size, type: file.type, dataUrl });
+  }
+
+  function updateSpecRow(idx: number, field: "name" | "value", value: string) {
+    setNewProductSpecs((prev) =>
+      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
+    );
+  }
+
+  function addSpecRow() {
+    setNewProductSpecs((prev) => (prev.length >= 10 ? prev : [...prev, { name: "", value: "" }]));
+  }
+
+  function removeSpecRow(idx: number) {
+    setNewProductSpecs((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function loadAll() {
@@ -622,6 +720,16 @@ export default function PricePage() {
   }, [productCategoryId, kind]);
 
   useEffect(() => {
+    if (kind === "product") return;
+    setCreateNewProduct(false);
+  }, [kind]);
+
+  useEffect(() => {
+    if (!createNewProduct) return;
+    setNewProductSlug(slugifyRu(newProductName));
+  }, [newProductName, createNewProduct]);
+
+  useEffect(() => {
     if (activeMainTab !== "leads") return;
     loadLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -630,11 +738,68 @@ export default function PricePage() {
   async function addItem() {
     setErr(null);
     try {
-      if (kind === "product" && !productId) { setErr("Выбери товар."); return; }
+      const priceValue = toNumOrNull(priceMin);
+      let productIdToUse = productId;
+
+      if (kind === "product" && createNewProduct) {
+        const trimmedName = newProductName.trim();
+        const trimmedDesc = newProductDescription.trim();
+        if (!productCategoryId) { setErr("Выбери категорию товара."); return; }
+        if (!trimmedName) { setErr("Укажи название товара."); return; }
+        if (!trimmedDesc) { setErr("Добавь описание товара."); return; }
+        if (!newProductCover) { setErr("Загрузи cover-картинку товара."); return; }
+        if (priceValue == null) { setErr("Укажи цену товара."); return; }
+
+        const duplicate = products.find(
+          (p) => String(p.name || "").trim().toLowerCase() === trimmedName.toLowerCase()
+        );
+        if (duplicate) {
+          setErr("Товар с таким названием уже существует. Выбери его из списка.");
+          return;
+        }
+
+        const coverUpload = await jreq(`${API}/company/upload-image`, "POST", {
+          dataUrl: newProductCover.dataUrl,
+          filename: newProductCover.name,
+          prefix: `product-cover-${me?.company?.id || "company"}`,
+        });
+
+        const priceLabel = formatPriceForSeo(priceValue);
+        const seoTitle = `${trimmedName} — ${companyTitle} ${regionName}. Цена от ${priceLabel} ₽`;
+        const seoH1 = `${trimmedName} от ${companyTitle} в ${regionName}`;
+        const seoDescription =
+          `Купить ${trimmedName} от компании ${companyTitle} в регионе ${regionName}. ` +
+          `Цена от ${priceLabel} ₽.`;
+
+        const specs = newProductSpecs
+          .map((row) => ({ name: row.name.trim(), value: row.value.trim() }))
+          .filter((row) => row.name && row.value)
+          .slice(0, 10);
+
+        const created = await jreq(`${API}/products`, "POST", {
+          name: trimmedName,
+          slug: newProductSlug || slugifyRu(trimmedName),
+          category_id: Number(productCategoryId),
+          description: trimmedDesc,
+          cover_image: coverUpload?.url,
+          specs,
+          seo_h1: seoH1,
+          seo_title: seoTitle,
+          seo_description: seoDescription,
+        });
+
+        productIdToUse = created?.item?.id ? String(created.item.id) : "";
+        if (!productIdToUse) {
+          setErr("Не удалось создать товар. Попробуй ещё раз.");
+          return;
+        }
+      }
+
+      if (kind === "product" && !productIdToUse) { setErr("Выбери товар."); return; }
       if (kind === "service" && !serviceId) { setErr("Выбери услугу."); return; }
-      const body: any = { kind, price_min: toNumOrNull(priceMin), price_max: null };
+      const body: any = { kind, price_min: priceValue, price_max: null };
       if (kind === "service") body.service_id = serviceId ? Number(serviceId) : null;
-      if (kind === "product") body.product_id = productId ? Number(productId) : null;
+      if (kind === "product") body.product_id = productIdToUse ? Number(productIdToUse) : null;
       await jreq(`${API}/company-items`, "POST", body);
       await loadAll();
       resetNewItemForm();
@@ -703,6 +868,12 @@ export default function PricePage() {
   const verified = me?.company?.is_verified;
   const regionName = me?.company?.region_name || "";
   const addressText = pAddress || profile?.address || "";
+
+  const duplicateProduct = useMemo(() => {
+    const target = newProductName.trim().toLowerCase();
+    if (!target) return null;
+    return products.find((p) => String(p.name || "").trim().toLowerCase() === target) || null;
+  }, [newProductName, products]);
 
   const filteredItems = useMemo(() => {
     const q = itemsQuery.trim().toLowerCase();
@@ -1087,7 +1258,7 @@ export default function PricePage() {
         {showAdd && (
           <div className={styles.drawerOverlay} role="dialog" aria-modal="true">
             <div className={styles.drawer}>
-              <div className={styles.drawerHead}><div><div className={styles.drawerTitle}>Добавить позицию</div><div className={styles.drawerSub}>Выбери товар или услугу из базы и укажи цену.</div></div><button className={styles.btnGhost} onClick={() => setShowAdd(false)}>Закрыть</button></div>
+              <div className={styles.drawerHead}><div><div className={styles.drawerTitle}>Добавить позицию</div><div className={styles.drawerSub}>Добавь услугу или товар с ценой. Для товара можно создать карточку с нуля.</div></div><button className={styles.btnGhost} onClick={() => setShowAdd(false)}>Закрыть</button></div>
               <div className={styles.formGrid}>
                 <div className={styles.field}><div className={styles.label}>Тип</div><select className={styles.input} value={kind} onChange={(e) => setKind(e.target.value as any)}><option value="service">Услуга</option><option value="product">Товар</option></select></div>
                 {kind === "service" && (
@@ -1100,9 +1271,62 @@ export default function PricePage() {
                   <>
                     <div className={styles.field}><div className={styles.label}>Категория товара</div><select className={styles.input} value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}><option value="">— выбери категорию —</option>{productCategoryOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select></div>
                     <div className={`${styles.field} ${styles.fieldWide}`}>
-                      <div className={styles.label}>Товар</div><select className={styles.input} value={productId} onChange={(e) => setProductId(e.target.value)}><option value="">— выбери товар —</option>{filteredProductsForAdd.map((p) => (<option key={String(p.id)} value={String(p.id)}>{p.name}</option>))}</select>
-                      {productCategoryId && filteredProductsForAdd.length === 0 && (<div className={styles.hint}>В этой категории пока нет товаров. Проверь category_id у товара в БД/API.</div>)}
+                      <div className={styles.label}>Создать новый товар</div>
+                      <label className={styles.toggleRow}>
+                        <input type="checkbox" checked={createNewProduct} onChange={(e) => setCreateNewProduct(e.target.checked)} />
+                        <span>Создать товар с нуля</span>
+                      </label>
                     </div>
+                    {!createNewProduct && (
+                      <div className={`${styles.field} ${styles.fieldWide}`}>
+                        <div className={styles.label}>Товар</div><select className={styles.input} value={productId} onChange={(e) => setProductId(e.target.value)}><option value="">— выбери товар —</option>{filteredProductsForAdd.map((p) => (<option key={String(p.id)} value={String(p.id)}>{p.name}</option>))}</select>
+                        {productCategoryId && filteredProductsForAdd.length === 0 && (<div className={styles.hint}>В этой категории пока нет товаров. Проверь category_id у товара в БД/API.</div>)}
+                      </div>
+                    )}
+                    {createNewProduct && (
+                      <>
+                        <div className={`${styles.field} ${styles.fieldWide}`}>
+                          <div className={styles.label}>Название товара</div>
+                          <input className={`${styles.input} ${duplicateProduct ? styles.inputError : ""}`} value={newProductName} onChange={(e) => setNewProductName(e.target.value)} placeholder="Напр. Пластиковые окна" />
+                          {duplicateProduct && (<div className={styles.fieldError}>Товар с таким названием уже существует.</div>)}
+                        </div>
+                        <div className={styles.field}>
+                          <div className={styles.label}>Slug</div>
+                          <input className={styles.input} value={newProductSlug} readOnly />
+                          <div className={styles.hint}>Slug генерируется автоматически.</div>
+                        </div>
+                        <div className={`${styles.field} ${styles.fieldWide}`}>
+                          <div className={styles.label}>Описание товара (каноничное)</div>
+                          <textarea className={`${styles.input} ${styles.textarea}`} value={newProductDescription} onChange={(e) => setNewProductDescription(e.target.value)} placeholder="Каноничное описание товара" />
+                        </div>
+                        <div className={`${styles.field} ${styles.fieldWide}`}>
+                          <div className={styles.label}>Cover-картинка товара</div>
+                          <div className={styles.coverRow}>
+                            <input className={styles.input} type="file" accept="image/*" onChange={(e) => onPickProductCover(e.target.files?.[0] || null)} />
+                            {newProductCover && (
+                              <div className={styles.coverPreview}>
+                                <img src={newProductCover.dataUrl} alt="cover-preview" />
+                                <button type="button" className={styles.photoDel} onClick={() => setNewProductCover(null)} title="Убрать">×</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`${styles.field} ${styles.fieldWide}`}>
+                          <div className={styles.label}>Характеристики (до 10)</div>
+                          <div className={styles.specsList}>
+                            {newProductSpecs.map((row, idx) => (
+                              <div key={`spec-${idx}`} className={styles.specRow}>
+                                <input className={styles.input} value={row.name} onChange={(e) => updateSpecRow(idx, "name", e.target.value)} placeholder="Название" />
+                                <input className={styles.input} value={row.value} onChange={(e) => updateSpecRow(idx, "value", e.target.value)} placeholder="Значение" />
+                                <button type="button" className={styles.specRemove} onClick={() => removeSpecRow(idx)}>×</button>
+                              </div>
+                            ))}
+                          </div>
+                          <button type="button" className={styles.btnGhost} onClick={addSpecRow} disabled={newProductSpecs.length >= 10}>Добавить характеристику</button>
+                          <div className={styles.hint}>SEO (h1/title/description) генерируется автоматически из названия компании, региона и цены.</div>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
                 <div className={styles.field}><div className={styles.label}>Цена от, ₽</div><input className={styles.input} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Напр. 1500" inputMode="decimal" /></div>

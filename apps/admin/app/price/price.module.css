@@ -268,6 +268,63 @@
   min-height: 86px;
 }
 
+.toggleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #1f2430;
+  border: 1px solid rgba(31, 36, 48, 0.14);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.coverRow {
+  display: grid;
+  gap: 12px;
+}
+
+.coverPreview {
+  position: relative;
+  width: 180px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 36, 48, 0.12);
+  background: #fff;
+}
+
+.coverPreview img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.specsList {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.specRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 40px;
+  gap: 8px;
+  align-items: center;
+}
+
+.specRemove {
+  border: 1px solid rgba(31, 36, 48, 0.14);
+  background: #fff;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
 .hint {
   margin-top: 6px;
   font-size: 12px;

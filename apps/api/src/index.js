@@ -2209,23 +2209,59 @@ app.post(
   "/products",
   aw(async (req, res) => {
     try {
-      const name = String(req.body?.name || "").trim();
-      const slug = String(req.body?.slug || "").trim();
+      const name = sanitizeText(req.body?.name, 500);
+      const slugRaw = cleanStr(req.body?.slug);
       const categoryId = Number(req.body?.category_id || 0);
 
       if (!name) return res.status(400).json({ ok: false, error: "bad_name" });
-      if (!slug) return res.status(400).json({ ok: false, error: "bad_slug" });
       if (!Number.isFinite(categoryId) || categoryId <= 0)
         return res.status(400).json({ ok: false, error: "bad_category_id" });
 
       const c = await pool.query("select slug from product_categories where id=$1", [categoryId]);
       const category = c.rows?.[0]?.slug || "general";
 
+      const slugBase = slugifyRu(slugRaw || name);
+      if (!slugBase) return res.status(400).json({ ok: false, error: "bad_slug" });
+
+      const dupeName = await pool.query(
+        "select id from products where lower(trim(name))=lower(trim($1)) limit 1",
+        [name]
+      );
+      if (dupeName.rowCount) return res.status(409).json({ ok: false, error: "name_exists" });
+
+      let slug = slugBase;
+      for (let i = 0; i < 50; i++) {
+        const dupe = await pool.query("select id from products where slug=$1 limit 1", [slug]);
+        if (!dupe.rowCount) break;
+        slug = `${slugBase}-${i + 1}`;
+      }
+
+      const description = sanitizeText(req.body?.description, 50000);
+      const cover_image = cleanStr(req.body?.cover_image);
+      let specs = undefined;
+      if (req.body?.specs !== undefined) specs = normalizeSpecs(req.body?.specs);
+      const seo_h1 = sanitizeText(req.body?.seo_h1, 300);
+      const seo_title = sanitizeText(req.body?.seo_title, 700);
+      const seo_description = sanitizeText(req.body?.seo_description, 1500);
+      const seo_text = sanitizeText(req.body?.seo_text, 50000);
+
       const ins = await pool.query(
-        `insert into products (name, slug, category, category_id)
-         values ($1,$2,$3,$4)
+        `insert into products (name, slug, category, category_id, description, cover_image, specs, seo_h1, seo_title, seo_description, seo_text)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
          returning id, name, slug, category, category_id`,
-        [name, slug, category, categoryId]
+        [
+          name,
+          slug,
+          category,
+          categoryId,
+          description ?? null,
+          cover_image ?? null,
+          specs ? JSON.stringify(specs) : null,
+          seo_h1 ?? null,
+          seo_title ?? null,
+          seo_description ?? null,
+          seo_text ?? null,
+        ]
       );
 
       res.json({ ok: true, item: ins.rows[0] });
@@ -2725,6 +2761,34 @@ app.patch(
     `;
     const r = await pool.query(q, vals);
     return res.json({ ok: true, company: r.rows[0] });
+  })
+);
+
+/* =========================================================
+   COMPANY: UPLOAD IMAGE
+   POST /company/upload-image
+   body: { dataUrl, filename, prefix }
+========================================================= */
+app.post(
+  "/company/upload-image",
+  requireAuth,
+  aw(async (req, res) => {
+    const dataUrl = req.body?.dataUrl;
+    const filename = req.body?.filename || "image.jpg";
+    const prefixRaw = String(req.body?.prefix || "company").trim();
+
+    if (!dataUrl) return res.status(400).json({ ok: false, error: "no_dataUrl" });
+
+    const prefix = prefixRaw.replace(/[^a-z0-9-_]+/gi, "-").slice(0, 60) || "company";
+    const saved = await saveDataUrlImageGeneric({
+      prefix,
+      dataUrl,
+      filenameHint: filename,
+      maxBytes: 5 * 1024 * 1024,
+    });
+
+    if (!saved.ok) return res.status(400).json({ ok: false, error: saved.error || "upload_failed" });
+    return res.json({ ok: true, url: saved.url });
   })
 );
 
