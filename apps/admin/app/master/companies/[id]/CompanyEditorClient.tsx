@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
 type AnyObj = Record<string, any>;
@@ -82,8 +83,10 @@ const btnDanger =
 
 export default function CompanyEditorClient(props: { item: AnyObj; apiBase: string }) {
   const { item, apiBase } = props;
+  const router = useRouter();
 
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [msg, setMsg] = useState("");
 
   const initial = useMemo(() => {
@@ -94,6 +97,7 @@ export default function CompanyEditorClient(props: { item: AnyObj; apiBase: stri
       description: asStr(item.description ?? item.about),
       phone: asStr(item.phone ?? item.tel),
       email: asStr(item.email),
+      registration_email: asStr(item.registration_email ?? item.registrationEmail),
       website: asStr(item.website ?? item.site),
       address: asStr(item.address ?? item.addr),
       city: asStr(item.city ?? item.city_name),
@@ -178,6 +182,27 @@ export default function CompanyEditorClient(props: { item: AnyObj; apiBase: stri
     }
   }
 
+  async function handleDelete() {
+    if (!confirm(`Удалить компанию #${f.id}? Это действие нельзя отменить.`)) return;
+    setDeleting(true);
+    setMsg("");
+    try {
+      const r = await fetch(`${apiBase}/master/companies/${f.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const raw = await r.text();
+      const j = raw ? JSON.parse(raw) : null;
+      if (!r.ok || !j?.ok) throw new Error(j?.error || "delete_failed");
+      router.push("/master/companies");
+      router.refresh();
+    } catch (e: any) {
+      setMsg(`Ошибка: ${e.message}`);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const logoPreview = toPublicUploadsUrl(f.logo_url);
   const coverPreview = toPublicUploadsUrl(f.cover_image);
   const photosPreview = (f.photos || []).map(toPublicUploadsUrl).filter(Boolean);
@@ -203,6 +228,14 @@ export default function CompanyEditorClient(props: { item: AnyObj; apiBase: stri
           >
             ← Назад к списку
           </Link>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-600 shadow-sm transition-all hover:border-red-300 hover:bg-red-50 active:scale-95 disabled:opacity-50"
+          >
+            {deleting ? "Удаление..." : "Удалить"}
+          </button>
           <button
             onClick={save}
             disabled={saving}
@@ -265,6 +298,15 @@ export default function CompanyEditorClient(props: { item: AnyObj; apiBase: stri
                 />
               </Field>
             </div>
+
+            <Field label="Регистрационный email">
+              <input
+                value={f.registration_email}
+                onChange={(e) => setF({ ...f, registration_email: e.target.value })}
+                className={inputBase}
+                placeholder="Email пользователя-владельца"
+              />
+            </Field>
 
             <Field label="Веб-сайт">
               <input

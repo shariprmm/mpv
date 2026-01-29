@@ -259,6 +259,13 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
             ${selExpr(m.description ? qCol("c", m.description) : null, "description")},
             ${selExpr(m.phone ? qCol("c", m.phone) : null, "phone")},
             ${selExpr(m.email ? qCol("c", m.email) : null, "email")},
+            (
+              SELECT u.email
+              FROM company_users u
+              WHERE u.company_id = c.id
+              ORDER BY (u.role = 'owner') DESC, u.id ASC
+              LIMIT 1
+            ) as registration_email,
             ${selExpr(m.website ? qCol("c", m.website) : null, "website")},
             ${selExpr(m.address ? qCol("c", m.address) : null, "address")},
             ${selExpr(m.city ? qCol("c", m.city) : null, "city")},
@@ -306,6 +313,13 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
             ${selExpr(m.description ? qCol("c", m.description) : null, "description")},
             ${selExpr(m.phone ? qCol("c", m.phone) : null, "phone")},
             ${selExpr(m.email ? qCol("c", m.email) : null, "email")},
+            (
+              SELECT u.email
+              FROM company_users u
+              WHERE u.company_id = c.id
+              ORDER BY (u.role = 'owner') DESC, u.id ASC
+              LIMIT 1
+            ) as registration_email,
             ${selExpr(m.website ? qCol("c", m.website) : null, "website")},
             ${selExpr(m.address ? qCol("c", m.address) : null, "address")},
             ${selExpr(m.city ? qCol("c", m.city) : null, "city")},
@@ -350,6 +364,7 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
 
         const phone = cleanStr(req.body?.phone);
         const email = cleanStr(req.body?.email);
+        const registration_email = cleanStr(req.body?.registration_email);
         const website = cleanStr(req.body?.website);
 
         const address = sanitizeText(req.body?.address, 500);
@@ -429,6 +444,39 @@ export function registerMasterRoutes(app, pool, requireSuperadmin, helpers = {})
         putJsonb(m.photos, photos);
 
         if (m.is_verified) put(m.is_verified, is_verified);
+
+        if (registration_email !== undefined) {
+          const normalizedEmail = registration_email ? registration_email.toLowerCase() : null;
+          if (normalizedEmail && !normalizedEmail.includes("@")) {
+            return res.status(400).json({ ok: false, error: "bad_registration_email" });
+          }
+          if (normalizedEmail) {
+            const exists = await pool.query(
+              "SELECT id FROM company_users WHERE email=$1 AND company_id <> $2 LIMIT 1",
+              [normalizedEmail, id]
+            );
+            if (exists.rowCount) {
+              return res.status(409).json({ ok: false, error: "registration_email_exists" });
+            }
+          }
+          const user = await pool.query(
+            `
+            SELECT id
+            FROM company_users
+            WHERE company_id=$1
+            ORDER BY (role = 'owner') DESC, id ASC
+            LIMIT 1
+            `,
+            [id]
+          );
+          if (!user.rowCount) {
+            return res.status(404).json({ ok: false, error: "company_user_not_found" });
+          }
+          await pool.query("UPDATE company_users SET email=$1 WHERE id=$2", [
+            normalizedEmail,
+            user.rows[0].id,
+          ]);
+        }
 
         if (!sets.length) return res.json({ ok: true });
 
