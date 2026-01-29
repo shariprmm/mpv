@@ -11,9 +11,18 @@ const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
   "https://api.moydompro.ru";
 
+const SITE =
+  process.env.NEXT_PUBLIC_SITE_ORIGIN?.replace(/\/+$/, "") ||
+  "https://moydompro.ru";
+
 type IdLike = string | number;
 
-type Service = { id: IdLike; name: string; slug: string; category?: string | null };
+type Service = {
+  id: IdLike;
+  name: string;
+  slug: string;
+  category?: string | null;
+};
 
 type Product = {
   id: IdLike;
@@ -44,7 +53,6 @@ type CompanyItem = {
   custom_title?: string | null;
   service_name?: string | null;
   product_name?: string | null;
-
   description?: string | null;
   photos?: string[] | null;
 };
@@ -115,7 +123,11 @@ async function jget(url: string) {
   return data;
 }
 
-async function jreq(url: string, method: "POST" | "PATCH" | "DELETE", body?: any) {
+async function jreq(
+  url: string,
+  method: "POST" | "PATCH" | "DELETE",
+  body?: any
+) {
   const r = await fetch(url, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -133,6 +145,7 @@ async function jreq(url: string, method: "POST" | "PATCH" | "DELETE", body?: any
   return data;
 }
 
+// Ensure ReactQuill is loaded only on client
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 function toNumOrNull(v: any): number | null {
@@ -186,24 +199,19 @@ function slugifyRu(input: string) {
     я: "ya",
   };
 
-  return (
-    s
-      .split("")
-      .map((ch) => map[ch] ?? ch)
-      .join("")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-  );
+  return s
+    .split("")
+    .map((ch) => map[ch] ?? ch)
+    .join("")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function formatPriceForSeo(price: number | null) {
   if (price == null) return "";
   return new Intl.NumberFormat("ru-RU").format(price);
 }
-
-const SITE =
-  process.env.NEXT_PUBLIC_SITE_ORIGIN?.replace(/\/+$/, "") || "https://moydompro.ru";
 
 function absPublicUrl(p: string | null | undefined) {
   if (!p) return null;
@@ -235,7 +243,7 @@ function kindLabel(k: CompanyItem["kind"]) {
 }
 
 /* =========================
-   Work hours: chips + upsert
+   Work hours helpers
 ========================= */
 function normDashesSpaces(s: string) {
   return String(s || "")
@@ -281,15 +289,19 @@ function applyWorkHoursPreset(
   preset: "weekdays" | "daily" | "24" | "weekend" | "break"
 ) {
   const base = prev || "";
-  if (preset === "weekdays") return upsertBlock(base, "будни", "будни 10:00-19:00");
-  if (preset === "weekend") return upsertBlock(base, "выходные", "выходные 10:00-18:00");
-  if (preset === "break") return upsertBlock(base, "перерыв", "перерыв 12:00-13:00");
-  if (preset === "daily") return upsertBlock(base, "ежедневно", "ежедневно 10:00-19:00");
+  if (preset === "weekdays")
+    return upsertBlock(base, "будни", "будни 10:00-19:00");
+  if (preset === "weekend")
+    return upsertBlock(base, "выходные", "выходные 10:00-18:00");
+  if (preset === "break")
+    return upsertBlock(base, "перерыв", "перерыв 12:00-13:00");
+  if (preset === "daily")
+    return upsertBlock(base, "ежедневно", "ежедневно 10:00-19:00");
   return upsertBlock(base, "круглосуточно", "круглосуточно");
 }
 
 /* =========================
-   Phone mask + URL-only socials
+   Phone mask + Helpers
 ========================= */
 function digitsOnly(s: string) {
   return String(s || "").replace(/\D+/g, "");
@@ -320,17 +332,6 @@ function formatRuPhoneMasked(input: string) {
   return out;
 }
 
-function looksLikeUrl(v: string) {
-  const s = String(v || "").trim();
-  if (!s) return true;
-  try {
-    const u = new URL(s);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
 function normalizeUrl(v: string) {
   const s = String(v || "").trim();
   if (!s) return "";
@@ -353,17 +354,14 @@ export default function PricePage() {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [savingProfile, setSavingProfile] = useState<boolean>(false);
 
-  // ===== sections/tabs =====
   const [activeMainTab, setActiveMainTab] = useState<"catalog" | "company" | "leads">("catalog");
   const [activeCatalogTab, setActiveCatalogTab] = useState<"products" | "services">("products");
 
-  // ===== Leads =====
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [leadsStatus, setLeadsStatus] = useState<string>("");
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [leadsError, setLeadsError] = useState<string>("");
 
-  // ===== Company profile form =====
   const [pName, setPName] = useState("");
   const [pPhone, setPPhone] = useState("");
   const [pAddress, setPAddress] = useState("");
@@ -379,7 +377,6 @@ export default function PricePage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFileName, setLogoFileName] = useState<string>("");
 
-  // ===== Price add/edit =====
   const [kind, setKind] = useState<"service" | "product">("service");
   const [serviceCategory, setServiceCategory] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
@@ -393,18 +390,17 @@ export default function PricePage() {
   const [newProductSpecs, setNewProductSpecs] = useState<SpecRow[]>([]);
   const [newProductCover, setNewProductCover] = useState<PickedPhoto | null>(null);
 
-  // price list UI
   const [priceDraft, setPriceDraft] = useState<Record<number, string>>({});
+  // Used to keep text descriptions for edit modal if needed, currently implicit
   const [editDesc, setEditDesc] = useState<Record<number, string>>({});
 
   const [itemsKindFilter, setItemsKindFilter] = useState<"all" | "service" | "product">("all");
-  const [itemsCategoryFilter, setItemsCategoryFilter] = useState<string>(""); // "" = all
+  const [itemsCategoryFilter, setItemsCategoryFilter] = useState<string>("");
   const [itemsQuery, setItemsQuery] = useState("");
 
-  // ===== Catalog (products/services) =====
   const [catalogQuery, setCatalogQuery] = useState("");
-  const [catalogCatId, setCatalogCatId] = useState<string>(""); // for products filter
-  const [catalogSvcCat, setCatalogSvcCat] = useState<string>(""); // for services filter
+  const [catalogCatId, setCatalogCatId] = useState<string>("");
+  const [catalogSvcCat, setCatalogSvcCat] = useState<string>("");
 
   const serviceCategories = useMemo(() => {
     const set = new Set<string>();
@@ -461,10 +457,8 @@ export default function PricePage() {
 
   const filteredProductsForAdd = useMemo(() => {
     if (!productCategoryId) return products;
-
     const hasCategoryId = products.some((p) => p.category_id != null);
     if (!hasCategoryId) return products;
-
     return products.filter((p) => {
       const cid = Number(p.category_id || 0);
       return cid && selectedCatIds.has(cid);
@@ -474,7 +468,6 @@ export default function PricePage() {
   const titleByItem = useMemo(() => {
     const smap = new Map(services.map((s) => [String(s.id), s.name]));
     const pmap = new Map(products.map((p) => [String(p.id), p.name]));
-
     return (it: CompanyItem) => {
       if (it.kind === "service") {
         const key = it.service_id == null ? "" : String(it.service_id);
@@ -494,21 +487,19 @@ export default function PricePage() {
     return (id: number | null | undefined) => (id ? map.get(id) || "—" : "—");
   }, [productCategories]);
 
-  // ✅ Обновленная логика получения названия категории
   const categoryByItem = useMemo(() => {
     const sMap = new Map<string, string>();
     for (const s of services) sMap.set(String(s.id), normCat(s.category));
 
     const pMap = new Map<string, string>();
     for (const p of products) {
-        // Пробуем взять по category_id, если нет - fallback на текстовое поле category
-        let cName = "—";
-        if (p.category_id) {
-            cName = catNameById(p.category_id) || "—";
-        } else if (p.category) {
-            cName = p.category;
-        }
-        pMap.set(String(p.id), cName);
+      let cName = "—";
+      if (p.category_id) {
+        cName = catNameById(p.category_id) || "—";
+      } else if (p.category) {
+        cName = p.category;
+      }
+      pMap.set(String(p.id), cName);
     }
 
     return (it: CompanyItem) => {
@@ -518,19 +509,17 @@ export default function PricePage() {
     };
   }, [services, products, catNameById]);
 
-  // Вычисляем доступные категории для фильтра
   const availableCategories = useMemo(() => {
-      const set = new Set<string>();
-      const preFiltered = items.filter(it => {
-          if (itemsKindFilter !== 'all' && it.kind !== itemsKindFilter) return false;
-          return true;
-      });
-
-      for (const it of preFiltered) {
-          const cat = categoryByItem(it);
-          if (cat && cat !== "—") set.add(cat);
-      }
-      return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
+    const set = new Set<string>();
+    const preFiltered = items.filter((it) => {
+      if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
+      return true;
+    });
+    for (const it of preFiltered) {
+      const cat = categoryByItem(it);
+      if (cat && cat !== "—") set.add(cat);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
   }, [items, itemsKindFilter, categoryByItem]);
 
   useEffect(() => {
@@ -734,7 +723,6 @@ export default function PricePage() {
   useEffect(() => {
     if (activeMainTab !== "leads") return;
     loadLeads();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMainTab, leadsStatus]);
 
   async function addItem() {
@@ -883,7 +871,6 @@ export default function PricePage() {
       if (it.kind === "custom") return false;
       if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
       
-      // Проверка категории
       if (itemsCategoryFilter) {
           const cat = categoryByItem(it);
           if (cat !== itemsCategoryFilter) return false;
@@ -946,8 +933,7 @@ export default function PricePage() {
     return list;
   }, [services, catalogQuery, catalogSvcCat]);
 
-  return (
-    <div className={styles.shell}>
+  return <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarInner}>
           <div className={styles.brand}>
@@ -1100,7 +1086,6 @@ export default function PricePage() {
                   </select>
                 </div>
 
-                {/* ✅ Новый фильтр по категориям */}
                 <div className={styles.field} style={{ minWidth: 200 }}>
                   <div className={styles.label}>Категория</div>
                   <select className={styles.input} value={itemsCategoryFilter} onChange={(e) => setItemsCategoryFilter(e.target.value)}>
@@ -1127,11 +1112,9 @@ export default function PricePage() {
                           <div className={styles.rowTitleTop}>
                             <span className={`${styles.badge} ${styles["badge_" + it.kind]}`}>{kindLabel(it.kind)}</span>
                             <span className={styles.rowName}>{titleByItem(it)}</span>
-                            {/* ✅ Вывод названия категории */}
                             <span style={{ color: "#888", fontSize: "13px", marginLeft: "10px" }}>{categoryByItem(it)}</span>
                           </div>
                           <div className={styles.rowMeta}>
-                            {/* ✅ УБРАН ID, оставлен только статус сохранения */}
                             {savingId === it.id ? <span className={styles.savingInline}>сохранение…</span> : null}
                           </div>
                         </div>
@@ -1140,7 +1123,6 @@ export default function PricePage() {
                             <span className={styles.miniLabel}>Цена от, ₽</span>
                             <input className={styles.input} value={draft} onChange={(e) => setPriceDraft((prev) => ({ ...prev, [it.id]: e.target.value }))} onBlur={() => { const v = toNumOrNull(priceDraft[it.id] ?? draft); saveItemPrice(it, v); }} inputMode="decimal" />
                           </label>
-                          {/* ✅ УБРАН БЛОК "ИТОГО" */}
                         </div>
                         <div className={styles.rowActions}>
                           <button className={styles.btnGhost} onClick={() => delItem(it.id)}>Удалить</button>
@@ -1340,7 +1322,6 @@ export default function PricePage() {
                   </>
                 )}
                 <div className={styles.field}><div className={styles.label}>Цена от, ₽</div><input className={styles.input} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Напр. 1500" inputMode="decimal" /></div>
-                </div>
               </div>
             </div>
             <div className={styles.drawerFooter}><button className={styles.btnGhost} onClick={() => { resetNewItemForm(); setShowAdd(false); }}>Отмена</button><button className={styles.btnPrimary} onClick={addItem}>Добавить</button></div>
@@ -1348,5 +1329,4 @@ export default function PricePage() {
         )}
       </main>
     </div>
-  );
 }
