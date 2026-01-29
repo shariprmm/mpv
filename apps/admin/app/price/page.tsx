@@ -2,7 +2,9 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import React, { useEffect, useMemo, useState } from "react";
+import "react-quill/dist/quill.snow.css";
 import styles from "./price.module.css";
 
 const API =
@@ -130,6 +132,8 @@ async function jreq(url: string, method: "POST" | "PATCH" | "DELETE", body?: any
   if (!r.ok) throw new Error(data?.error || data?.message || `HTTP ${r.status}`);
   return data;
 }
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 function toNumOrNull(v: any): number | null {
   if (v === null || v === undefined) return null;
@@ -1330,6 +1334,7 @@ export default function PricePage() {
                   </>
                 )}
                 <div className={styles.field}><div className={styles.label}>Цена от, ₽</div><input className={styles.input} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Напр. 1500" inputMode="decimal" /></div>
+                </div>
               </div>
               <div className={styles.drawerFooter}><button className={styles.btnGhost} onClick={() => { resetNewItemForm(); setShowAdd(false); }}>Отмена</button><button className={styles.btnPrimary} onClick={addItem}>Добавить</button></div>
             </div>
