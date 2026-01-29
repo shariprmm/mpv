@@ -202,14 +202,6 @@ function formatPriceForSeo(price: number | null) {
   return new Intl.NumberFormat("ru-RU").format(price);
 }
 
-function stripHtmlText(value: string) {
-  return String(value || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 const SITE =
   process.env.NEXT_PUBLIC_SITE_ORIGIN?.replace(/\/+$/, "") || "https://moydompro.ru";
 
@@ -756,10 +748,9 @@ export default function PricePage() {
       if (kind === "product" && createNewProduct) {
         const trimmedName = newProductName.trim();
         const trimmedDesc = newProductDescription.trim();
-        const descText = stripHtmlText(trimmedDesc);
         if (!productCategoryId) { setErr("Выбери категорию товара."); return; }
         if (!trimmedName) { setErr("Укажи название товара."); return; }
-        if (!descText) { setErr("Добавь описание товара."); return; }
+        if (!trimmedDesc) { setErr("Добавь описание товара."); return; }
         if (!newProductCover) { setErr("Загрузи cover-картинку товара."); return; }
         if (priceValue == null) { setErr("Укажи цену товара."); return; }
 
@@ -1280,8 +1271,7 @@ export default function PricePage() {
           <div className={styles.drawerOverlay} role="dialog" aria-modal="true">
             <div className={styles.drawer}>
               <div className={styles.drawerHead}><div><div className={styles.drawerTitle}>Добавить позицию</div><div className={styles.drawerSub}>Добавь услугу или товар с ценой. Для товара можно создать карточку с нуля.</div></div><button className={styles.btnGhost} onClick={() => setShowAdd(false)}>Закрыть</button></div>
-              <div className={styles.drawerBody}>
-                <div className={styles.formGrid}>
+              <div className={styles.formGrid}>
                 <div className={styles.field}><div className={styles.label}>Тип</div><select className={styles.input} value={kind} onChange={(e) => setKind(e.target.value as any)}><option value="service">Услуга</option><option value="product">Товар</option></select></div>
                 {kind === "service" && (
                   <>
@@ -1312,11 +1302,14 @@ export default function PricePage() {
                           <input className={`${styles.input} ${duplicateProduct ? styles.inputError : ""}`} value={newProductName} onChange={(e) => setNewProductName(e.target.value)} placeholder="Напр. Пластиковые окна" />
                           {duplicateProduct && (<div className={styles.fieldError}>Товар с таким названием уже существует.</div>)}
                         </div>
+                        <div className={styles.field}>
+                          <div className={styles.label}>Slug</div>
+                          <input className={styles.input} value={newProductSlug} readOnly />
+                          <div className={styles.hint}>Slug генерируется автоматически.</div>
+                        </div>
                         <div className={`${styles.field} ${styles.fieldWide}`}>
                           <div className={styles.label}>Описание товара (каноничное)</div>
-                          <div className={styles.editor}>
-                            <ReactQuill theme="snow" value={newProductDescription} onChange={setNewProductDescription} placeholder="Каноничное описание товара" />
-                          </div>
+                          <textarea className={`${styles.input} ${styles.textarea}`} value={newProductDescription} onChange={(e) => setNewProductDescription(e.target.value)} placeholder="Каноничное описание товара" />
                         </div>
                         <div className={`${styles.field} ${styles.fieldWide}`}>
                           <div className={styles.label}>Cover-картинка товара</div>
