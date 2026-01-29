@@ -1340,6 +1340,7 @@ export default function PricePage() {
                   </>
                 )}
                 <div className={styles.field}><div className={styles.label}>Цена от, ₽</div><input className={styles.input} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Напр. 1500" inputMode="decimal" /></div>
+                </div>
               </div>
             </div>
             <div className={styles.drawerFooter}><button className={styles.btnGhost} onClick={() => { resetNewItemForm(); setShowAdd(false); }}>Отмена</button><button className={styles.btnPrimary} onClick={addItem}>Добавить</button></div>
