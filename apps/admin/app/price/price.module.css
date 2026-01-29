@@ -268,23 +268,6 @@
   min-height: 86px;
 }
 
-.editor :global(.ql-toolbar) {
-  border-radius: 14px 14px 0 0;
-  border: 1px solid rgba(31, 36, 48, 0.14);
-}
-
-.editor :global(.ql-container) {
-  border-radius: 0 0 14px 14px;
-  border: 1px solid rgba(31, 36, 48, 0.14);
-  border-top: none;
-  min-height: 140px;
-  font-size: 14px;
-}
-
-.editor :global(.ql-editor) {
-  min-height: 140px;
-}
-
 .toggleRow {
   display: inline-flex;
   align-items: center;
