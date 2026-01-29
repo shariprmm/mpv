@@ -391,7 +391,6 @@ export default function PricePage() {
   const [newProductCover, setNewProductCover] = useState<PickedPhoto | null>(null);
 
   const [priceDraft, setPriceDraft] = useState<Record<number, string>>({});
-  // Used to keep text descriptions for edit modal if needed, currently implicit
   const [editDesc, setEditDesc] = useState<Record<number, string>>({});
 
   const [itemsKindFilter, setItemsKindFilter] = useState<"all" | "service" | "product">("all");
@@ -1086,6 +1085,7 @@ export default function PricePage() {
                   </select>
                 </div>
 
+                {/* ✅ Новый фильтр по категориям */}
                 <div className={styles.field} style={{ minWidth: 200 }}>
                   <div className={styles.label}>Категория</div>
                   <select className={styles.input} value={itemsCategoryFilter} onChange={(e) => setItemsCategoryFilter(e.target.value)}>
@@ -1112,9 +1112,11 @@ export default function PricePage() {
                           <div className={styles.rowTitleTop}>
                             <span className={`${styles.badge} ${styles["badge_" + it.kind]}`}>{kindLabel(it.kind)}</span>
                             <span className={styles.rowName}>{titleByItem(it)}</span>
+                            {/* ✅ Вывод названия категории */}
                             <span style={{ color: "#888", fontSize: "13px", marginLeft: "10px" }}>{categoryByItem(it)}</span>
                           </div>
                           <div className={styles.rowMeta}>
+                            {/* ✅ УБРАН ID, оставлен только статус сохранения */}
                             {savingId === it.id ? <span className={styles.savingInline}>сохранение…</span> : null}
                           </div>
                         </div>
@@ -1123,6 +1125,7 @@ export default function PricePage() {
                             <span className={styles.miniLabel}>Цена от, ₽</span>
                             <input className={styles.input} value={draft} onChange={(e) => setPriceDraft((prev) => ({ ...prev, [it.id]: e.target.value }))} onBlur={() => { const v = toNumOrNull(priceDraft[it.id] ?? draft); saveItemPrice(it, v); }} inputMode="decimal" />
                           </label>
+                          {/* ✅ УБРАН БЛОК "ИТОГО" */}
                         </div>
                         <div className={styles.rowActions}>
                           <button className={styles.btnGhost} onClick={() => delItem(it.id)}>Удалить</button>
@@ -1280,16 +1283,14 @@ export default function PricePage() {
                         <div className={`${styles.field} ${styles.fieldWide}`}>
                           <div className={styles.label}>Название товара</div>
                           <input className={`${styles.input} ${duplicateProduct ? styles.inputError : ""}`} value={newProductName} onChange={(e) => setNewProductName(e.target.value)} placeholder="Напр. Пластиковые окна" />
+                          <div className={styles.hint}>С таким названием товар будет отображаться в каталоге.</div>
                           {duplicateProduct && (<div className={styles.fieldError}>Товар с таким названием уже существует. Выбери его из списка.</div>)}
                         </div>
-                        <div className={styles.field}>
-                          <div className={styles.label}>Slug</div>
-                          <input className={styles.input} value={newProductSlug} readOnly />
-                          <div className={styles.hint}>Slug генерируется автоматически.</div>
-                        </div>
+                        {/* Slug hidden intentionally */}
                         <div className={`${styles.field} ${styles.fieldWide}`}>
                           <div className={styles.label}>Описание товара (каноничное)</div>
                           <textarea className={`${styles.input} ${styles.textarea}`} value={newProductDescription} onChange={(e) => setNewProductDescription(e.target.value)} placeholder="Каноничное описание товара" />
+                          <div className={styles.hint}>Опиши преимущества и характеристики. Это важно для SEO.</div>
                         </div>
                         <div className={`${styles.field} ${styles.fieldWide}`}>
                           <div className={styles.label}>Cover-картинка товара</div>
@@ -1302,6 +1303,7 @@ export default function PricePage() {
                               </div>
                             )}
                           </div>
+                          <div className={styles.hint}>Первое фото, которое увидит клиент.</div>
                         </div>
                         <div className={`${styles.field} ${styles.fieldWide}`}>
                           <div className={styles.label}>Характеристики (до 10)</div>
@@ -1315,7 +1317,7 @@ export default function PricePage() {
                             ))}
                           </div>
                           <button type="button" className={styles.btnGhost} onClick={addSpecRow} disabled={newProductSpecs.length >= 10}>Добавить характеристику</button>
-                          <div className={styles.hint}>SEO (h1/title/description) генерируется автоматически из названия компании, региона и цены.</div>
+                          <div className={styles.hint}>Например: Объем - 5 л, Вес - 10 кг.</div>
                         </div>
                       </>
                     )}
