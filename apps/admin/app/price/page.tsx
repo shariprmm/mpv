@@ -906,11 +906,19 @@ export default function PricePage() {
       const stack = [catId];
       while (stack.length) {
         const cur = stack.pop()!;
-        if (out.has(cur)) continue; out.add(cur);
+        if (out.has(cur)) {
+          continue;
+        }
+        out.add(cur);
         const kids = catChildren.get(cur) || [];
-        for (const k of kids) stack.push(k);
+        for (const k of kids) {
+          stack.push(k);
+        }
       }
-      list = list.filter((p) => { const cid = Number(p.category_id || 0); return cid && out.has(cid); });
+      list = list.filter((p) => {
+        const cid = Number(p.category_id || 0);
+        return cid && out.has(cid);
+      });
     }
     if (q) {
       list = list.filter((p) => {

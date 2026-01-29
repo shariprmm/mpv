@@ -1031,6 +1031,21 @@
     padding: 14px;
   }
 
+  .drawerOverlay {
+    padding: 0;
+  }
+
+  .drawer {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .drawerBody {
+    padding: 14px;
+  }
+
   /* ✅ FIX: grid-areas должны быть в 1 колонку (иначе ломает и “Удалить” наезжает на инпут) */
   .rowMain {
     grid-template-columns: 1fr;
