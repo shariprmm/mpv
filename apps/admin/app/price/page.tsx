@@ -406,8 +406,6 @@ export default function PricePage() {
   const [catalogCatId, setCatalogCatId] = useState<string>(""); // for products filter
   const [catalogSvcCat, setCatalogSvcCat] = useState<string>(""); // for services filter
 
-  // modal: edit product/service (removed)
-
   const serviceCategories = useMemo(() => {
     const set = new Set<string>();
     for (const s of services) set.add(normCat(s.category));
@@ -1300,7 +1298,7 @@ export default function PricePage() {
                         <div className={`${styles.field} ${styles.fieldWide}`}>
                           <div className={styles.label}>Название товара</div>
                           <input className={`${styles.input} ${duplicateProduct ? styles.inputError : ""}`} value={newProductName} onChange={(e) => setNewProductName(e.target.value)} placeholder="Напр. Пластиковые окна" />
-                          {duplicateProduct && (<div className={styles.fieldError}>Товар с таким названием уже существует.</div>)}
+                          {duplicateProduct && (<div className={styles.fieldError}>Товар с таким названием уже существует. Выбери его из списка.</div>)}
                         </div>
                         <div className={styles.field}>
                           <div className={styles.label}>Slug</div>
@@ -1342,10 +1340,9 @@ export default function PricePage() {
                   </>
                 )}
                 <div className={styles.field}><div className={styles.label}>Цена от, ₽</div><input className={styles.input} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Напр. 1500" inputMode="decimal" /></div>
-                </div>
               </div>
-              <div className={styles.drawerFooter}><button className={styles.btnGhost} onClick={() => { resetNewItemForm(); setShowAdd(false); }}>Отмена</button><button className={styles.btnPrimary} onClick={addItem}>Добавить</button></div>
             </div>
+            <div className={styles.drawerFooter}><button className={styles.btnGhost} onClick={() => { resetNewItemForm(); setShowAdd(false); }}>Отмена</button><button className={styles.btnPrimary} onClick={addItem}>Добавить</button></div>
           </div>
         )}
       </main>
