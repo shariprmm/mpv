@@ -1,4 +1,4 @@
-// apps/admin/app/price/page.tsx
+// apps/admin/app/price/PricePage.tsx
 "use client";
 
 import Link from "next/link";
