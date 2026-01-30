@@ -1,23 +1,10 @@
+// apps/admin/app/price/AddItemForm.tsx
 import React from "react";
 import styles from "./AddItemForm.module.css";
-import baseStyles from "./price.module.css";
 
-type IdLike = string | number;
-
-type Service = {
-  id: IdLike;
-  name: string;
-};
-
-type Product = {
-  id: IdLike;
-  name: string;
-};
-
-type ProductCategoryOption = {
-  value: string;
-  label: string;
-};
+// Типы дублируем или импортируем из page.tsx, если они экспортируются
+// Для автономности компонента лучше, если типы пропсов определены здесь.
+// (Предполагаем, что типы сущностей PickedPhoto и SpecRow уже определены или импортированы)
 
 type PickedPhoto = {
   name: string;
@@ -28,6 +15,10 @@ type PickedPhoto = {
 
 type SpecRow = { name: string; value: string };
 
+type Service = { id: string | number; name: string };
+type Product = { id: string | number; name: string };
+type CategoryOption = { value: string; label: string }; // Для унификации
+
 type Props = {
   kind: "service" | "product";
   setKind: (value: "service" | "product") => void;
@@ -37,7 +28,8 @@ type Props = {
   serviceId: string;
   setServiceId: (value: string) => void;
   filteredServicesForAdd: Service[];
-  productCategoryOptions: ProductCategoryOption[];
+  
+  productCategoryOptions: { value: string; label: string }[];
   productCategoryId: string;
   setProductCategoryId: (value: string) => void;
   createNewProduct: boolean;
@@ -46,6 +38,7 @@ type Props = {
   setProductId: (value: string) => void;
   filteredProductsForAdd: Product[];
   duplicateProduct: boolean;
+  
   newProductName: string;
   setNewProductName: (value: string) => void;
   newProductDescription: string;
@@ -53,10 +46,12 @@ type Props = {
   newProductCover: PickedPhoto | null;
   setNewProductCover: (value: PickedPhoto | null) => void;
   onPickProductCover: (file: File | null) => void;
+  
   newProductSpecs: SpecRow[];
   updateSpecRow: (index: number, field: "name" | "value", value: string) => void;
   removeSpecRow: (index: number) => void;
   addSpecRow: () => void;
+  
   priceMin: string;
   setPriceMin: (value: string) => void;
   onClose: () => void;
@@ -64,176 +59,201 @@ type Props = {
   onAdd: () => void;
 };
 
-export default function AddItemForm({
-  kind,
-  setKind,
-  serviceCategories,
-  serviceCategory,
-  setServiceCategory,
-  serviceId,
-  setServiceId,
-  filteredServicesForAdd,
-  productCategoryOptions,
-  productCategoryId,
-  setProductCategoryId,
-  createNewProduct,
-  setCreateNewProduct,
-  productId,
-  setProductId,
-  filteredProductsForAdd,
-  duplicateProduct,
-  newProductName,
-  setNewProductName,
-  newProductDescription,
-  setNewProductDescription,
-  newProductCover,
-  setNewProductCover,
-  onPickProductCover,
-  newProductSpecs,
-  updateSpecRow,
-  removeSpecRow,
-  addSpecRow,
-  priceMin,
-  setPriceMin,
-  onClose,
-  onCancel,
-  onAdd,
-}: Props) {
+export default function AddItemForm(props: Props) {
+  const {
+    kind, setKind,
+    serviceCategories, serviceCategory, setServiceCategory,
+    serviceId, setServiceId, filteredServicesForAdd,
+    productCategoryOptions, productCategoryId, setProductCategoryId,
+    createNewProduct, setCreateNewProduct,
+    productId, setProductId, filteredProductsForAdd,
+    duplicateProduct,
+    newProductName, setNewProductName,
+    newProductDescription, setNewProductDescription,
+    newProductCover, setNewProductCover, onPickProductCover,
+    newProductSpecs, updateSpecRow, removeSpecRow, addSpecRow,
+    priceMin, setPriceMin,
+    onClose, onCancel, onAdd
+  } = props;
+
   return (
-    <div className={styles.drawerOverlay} role="dialog" aria-modal="true">
+    <div className={styles.drawerOverlay} role="dialog" aria-modal="true" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.drawer}>
+        
+        {/* HEADER */}
         <div className={styles.drawerHead}>
           <div>
             <div className={styles.drawerTitle}>Добавить позицию</div>
-            <div className={styles.drawerSub}>Добавь услугу или товар с ценой. Для товара можно создать карточку с нуля.</div>
+            <div className={styles.drawerSub}>
+              {kind === "service" ? "Добавление услуги в прайс-лист." : "Добавление товара в каталог."}
+            </div>
           </div>
-          <button className={baseStyles.btnGhost} onClick={onClose}>Закрыть</button>
+          <button className={styles.closeBtn} onClick={onClose}>×</button>
         </div>
-        <div className={baseStyles.formGrid}>
-          <div className={baseStyles.field}>
-            <div className={baseStyles.label}>Тип</div>
-            <select className={baseStyles.input} value={kind} onChange={(e) => setKind(e.target.value as "service" | "product")}>
-              <option value="service">Услуга</option>
-              <option value="product">Товар</option>
-            </select>
-          </div>
-          {kind === "service" && (
-            <>
-              <div className={baseStyles.field}>
-                <div className={baseStyles.label}>Категория</div>
-                <select className={baseStyles.input} value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value)}>
-                  {serviceCategories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-              <div className={`${baseStyles.field} ${baseStyles.fieldWide}`}>
-                <div className={baseStyles.label}>Услуга</div>
-                <select className={baseStyles.input} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-                  {filteredServicesForAdd.map((s) => (
-                    <option key={String(s.id)} value={String(s.id)}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
-          {kind === "product" && (
-            <>
-              <div className={baseStyles.field}>
-                <div className={baseStyles.label}>Категория товара</div>
-                <select className={baseStyles.input} value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
-                  <option value="">— выбери категорию —</option>
-                  {productCategoryOptions.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className={`${baseStyles.field} ${baseStyles.fieldWide}`}>
-                <div className={baseStyles.label}>Создать новый товар</div>
-                <label className={baseStyles.toggleRow}>
-                  <input type="checkbox" checked={createNewProduct} onChange={(e) => setCreateNewProduct(e.target.checked)} />
-                  <span>Создать товар с нуля</span>
-                </label>
-              </div>
-              {!createNewProduct && (
-                <div className={`${baseStyles.field} ${baseStyles.fieldWide}`}>
-                  <div className={baseStyles.label}>Товар</div>
-                  <select className={baseStyles.input} value={productId} onChange={(e) => setProductId(e.target.value)}>
-                    <option value="">— выбери товар —</option>
-                    {filteredProductsForAdd.map((p) => (
-                      <option key={String(p.id)} value={String(p.id)}>{p.name}</option>
+
+        {/* BODY */}
+        <div className={styles.drawerBody}>
+          <div className={styles.grid}>
+            
+            {/* Тип позиции */}
+            <div className={styles.field}>
+              <label className={styles.label}>Тип</label>
+              <select className={styles.select} value={kind} onChange={(e) => setKind(e.target.value as "service" | "product")}>
+                <option value="service">Услуга</option>
+                <option value="product">Товар</option>
+              </select>
+            </div>
+
+            {/* --- УСЛУГА --- */}
+            {kind === "service" && (
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Категория</label>
+                  <select className={styles.select} value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value)}>
+                    {serviceCategories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
-                  {productCategoryId && filteredProductsForAdd.length === 0 && (
-                    <div className={baseStyles.hint}>В этой категории пока нет товаров. Проверь category_id у товара в БД/API.</div>
-                  )}
                 </div>
-              )}
-              {createNewProduct && (
-                <>
-                  <div className={`${baseStyles.field} ${baseStyles.fieldWide}`}>
-                    <div className={baseStyles.label}>Название товара</div>
-                    <input
-                      className={`${baseStyles.input} ${duplicateProduct ? baseStyles.inputError : ""}`}
-                      value={newProductName}
-                      onChange={(e) => setNewProductName(e.target.value)}
-                      placeholder="Напр. Пластиковые окна"
-                    />
-                    <div className={baseStyles.hint}>С таким названием товар будет отображаться в каталоге.</div>
-                    {duplicateProduct && (
-                      <div className={baseStyles.fieldError}>Товар с таким названием уже существует. Выбери его из списка.</div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Услуга</label>
+                  <select className={styles.select} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                    {filteredServicesForAdd.map((s) => (
+                      <option key={String(s.id)} value={String(s.id)}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* --- ТОВАР --- */}
+            {kind === "product" && (
+              <>
+                <div className={styles.field}>
+                  <label className={styles.label}>Категория товара</label>
+                  <select className={styles.select} value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
+                    <option value="">— Выберите категорию —</option>
+                    {productCategoryOptions.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.toggleLabel}>
+                    <input type="checkbox" checked={createNewProduct} onChange={(e) => setCreateNewProduct(e.target.checked)} />
+                    <span className={styles.toggleText}>Создать новый товар с нуля</span>
+                  </label>
+                </div>
+
+                {!createNewProduct ? (
+                  /* Выбор существующего */
+                  <div className={styles.field}>
+                    <label className={styles.label}>Товар</label>
+                    <select className={styles.select} value={productId} onChange={(e) => setProductId(e.target.value)}>
+                      <option value="">— Выберите товар —</option>
+                      {filteredProductsForAdd.map((p) => (
+                        <option key={String(p.id)} value={String(p.id)}>{p.name}</option>
+                      ))}
+                    </select>
+                    {productCategoryId && filteredProductsForAdd.length === 0 && (
+                      <div className={styles.hint}>В этой категории нет товаров. Создайте новый.</div>
                     )}
                   </div>
-                  <div className={`${baseStyles.field} ${baseStyles.fieldWide}`}>
-                    <div className={baseStyles.label}>Описание товара (каноничное)</div>
-                    <textarea
-                      className={`${baseStyles.input} ${baseStyles.textarea}`}
-                      value={newProductDescription}
-                      onChange={(e) => setNewProductDescription(e.target.value)}
-                      placeholder="Каноничное описание товара"
-                    />
-                    <div className={baseStyles.hint}>Опиши преимущества и характеристики. Это важно для SEO.</div>
-                  </div>
-                  <div className={`${baseStyles.field} ${baseStyles.fieldWide}`}>
-                    <div className={baseStyles.label}>Cover-картинка товара</div>
-                    <div className={baseStyles.coverRow}>
-                      <input className={baseStyles.input} type="file" accept="image/*" onChange={(e) => onPickProductCover(e.target.files?.[0] || null)} />
-                      {newProductCover && (
-                        <div className={baseStyles.coverPreview}>
-                          <img src={newProductCover.dataUrl} alt="cover-preview" />
-                          <button type="button" className={baseStyles.photoDel} onClick={() => setNewProductCover(null)} title="Убрать">×</button>
+                ) : (
+                  /* Создание нового */
+                  <>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Название товара</label>
+                      <input
+                        className={`${styles.input} ${duplicateProduct ? styles.inputError : ""}`}
+                        value={newProductName}
+                        onChange={(e) => setNewProductName(e.target.value)}
+                        placeholder="Например: Септик Топас 5"
+                      />
+                      {duplicateProduct && <div className={styles.errorText}>Такой товар уже существует.</div>}
+                      <div className={styles.hint}>Название должно быть уникальным в категории.</div>
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>Описание</label>
+                      <textarea
+                        className={styles.textarea}
+                        value={newProductDescription}
+                        onChange={(e) => setNewProductDescription(e.target.value)}
+                        placeholder="Краткое описание характеристик и преимуществ..."
+                      />
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>Фотография (Cover)</label>
+                      {!newProductCover ? (
+                        <div className={styles.uploadBox}>
+                          <label className={styles.uploadBtn}>
+                            <input type="file" className={styles.fileInput} accept="image/*" onChange={(e) => onPickProductCover(e.target.files?.[0] || null)} />
+                            📁 Выбрать файл
+                          </label>
+                          <span className={styles.hint}>PNG, JPG, WEBP до 5Мб</span>
+                        </div>
+                      ) : (
+                        <div className={styles.preview}>
+                          <img src={newProductCover.dataUrl} alt="preview" className={styles.previewImg} />
+                          <span style={{ fontSize: 13, flexGrow: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{newProductCover.name}</span>
+                          <button onClick={() => setNewProductCover(null)} className={styles.removeBtn}>×</button>
                         </div>
                       )}
                     </div>
-                    <div className={baseStyles.hint}>Первое фото, которое увидит клиент.</div>
-                  </div>
-                  <div className={`${baseStyles.field} ${baseStyles.fieldWide}`}>
-                    <div className={baseStyles.label}>Характеристики (до 10)</div>
-                    <div className={baseStyles.specsList}>
-                      {newProductSpecs.map((row, idx) => (
-                        <div key={`spec-${idx}`} className={baseStyles.specRow}>
-                          <input className={baseStyles.input} value={row.name} onChange={(e) => updateSpecRow(idx, "name", e.target.value)} placeholder="Название" />
-                          <input className={baseStyles.input} value={row.value} onChange={(e) => updateSpecRow(idx, "value", e.target.value)} placeholder="Значение" />
-                          <button type="button" className={baseStyles.specRemove} onClick={() => removeSpecRow(idx)}>×</button>
-                        </div>
-                      ))}
+
+                    <div className={styles.field}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <label className={styles.label}>Характеристики</label>
+                        <button className={styles.specBtn} onClick={addSpecRow} disabled={newProductSpecs.length >= 10}>
+                          + Добавить строку
+                        </button>
+                      </div>
+                      
+                      <div className={styles.specsList}>
+                        {newProductSpecs.map((row, idx) => (
+                          <div key={idx} className={styles.specRow}>
+                            <input className={styles.input} value={row.name} onChange={(e) => updateSpecRow(idx, "name", e.target.value)} placeholder="Название (Объем)" />
+                            <input className={styles.input} value={row.value} onChange={(e) => updateSpecRow(idx, "value", e.target.value)} placeholder="Значение (5 л)" />
+                            <button className={styles.removeBtn} onClick={() => removeSpecRow(idx)}>×</button>
+                          </div>
+                        ))}
+                        {newProductSpecs.length === 0 && (
+                          <div className={styles.hint} style={{textAlign: 'center', padding: 10, background: '#f9f9f9', borderRadius: 8}}>
+                            Нет характеристик. Нажмите «Добавить строку».
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <button type="button" className={baseStyles.btnGhost} onClick={addSpecRow} disabled={newProductSpecs.length >= 10}>Добавить характеристику</button>
-                    <div className={baseStyles.hint}>Например: Объем - 5 л, Вес - 10 кг.</div>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-          <div className={baseStyles.field}>
-            <div className={baseStyles.label}>Цена от, ₽</div>
-            <input className={baseStyles.input} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Напр. 1500" inputMode="decimal" />
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Цена */}
+            <div className={styles.field}>
+              <label className={styles.label}>Цена от (₽)</label>
+              <input
+                className={styles.input}
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value)}
+                placeholder="0"
+                inputMode="decimal"
+              />
+              <div className={styles.hint}>Укажите минимальную цену. В каталоге будет отображаться "от ... ₽"</div>
+            </div>
+
           </div>
         </div>
-      </div>
-      <div className={styles.drawerFooter}>
-        <button className={baseStyles.btnGhost} onClick={onCancel}>Отмена</button>
-        <button className={baseStyles.btnPrimary} onClick={onAdd}>Добавить</button>
+
+        {/* FOOTER */}
+        <div className={styles.drawerFooter}>
+          <button className={styles.btnGhost} onClick={onCancel}>Отмена</button>
+          <button className={styles.btnPrimary} onClick={onAdd}>Добавить</button>
+        </div>
+
       </div>
     </div>
   );
