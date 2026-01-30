@@ -1,6 +1,9 @@
+// app/login/page.tsx
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import styles from "./login.module.css"; // Импортируем стили
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -25,7 +28,11 @@ export default function LoginPage() {
       });
       const txt = await r.text();
       let data: any = null;
-      try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+      try {
+        data = JSON.parse(txt);
+      } catch {
+        data = { raw: txt };
+      }
 
       if (!r.ok) throw new Error(data?.error || data?.message || `HTTP ${r.status}`);
       // успех -> в прайс
@@ -38,55 +45,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "48px auto", fontFamily: "system-ui" }}>
-      <h1 style={{ fontSize: 24, marginBottom: 16 }}>Вход в админку</h1>
+    <div className={styles.container}>
+      <div className={styles.card}>
+        
+        {/* Логотип для брендинга */}
+        <div className={styles.brand}>
+          <div className={styles.brandLogo}>🏡</div>
+          <div className={styles.brandTitle}>МойДомПро</div>
+        </div>
 
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <div>Email</div>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-            autoComplete="username"
-          />
-        </label>
-
-        <label style={{ display: "grid", gap: 6 }}>
-          <div>Пароль</div>
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            style={{ padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-            autoComplete="current-password"
-          />
-        </label>
-
-        <button
-          disabled={loading}
-          style={{
-            padding: 12,
-            borderRadius: 10,
-            border: "1px solid #222",
-            background: "#111",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Входим..." : "Войти"}
-        </button>
-		<a href="/register" style={{ fontSize: 14, color: "#333" }}>
-  Нет аккаунта? Зарегистрировать компанию
-</a>
-
+        <h1 className={styles.title}>Вход в кабинет</h1>
 
         {err && (
-          <div style={{ background: "#fee", border: "1px solid #f99", padding: 10, borderRadius: 10 }}>
-            Ошибка: {err}
+          <div className={styles.error} role="alert">
+            {err}
           </div>
         )}
-      </form>
+
+        <form onSubmit={onSubmit} className={styles.form}>
+          <div className={styles.field}>
+            <label className={styles.label}>Email</label>
+            <input
+              className={styles.input}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+              placeholder="name@company.com"
+              type="email"
+              required
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Пароль</label>
+            <input
+              className={styles.input}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button type="submit" disabled={loading} className={styles.btn}>
+            {loading ? "Входим..." : "Войти"}
+          </button>
+        </form>
+
+        <div className={styles.footer}>
+          Нет аккаунта? 
+          <Link href="/register" className={styles.link}>
+            Зарегистрировать компанию
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
