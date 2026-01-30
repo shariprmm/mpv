@@ -1,0 +1,189 @@
+/* apps/admin/app/register/register.module.css */
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px; /* Чуть больше отступ сверху/снизу */
+  background-color: #f9f9f9;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #111;
+}
+
+.card {
+  width: 100%;
+  max-width: 440px; /* Чуть шире чем логин */
+  background: #fff;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+/* Логотип */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  text-decoration: none;
+  color: #111;
+  user-select: none;
+}
+
+.brandLogo {
+  font-size: 28px;
+}
+
+.brandTitle {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+/* Форма */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-left: 2px;
+}
+
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  font-size: 16px;
+  background: #fdfdfd;
+  color: #111;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #111;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.hint {
+  font-size: 12px;
+  color: #888;
+  margin-left: 2px;
+  line-height: 1.4;
+}
+
+/* Кнопка */
+.btn {
+  width: 100%;
+  padding: 16px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  margin-top: 12px;
+}
+
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Ошибка */
+.error {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #fecaca;
+}
+
+/* Футер */
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 24px;
+}
+
+.link {
+  color: #111;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Адаптив */
+@media (max-width: 480px) {
+  .container {
+    padding: 0;
+    background-color: #fff;
+    justify-content: flex-start; /* Чтобы на маленьких экранах форма была сверху */
+  }
+  
+  .card {
+    box-shadow: none;
+    border: none;
+    padding: 24px 20px;
+    border-radius: 0;
+    min-height: 100vh; /* На весь экран */
+  }
+
+  .brand {
+    margin-bottom: 24px;
+  }
+}
