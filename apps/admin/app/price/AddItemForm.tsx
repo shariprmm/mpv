@@ -54,6 +54,7 @@ type Props = {
   
   priceMin: string;
   setPriceMin: (value: string) => void;
+  addItemError: string | null;
   onClose: () => void;
   onCancel: () => void;
   onAdd: () => void;
@@ -73,6 +74,7 @@ export default function AddItemForm(props: Props) {
     newProductCover, setNewProductCover, onPickProductCover,
     newProductSpecs, updateSpecRow, removeSpecRow, addSpecRow,
     priceMin, setPriceMin,
+    addItemError,
     onClose, onCancel, onAdd
   } = props;
 
@@ -93,6 +95,11 @@ export default function AddItemForm(props: Props) {
 
         {/* BODY */}
         <div className={styles.drawerBody}>
+          {addItemError && (
+            <div className={styles.errorText} role="alert" style={{ marginBottom: 12 }}>
+              {addItemError}
+            </div>
+          )}
           <div className={styles.grid}>
             
             {/* Тип позиции */}
