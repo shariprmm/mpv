@@ -665,7 +665,8 @@ app.get(
         s.id,
         s.name,
         s.slug,
-        coalesce(sc.name, s.category_slug, '') as category
+        coalesce(sc.name, s.category_slug, '') as category,
+        s.cover_image as image_url
       from services_catalog s
       left join service_categories sc on sc.id = s.category_id
       where s.show_on_site = true
@@ -692,7 +693,7 @@ app.get(
 
       if (!categoryId || !Number.isFinite(categoryId) || categoryId <= 0) {
         const r = await pool.query(
-          `select id, name, slug, category, category_id
+          `select id, name, slug, category, category_id, cover_image as image_url
            from products
            where show_on_site = true -- ✅ Фильтр только для опубликованных товаров
            order by category_id nulls last, name asc`
@@ -709,7 +710,7 @@ app.get(
           FROM product_categories c
           JOIN tree t ON c.parent_id = t.id
         )
-        SELECT p.id, p.name, p.slug, p.category, p.category_id
+        SELECT p.id, p.name, p.slug, p.category, p.category_id, p.cover_image as image_url
         FROM products p
         WHERE p.category_id IN (SELECT id FROM tree)
           AND p.show_on_site = true -- ✅ Фильтр для товаров внутри категорий
@@ -3054,6 +3055,8 @@ const itemsR = await pool.query(
   select
     ci.id,
     ci.kind,
+    ci.service_id,
+    ci.product_id,
     ci.price_min,
     ci.price_max,
     ci.currency,
@@ -3104,6 +3107,8 @@ app.get(
       SELECT
         ci.id,
         ci.kind,
+        ci.service_id,
+        ci.product_id,
         ci.price_min,
         ci.price_max,
         ci.currency,
@@ -3166,6 +3171,21 @@ app.post(
     } else {
       custom_title = String(pick(b, ["custom_title", "customTitle", "title", "name"]) ?? "").trim();
       if (!custom_title) custom_title = "";
+    }
+
+    if (kind === "service" || kind === "product") {
+      const rDup = await pool.query(
+        `
+        SELECT id
+        FROM company_items
+        WHERE company_id=$1 AND kind=$2 AND service_id IS NOT DISTINCT FROM $3 AND product_id IS NOT DISTINCT FROM $4
+        LIMIT 1
+        `,
+        [companyId, kind, service_id, product_id]
+      );
+      if (rDup.rowCount) {
+        return res.status(409).json({ ok: false, error: "already_exists" });
+      }
     }
 
     const rIns = await pool.query(
