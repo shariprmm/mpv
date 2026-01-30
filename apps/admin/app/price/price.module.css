@@ -185,7 +185,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #f3f5f9; /* Совпадает с фоном */
+  background: #f3f5f9;
   padding: 24px;
   display: flex;
   align-items: center;
@@ -640,7 +640,7 @@
     grid-template-columns: 1fr;
   }
   .logoPreview {
-    width: 200px; /* ограничение ширины лого на планшете */
+    width: 200px;
   }
 }
 
@@ -664,33 +664,44 @@
   .content { padding: 0 16px 32px; }
   .formGrid { grid-template-columns: 1fr; }
   
-  /* Catalog Table Mobile View */
-  .catalogTable, .catalogThead, .catalogTbody, tr, td, th {
+  /* Catalog Table Mobile View - Scoped to table rows */
+  .catalogTable, 
+  .catalogThead, 
+  .catalogTbody {
     display: block;
     width: 100%;
   }
-  .catalogThead { display: none; }
-  .catalogTbody tr {
+
+  /* Make sure tr/td are targeted inside catalogTable to be specific and pure */
+  .catalogTable tr {
+    display: block;
     margin-bottom: 16px;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 16px;
   }
-  .catalogTbody td {
-    border: none;
-    padding: 8px 0;
+  
+  .catalogTable td {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: none;
+    padding: 8px 0;
     text-align: right;
   }
-  .catalogTbody td::before {
-    content: attr(data-label); /* requires data-label attr in HTML */
+  
+  .catalogTable th {
+     display: none; /* Hide header on mobile */
+  }
+
+  .catalogTable td::before {
+    content: attr(data-label);
     font-weight: 600;
     color: #64748b;
     font-size: 13px;
     text-align: left;
     margin-right: 12px;
   }
-  .catalogPhotoCell { display: none; /* Hide photo on very small screens or adapt */ }
+  
+  .catalogPhotoCell { display: none; }
 }
