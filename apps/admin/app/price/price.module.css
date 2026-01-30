@@ -20,7 +20,7 @@
 
 .content {
   padding: 0 24px 32px;
-  max-width: 1200px;
+  
   width: 100%;
   box-sizing: border-box;
 }
@@ -705,3 +705,4 @@
   
   .catalogPhotoCell { display: none; }
 }
+
