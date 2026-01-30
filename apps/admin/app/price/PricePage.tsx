@@ -403,6 +403,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({}); 
 
   const [catalogQuery, setCatalogQuery] = useState("");
+  const [addItemErr, setAddItemErr] = useState<string | null>(null);
   
   // Фильтры
   const [catalogCatId, setCatalogCatId] = useState<string>(""); // Фильтр для Товаров
@@ -661,6 +662,14 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   }, [kind]);
 
   useEffect(() => {
+    if (!showAdd) {
+      setAddItemErr(null);
+      return;
+    }
+    setAddItemErr(null);
+  }, [showAdd, kind, serviceId, productId, productCategoryId, createNewProduct]);
+
+  useEffect(() => {
     if (!createNewProduct) return;
     setNewProductSlug(slugifyRu(newProductName));
   }, [newProductName, createNewProduct]);
@@ -673,6 +682,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   async function addItem() {
     // Legacy add function from modal, still useful for creating NEW products
     setErr(null);
+    setAddItemErr(null);
     try {
       const priceValue = toNumOrNull(priceMin);
       let productIdToUse = productId;
@@ -735,6 +745,16 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       // После создания товара, привязываем его к компании
       if (kind === "product" && !productIdToUse) { setErr("Выбери товар."); return; }
       if (kind === "service" && !serviceId) { setErr("Выбери услугу."); return; }
+      const existsInCompany = items.some((item) => {
+        if (item.kind !== kind) return false;
+        return kind === "product"
+          ? String(item.product_id) === String(productIdToUse)
+          : String(item.service_id) === String(serviceId);
+      });
+      if (existsInCompany) {
+        setAddItemErr(kind === "product" ? "Этот товар уже добавлен в прайс." : "Эта услуга уже добавлена в прайс.");
+        return;
+      }
       const body: any = { kind, price_min: priceValue, price_max: null };
       if (kind === "service") body.service_id = serviceId ? Number(serviceId) : null;
       if (kind === "product") body.product_id = productIdToUse ? Number(productIdToUse) : null;
@@ -1410,6 +1430,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             addSpecRow={addSpecRow}
             priceMin={priceMin}
             setPriceMin={setPriceMin}
+            addItemError={addItemErr}
             onClose={() => setShowAdd(false)}
             onCancel={() => {
               resetNewItemForm();
