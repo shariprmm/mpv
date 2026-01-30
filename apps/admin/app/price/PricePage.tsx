@@ -564,16 +564,15 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setErr(null);
     const meData = (await jget(`${API}/auth/me`)) as MeResp;
     setMe(meData);
-    const [svc, svcCatsResp, prd, comp, prof, cats] = await Promise.all([
+    const [svc, prd, comp, prof, cats] = await Promise.all([
       jget(`${API}/company/services`),
-      jget(`${API}/company/service-categories`),
       jget(`${API}/products`),
       jget(`${API}/companies/${meData.company.id}`),
       jget(`${API}/company/profile`),
       jget(`${API}/product-categories?flat=1`),
     ]);
     const svcItems: Service[] = svc.items || [];
-    const svcCatItems: ServiceCategory[] = svcCatsResp.categories || [];
+    const svcCatItems: ServiceCategory[] = svcCats.categories || [];
     const prdItems: Product[] = (prd.items || prd.result || []) as Product[];
     const catItems: CategoryFlat[] = (cats.result || cats.items || []) as CategoryFlat[];
     const serverItems: CompanyItem[] = comp.items || [];
