@@ -26,6 +26,15 @@ export type Service = {
   image_url?: string | null;
 };
 
+type ServiceCategory = {
+  id: number;
+  slug: string;
+  name: string;
+  parent_id: number | null;
+  sort_order?: number | null;
+  is_active?: boolean;
+};
+
 export type Product = {
   id: IdLike;
   name: string;
@@ -356,6 +365,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<CompanyItem[]>([]);
 
+  const [serviceCategoryList, setServiceCategoryList] = useState<ServiceCategory[]>([]);
   const [productCategories, setProductCategories] = useState<CategoryFlat[]>([]);
   const [productCategoryId, setProductCategoryId] = useState<string>("");
 
@@ -408,12 +418,12 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [catalogCatId, setCatalogCatId] = useState<string>(""); // Фильтр для Товаров
   const [catalogSvcCat, setCatalogSvcCat] = useState<string>(""); // Фильтр для Услуг
 
-  // 1. Формируем список категорий ДЛЯ ФИЛЬТРА УСЛУГ (из всех услуг)
+  // 1. Формируем список категорий ДЛЯ ФИЛЬТРА УСЛУГ (из справочника категорий)
   const serviceCategories = useMemo(() => {
     const set = new Set<string>();
-    for (const s of services) set.add(normCat(s.category));
+    for (const c of serviceCategoryList) set.add(normCat(c.name));
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
-  }, [services]);
+  }, [serviceCategoryList]);
 
   // 2. Формируем список категорий ДЛЯ ФИЛЬТРА ТОВАРОВ (из дерева категорий)
   const productCategoryOptions = useMemo(() => {
@@ -562,11 +572,13 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       jget(`${API}/product-categories?flat=1`),
     ]);
     const svcItems: Service[] = svc.items || [];
+    const svcCatItems: ServiceCategory[] = svcCats.categories || [];
     const prdItems: Product[] = (prd.items || prd.result || []) as Product[];
     const catItems: CategoryFlat[] = (cats.result || cats.items || []) as CategoryFlat[];
     const serverItems: CompanyItem[] = comp.items || [];
 
     setServices(svcItems);
+    setServiceCategoryList(svcCatItems);
     setProducts(prdItems);
     setProductCategories(catItems);
     setItems(serverItems);
@@ -599,7 +611,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setPickedCompanyPhotos([]);
     setLogoPreview(absPublicUrl(cp.logo_url));
 
-    const firstSvcCat = svcItems.length ? normCat(svcItems[0].category) : "";
+    const firstSvcCat = svcCatItems.length ? normCat(svcCatItems[0].name) : "";
     setServiceCategory((prev) => prev || firstSvcCat);
     
     const firstProductCategoryId = catItems.length ? String(catItems[0].id) : "";
