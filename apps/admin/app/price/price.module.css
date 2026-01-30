@@ -706,3 +706,213 @@
   .catalogPhotoCell { display: none; }
 }
 
+/* =========================================
+   RESPONSIVE DESIGN (MOBILE FIXES)
+   ========================================= */
+
+@media (max-width: 1024px) {
+  .mediaSplit {
+    grid-template-columns: 1fr;
+  }
+  .logoPreview {
+    width: 200px;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+  }
+  .topbarActions { width: 100%; justify-content: space-between; }
+  
+  .mobileTabs { display: flex; }
+  
+  .filtersRow { grid-template-columns: 1fr; gap: 12px; }
+}
+
+@media (max-width: 640px) {
+  .content { padding: 0 16px 32px; }
+  .formGrid { grid-template-columns: 1fr; }
+  
+  /* --- CATALOG MOBILE CARDS --- */
+  .catalogTable, .catalogThead, .catalogTbody {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .catalogThead { display: none; }
+
+  .catalogTbody tr {
+    display: grid;
+    /* Grid areas for mobile card layout:
+       [Photo] [Name]
+       [Photo] [Category]
+       [Price Input] [Delete]
+    */
+    grid-template-columns: 60px 1fr 40px;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "photo name name"
+      "photo cat cat"
+      "price price del";
+    
+    gap: 8px 12px;
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+
+  .catalogTbody td {
+    display: block;
+    padding: 0;
+    border: none;
+    text-align: left;
+  }
+
+  .catalogTbody td:nth-child(1) { /* Photo */
+    grid-area: photo;
+    width: 100%; 
+  }
+  
+  .catalogPhotoCell {
+    width: 100% !important;
+    padding-right: 0 !important;
+  }
+  
+  .catalogPhoto {
+    width: 60px;
+    height: 60px;
+  }
+
+  .catalogTbody td:nth-child(2) { /* Name */
+    grid-area: name;
+    align-self: center;
+  }
+
+  .catalogName {
+    font-size: 15px;
+    line-height: 1.3;
+  }
+
+  .catalogTbody td:nth-child(3) { /* Category */
+    grid-area: cat;
+    font-size: 13px;
+    color: #64748b;
+    margin-top: -4px;
+  }
+
+  .catalogTbody td:nth-child(4) { /* Price Input */
+    grid-area: price;
+    margin-top: 8px;
+  }
+  
+  .catalogTbody td:nth-child(4) input {
+    width: 100% !important; /* Force full width on mobile */
+    padding: 10px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .catalogTbody td:nth-child(5) { /* Delete Button */
+    grid-area: del;
+    align-self: end;
+    justify-self: end;
+    margin-bottom: 4px;
+  }
+
+  /* --- LEADS MOBILE CARDS --- */
+  /* Reusing catalog table classes for leads, but structure is different */
+  
+  /* We need to target the LEADS table specifically if it uses the same class. 
+     Since the HTML structure is different (6 columns), we use nth-child logic or
+     we can rely on the fact that leads row has different content.
+  */
+
+  /* Logic for Leads Rows (6 columns) */
+  .catalogTbody tr:has(> td:nth-child(6)) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    padding-bottom: 50px; /* Space for actions at bottom */
+  }
+
+  /* ID (Absolute top right) */
+  .catalogTbody tr:has(> td:nth-child(6)) td:nth-child(1) {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  /* Date */
+  .catalogTbody tr:has(> td:nth-child(6)) td:nth-child(2) {
+    font-size: 13px;
+    color: #64748b;
+    order: 3; /* Move below status */
+  }
+
+  /* Contact */
+  .catalogTbody tr:has(> td:nth-child(6)) td:nth-child(3) {
+    font-weight: 600;
+    font-size: 16px;
+    color: #0f172a;
+    order: 1; /* First */
+    padding-right: 40px; /* Space for ID */
+  }
+
+  /* Message */
+  .catalogTbody tr:has(> td:nth-child(6)) td:nth-child(4) {
+    font-size: 14px;
+    color: #334155;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+    order: 2;
+  }
+
+  /* Status */
+  .catalogTbody tr:has(> td:nth-child(6)) td:nth-child(5) {
+    order: 4;
+    display: flex;
+    justify-content: flex-end;
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+  }
+
+  /* Actions */
+  .catalogTbody tr:has(> td:nth-child(6)) td:nth-child(6) {
+    order: 5;
+    margin-top: 8px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 12px;
+  }
+  
+  .leadsActions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 buttons in a row or wrap */
+    gap: 8px;
+  }
+  
+  .leadsActions button {
+    width: 100%;
+    padding: 8px 0;
+    justify-content: center;
+    font-size: 12px;
+  }
+}
+
