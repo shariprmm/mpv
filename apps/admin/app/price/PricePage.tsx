@@ -890,9 +890,16 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   }, [newProductName, products]);
 
   const filteredCatalogProducts = useMemo(() => {
+    const allowedProductIds = new Set(
+      items
+        .filter((it) => it.kind === "product" && it.product_id != null)
+        .map((it) => String(it.product_id))
+    );
     const q = catalogQuery.trim().toLowerCase();
     const catId = catalogCatId ? Number(catalogCatId) : 0;
     let list = products.slice(0);
+
+    list = list.filter((p) => allowedProductIds.has(String(p.id)));
     
     // Фильтр по категории
     if (catId && products.some((p) => p.category_id != null)) {
@@ -914,12 +921,18 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     
     list.sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));
     return list;
-  }, [products, catalogQuery, catalogCatId, catChildren]); // catChildren needed
+  }, [products, items, catalogQuery, catalogCatId, catChildren]); // catChildren needed
 
   const filteredCatalogServices = useMemo(() => {
+    const allowedServiceIds = new Set(
+      items
+        .filter((it) => it.kind === "service" && it.service_id != null)
+        .map((it) => String(it.service_id))
+    );
     const q = catalogQuery.trim().toLowerCase();
     const cat = catalogSvcCat ? normCat(catalogSvcCat) : "";
     let list = services.slice(0);
+    list = list.filter((s) => allowedServiceIds.has(String(s.id)));
     if (cat) list = list.filter((s) => normCat(s.category) === cat);
     if (q) {
       list = list.filter((s) => {
@@ -931,7 +944,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     }
     list.sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));
     return list;
-  }, [services, catalogQuery, catalogSvcCat]);
+  }, [services, items, catalogQuery, catalogSvcCat]);
 
   return (
     <div className={styles.shell}>
