@@ -695,27 +695,6 @@ app.get(
   })
 );
 
-app.get(
-  "/company/service-categories",
-  requireAuth,
-  aw(async (_req, res) => {
-    const r = await pool.query(
-      `
-      select
-        id,
-        slug,
-        name,
-        parent_id,
-        sort_order,
-        is_active
-      from service_categories
-      order by sort_order nulls last, name asc
-      `
-    );
-    res.json({ ok: true, categories: r.rows });
-  })
-);
-
 /* =========================================================
    PRODUCTS
    ✅ РОВНО ОДИН GET /products
