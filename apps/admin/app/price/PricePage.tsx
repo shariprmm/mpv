@@ -23,7 +23,7 @@ export type Service = {
   name: string;
   slug: string;
   category?: string | null;
-  image_url?: string | null; // ✅ Добавлено поле для картинки
+  image_url?: string | null;
 };
 
 export type Product = {
@@ -32,7 +32,7 @@ export type Product = {
   slug: string;
   category_id?: number | null;
   category?: string | null;
-  image_url?: string | null; // ✅ Добавлено поле для картинки
+  image_url?: string | null;
 };
 
 export type CategoryFlat = {
@@ -403,21 +403,19 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({}); 
 
   const [catalogQuery, setCatalogQuery] = useState("");
-  const [catalogCatId, setCatalogCatId] = useState<string>("");
-  const [catalogSvcCat, setCatalogSvcCat] = useState<string>("");
+  
+  // ✅ FIX: Фильтры теперь применяются к каталогу, а не к items
+  const [catalogCatId, setCatalogCatId] = useState<string>(""); // Фильтр для Товаров
+  const [catalogSvcCat, setCatalogSvcCat] = useState<string>(""); // Фильтр для Услуг
 
+  // 1. Формируем список категорий ДЛЯ ФИЛЬТРА УСЛУГ (из всех услуг)
   const serviceCategories = useMemo(() => {
     const set = new Set<string>();
     for (const s of services) set.add(normCat(s.category));
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
   }, [services]);
 
-  const filteredServicesForAdd = useMemo(() => {
-    const cat = serviceCategory ? normCat(serviceCategory) : "";
-    if (!cat) return services;
-    return services.filter((s) => normCat(s.category) === cat);
-  }, [services, serviceCategory]);
-
+  // 2. Формируем список категорий ДЛЯ ФИЛЬТРА ТОВАРОВ (из дерева категорий)
   const productCategoryOptions = useMemo(() => {
     const list = (productCategories || []).slice(0);
     list.sort((a, b) => {
@@ -432,6 +430,13 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     });
   }, [productCategories]);
 
+  // Для модалки добавления (оставляем старую логику)
+  const filteredServicesForAdd = useMemo(() => {
+    const cat = serviceCategory ? normCat(serviceCategory) : "";
+    if (!cat) return services;
+    return services.filter((s) => normCat(s.category) === cat);
+  }, [services, serviceCategory]);
+
   const catChildren = useMemo(() => {
     const map = new Map<number, number[]>();
     for (const c of productCategories) {
@@ -443,20 +448,23 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     return map;
   }, [productCategories]);
 
+  const getCatIdsRecursive = (rootId: number) => {
+      const out = new Set<number>();
+      const stack = [rootId];
+      while (stack.length) {
+          const cur = stack.pop()!;
+          if (out.has(cur)) continue;
+          out.add(cur);
+          const kids = catChildren.get(cur) || [];
+          for (const k of kids) stack.push(k);
+      }
+      return out;
+  }
+
   const selectedCatIds = useMemo(() => {
     const root = productCategoryId ? Number(productCategoryId) : 0;
     if (!root) return new Set<number>();
-
-    const out = new Set<number>();
-    const stack = [root];
-    while (stack.length) {
-      const cur = stack.pop()!;
-      if (out.has(cur)) continue;
-      out.add(cur);
-      const kids = catChildren.get(cur) || [];
-      for (const k of kids) stack.push(k);
-    }
-    return out;
+    return getCatIdsRecursive(root);
   }, [productCategoryId, catChildren]);
 
   const filteredProductsForAdd = useMemo(() => {
@@ -594,14 +602,9 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
     const firstSvcCat = svcItems.length ? normCat(svcItems[0].category) : "";
     setServiceCategory((prev) => prev || firstSvcCat);
-    const catToUse = (serviceCategory || firstSvcCat || "").trim();
-    const list = catToUse ? svcItems.filter((s) => normCat(s.category) === normCat(catToUse)) : svcItems;
-    if (list.length) setServiceId((prev) => prev || String(list[0].id));
-
+    
     const firstProductCategoryId = catItems.length ? String(catItems[0].id) : "";
     setProductCategoryId((prev) => prev || firstProductCategoryId);
-    setCatalogCatId((prev) => prev || firstProductCategoryId);
-    setCatalogSvcCat((prev) => prev || firstSvcCat);
   }
 
   async function loadLeads() {
@@ -669,14 +672,12 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   }, [activeMainTab, leadsStatus]);
 
   async function addItem() {
-    // Legacy add function from modal, still useful for creating NEW products
     setErr(null);
     try {
       const priceValue = toNumOrNull(priceMin);
       let productIdToUse = productId;
 
       if (kind === "product" && createNewProduct) {
-        // ... (creation logic same as before)
         const trimmedName = newProductName.trim();
         const trimmedDesc = newProductDescription.trim();
         if (!productCategoryId) { setErr("Выбери категорию товара."); return; }
@@ -742,12 +743,11 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     } catch (e: any) { setErr(e?.message || String(e)); }
   }
 
-  // ✅ New Logic: Upsert Price directly from table
+  // ✅ Optimized: Update items locally to avoid race conditions with loadAll()
   async function upsertPrice(kind: "product" | "service", id: IdLike, valueStr: string) {
     setErr(null);
     const priceValue = toNumOrNull(valueStr);
     
-    // Find existing company item
     const existing = items.find(it => 
       it.kind === kind && 
       (kind === "product" ? String(it.product_id) === String(id) : String(it.service_id) === String(id))
@@ -755,39 +755,34 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
     try {
       if (priceValue === null) {
-        // If empty => delete if exists
         if (existing) {
-          setSavingId(existing.id); // Hack: use ID for loading state
+          setSavingId(existing.id);
           await jreq(`${API}/company-items/${existing.id}`, "DELETE");
-          // Remove locally
+          // Remove locally immediately
           setItems(prev => prev.filter(it => it.id !== existing.id));
         }
       } else {
-        // If value => create or update
         if (existing) {
           setSavingId(existing.id);
           await jreq(`${API}/company-items/${existing.id}`, "PATCH", { price_min: priceValue });
-          // Update locally
+          // Update locally immediately
           setItems(prev => prev.map(it => it.id === existing.id ? { ...it, price_min: priceValue } : it));
         } else {
-          // Creating
           const body: any = { kind, price_min: priceValue };
           if (kind === "service") body.service_id = Number(id);
           if (kind === "product") body.product_id = Number(id);
           
           const created = await jreq(`${API}/company-items`, "POST", body);
           
-          // Add locally if server returned the object
+          // Add locally immediately
           if (created && created.item) {
              setItems(prev => [...prev, created.item]);
           }
         }
       }
-      // We do NOT call loadAll() here to prevent flashing of old data
     } catch (e: any) {
       setErr(e?.message || String(e));
-      // On error, we might want to reload to be safe
-      await loadAll();
+      await loadAll(); // fallback to full reload on error
     } finally {
       setSavingId(null);
     }
@@ -847,25 +842,17 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     const q = catalogQuery.trim().toLowerCase();
     const catId = catalogCatId ? Number(catalogCatId) : 0;
     let list = products.slice(0);
+    
+    // Фильтр по категории
     if (catId && products.some((p) => p.category_id != null)) {
-      const out = new Set<number>();
-      const stack = [catId];
-      while (stack.length) {
-        const cur = stack.pop()!;
-        if (out.has(cur)) {
-          continue;
-        }
-        out.add(cur);
-        const kids = catChildren.get(cur) || [];
-        for (const k of kids) {
-          stack.push(k);
-        }
-      }
+      const out = getCatIdsRecursive(catId); // Helper function
       list = list.filter((p) => {
         const cid = Number(p.category_id || 0);
         return cid && out.has(cid);
       });
     }
+    
+    // Фильтр по поиску
     if (q) {
       list = list.filter((p) => {
         const n = String(p.name || "").toLowerCase();
@@ -873,9 +860,10 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
         return n.includes(q) || s.includes(q);
       });
     }
+    
     list.sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));
     return list;
-  }, [products, catalogQuery, catalogCatId, catChildren]);
+  }, [products, catalogQuery, catalogCatId, catChildren]); // catChildren needed
 
   const filteredCatalogServices = useMemo(() => {
     const q = catalogQuery.trim().toLowerCase();
