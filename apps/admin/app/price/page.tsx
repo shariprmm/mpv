@@ -1,4 +1,4 @@
-// /apps/admin/app/price/page.tsx
+// apps/admin/app/price/page.tsx
 "use client";
 
 import Link from "next/link";
@@ -487,6 +487,7 @@ export default function PricePage() {
     return (id: number | null | undefined) => (id ? map.get(id) || "—" : "—");
   }, [productCategories]);
 
+  // Хелпер для получения названия категории у элемента прайс-листа
   const categoryByItem = useMemo(() => {
     const sMap = new Map<string, string>();
     for (const s of services) sMap.set(String(s.id), normCat(s.category));
@@ -509,8 +510,10 @@ export default function PricePage() {
     };
   }, [services, products, catNameById]);
 
+  // Формируем список доступных категорий для фильтра на основе текущих items
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
+    // Предварительно фильтруем по типу, чтобы в селекте категорий были только актуальные
     const preFiltered = items.filter((it) => {
       if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
       return true;
@@ -522,6 +525,7 @@ export default function PricePage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
   }, [items, itemsKindFilter, categoryByItem]);
 
+  // Сбрасываем фильтр категории при смене типа
   useEffect(() => {
     setItemsCategoryFilter("");
   }, [itemsKindFilter]);
@@ -871,6 +875,7 @@ export default function PricePage() {
       if (it.kind === "custom") return false;
       if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
       
+      // Фильтр по категории
       if (itemsCategoryFilter) {
           const cat = categoryByItem(it);
           if (cat !== itemsCategoryFilter) return false;
@@ -1087,6 +1092,7 @@ export default function PricePage() {
                   </select>
                 </div>
 
+                {/* ✅ Новый фильтр по категориям */}
                 <div className={styles.field} style={{ minWidth: 200 }}>
                   <div className={styles.label}>Категория</div>
                   <select className={styles.input} value={itemsCategoryFilter} onChange={(e) => setItemsCategoryFilter(e.target.value)}>
@@ -1113,9 +1119,11 @@ export default function PricePage() {
                           <div className={styles.rowTitleTop}>
                             <span className={`${styles.badge} ${styles["badge_" + it.kind]}`}>{kindLabel(it.kind)}</span>
                             <span className={styles.rowName}>{titleByItem(it)}</span>
+                            {/* ✅ Вывод названия категории компактно */}
                             <span style={{ color: "#888", fontSize: "13px", marginLeft: "10px" }}>{categoryByItem(it)}</span>
                           </div>
                           <div className={styles.rowMeta}>
+                            {/* ✅ УБРАН ID, оставлен только статус сохранения */}
                             {savingId === it.id ? <span className={styles.savingInline}>сохранение…</span> : null}
                           </div>
                         </div>
@@ -1124,6 +1132,7 @@ export default function PricePage() {
                             <span className={styles.miniLabel}>Цена от, ₽</span>
                             <input className={styles.input} value={draft} onChange={(e) => setPriceDraft((prev) => ({ ...prev, [it.id]: e.target.value }))} onBlur={() => { const v = toNumOrNull(priceDraft[it.id] ?? draft); saveItemPrice(it, v); }} inputMode="decimal" />
                           </label>
+                          {/* ✅ УБРАН БЛОК "ИТОГО" */}
                         </div>
                         <div className={styles.rowActions}>
                           <button className={styles.btnGhost} onClick={() => delItem(it.id)}>Удалить</button>
