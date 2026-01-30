@@ -576,29 +576,16 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setErr(null);
     const meData = (await jget(`${API}/auth/me`)) as MeResp;
     setMe(meData);
-    const [svc, prd, comp, prof, cats] = await Promise.all([
+    const [svc, prd, comp, prof, cats, svcCats] = await Promise.all([
       jget(`${API}/company/services`),
       jget(`${API}/products`),
       jget(`${API}/companies/${meData.company.id}`),
       jget(`${API}/company/profile`),
       jget(`${API}/product-categories?flat=1`),
+      jget(`${API}/service-categories?flat=1`),
     ]);
     const svcItems: Service[] = svc.items || [];
-    const svcCats =
-      (await jgetOptional(`${API}/service-categories?flat=1`)) ??
-      (await jgetOptional(`${API}/public/services/categories`));
-    let svcCatItems: ServiceCategory[] = (svcCats?.categories || svcCats?.result || svcCats?.items || []) as ServiceCategory[];
-    if (!svcCatItems.length) {
-      const uniqNames = Array.from(
-        new Set(svcItems.map((item) => (item.category ? String(item.category).trim() : "")).filter(Boolean))
-      );
-      svcCatItems = uniqNames.map((name, idx) => ({
-        id: idx + 1,
-        slug: slugifyRu(name),
-        name,
-        parent_id: null,
-      }));
-    }
+    const svcCatItems: ServiceCategory[] = (svcCats.categories || svcCats.result || svcCats.items || []) as ServiceCategory[];
     const prdItems: Product[] = (prd.items || prd.result || []) as Product[];
     const catItems: CategoryFlat[] = (cats.result || cats.items || []) as CategoryFlat[];
     const serverItems: CompanyItem[] = comp.items || [];
