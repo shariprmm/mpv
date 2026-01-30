@@ -146,6 +146,7 @@ async function jreq(
   return data;
 }
 
+// Ensure ReactQuill is loaded only on client
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 function toNumOrNull(v: any): number | null {
@@ -233,7 +234,7 @@ async function fileToDataUrl(file: File): Promise<string> {
 
 function normCat(v: any): string {
   const s = String(v ?? "").trim();
-  return s ? s : "Без категории";
+  return s ? s : "—";
 }
 
 function kindLabel(k: CompanyItem["kind"]) {
@@ -382,6 +383,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFileName, setLogoFileName] = useState<string>("");
 
+  // Add Item Form State
   const [kind, setKind] = useState<"service" | "product">("service");
   const [serviceCategory, setServiceCategory] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
@@ -395,12 +397,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [newProductSpecs, setNewProductSpecs] = useState<SpecRow[]>([]);
   const [newProductCover, setNewProductCover] = useState<PickedPhoto | null>(null);
 
-  const [priceDraft, setPriceDraft] = useState<Record<number, string>>({});
-  const [editDesc, setEditDesc] = useState<Record<number, string>>({});
-
-  const [itemsKindFilter, setItemsKindFilter] = useState<"all" | "service" | "product">("all");
-  const [itemsCategoryFilter, setItemsCategoryFilter] = useState<string>("");
-  const [itemsQuery, setItemsQuery] = useState("");
+  // Price Management in Catalog
+  const [priceDraft, setPriceDraft] = useState<Record<string, string>>({}); 
 
   const [catalogQuery, setCatalogQuery] = useState("");
   const [catalogCatId, setCatalogCatId] = useState<string>("");
@@ -469,86 +467,20 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     });
   }, [products, productCategoryId, selectedCatIds]);
 
-  const titleByItem = useMemo(() => {
-    const smap = new Map(services.map((s) => [String(s.id), s.name]));
-    const pmap = new Map(products.map((p) => [String(p.id), p.name]));
-    return (it: CompanyItem) => {
-      if (it.kind === "service") {
-        const key = it.service_id == null ? "" : String(it.service_id);
-        return it.service_name || smap.get(key) || "Услуга";
-      }
-      if (it.kind === "product") {
-        const key = it.product_id == null ? "" : String(it.product_id);
-        return it.product_name || pmap.get(key) || "Товар";
-      }
-      return it.custom_title || "Своя позиция";
-    };
-  }, [services, products]);
-
   const catNameById = useMemo(() => {
     const map = new Map<number, string>();
     for (const c of productCategories) map.set(c.id, c.path_name || c.name);
     return (id: number | null | undefined) => (id ? map.get(id) || "—" : "—");
   }, [productCategories]);
 
-  // ✅ FIX: Правильно определяем категорию для элемента прайс-листа
-  const categoryByItem = useMemo(() => {
-    // 1. Мапа услуг: ID услуги -> Категория (строка)
-    const sMap = new Map<string, string>();
-    for (const s of services) {
-        sMap.set(String(s.id), normCat(s.category));
-    }
-
-    // 2. Мапа товаров: ID товара -> Категория (название из дерева категорий или строка)
-    const pMap = new Map<string, string>();
-    for (const p of products) {
-      let cName = "—";
-      if (p.category_id) {
-        // Если есть ID категории, ищем название в справочнике
-        cName = catNameById(p.category_id) || "—";
-      } else if (p.category) {
-        // Fallback на текстовое поле, если оно есть
-        cName = p.category;
-      }
-      pMap.set(String(p.id), cName);
-    }
-
-    // Возвращаем функцию, которая по CompanyItem вернет название категории
-    return (it: CompanyItem) => {
-      if (it.kind === "service") {
-          return sMap.get(String(it.service_id)) || "—";
-      }
-      if (it.kind === "product") {
-          return pMap.get(String(it.product_id)) || "—";
-      }
-      return "—"; // Для custom
-    };
-  }, [services, products, catNameById]);
-
-  // ✅ FIX: Вычисляем список категорий ДИНАМИЧЕСКИ на основе того, что есть в списке filteredItems (но до фильтрации по категории)
-  const availableCategories = useMemo(() => {
-    const set = new Set<string>();
-    
-    // Берем все items, фильтруем только по Типу (Услуга/Товар), но НЕ по категории
-    const preFiltered = items.filter((it) => {
-      if (it.kind === "custom") return false; 
-      if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
-      return true;
-    });
-
-    // Собираем категории из этих элементов
-    for (const it of preFiltered) {
-      const cat = categoryByItem(it);
-      if (cat && cat !== "—") set.add(cat);
-    }
-    
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
-  }, [items, itemsKindFilter, categoryByItem]);
-
-  // Сбрасываем фильтр категории при смене типа
-  useEffect(() => {
-    setItemsCategoryFilter("");
-  }, [itemsKindFilter]);
+  // Хелпер: Получение цены компании для конкретного товара/услуги
+  const getCompanyPrice = (kind: "product" | "service", id: IdLike) => {
+    const item = items.find(it => 
+      it.kind === kind && 
+      (kind === "product" ? String(it.product_id) === String(id) : String(it.service_id) === String(id))
+    );
+    return item ? item.price_min : null;
+  };
 
   function resetNewItemForm() {
     setPriceMin("");
@@ -638,25 +570,19 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setProductCategories(catItems);
     setItems(serverItems);
 
-    setEditDesc((prev) => {
-      const next = { ...prev };
-      for (const it of serverItems) {
-        if (next[it.id] === undefined) next[it.id] = (it.description || "").toString();
+    // Initial draft for inputs
+    const draft: Record<string, string> = {};
+    
+    // Fill draft from existing company items
+    // Key format: "product_ID" or "service_ID"
+    for (const it of serverItems) {
+      if (it.kind === 'product' && it.product_id) {
+        draft[`product_${it.product_id}`] = it.price_min != null ? String(it.price_min) : "";
+      } else if (it.kind === 'service' && it.service_id) {
+        draft[`service_${it.service_id}`] = it.price_min != null ? String(it.price_min) : "";
       }
-      return next;
-    });
-
-    setPriceDraft((prev) => {
-      const next = { ...prev };
-      for (const it of serverItems) {
-        if (next[it.id] === undefined) next[it.id] = it.price_min == null ? "" : String(it.price_min);
-      }
-      for (const k of Object.keys(next)) {
-        const id = Number(k);
-        if (!serverItems.some((x) => x.id === id)) delete next[id];
-      }
-      return next;
-    });
+    }
+    setPriceDraft(draft);
 
     const cp = prof.company as CompanyProfile;
     setProfile(cp);
@@ -750,12 +676,14 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   }, [activeMainTab, leadsStatus]);
 
   async function addItem() {
+    // Legacy add function from modal, still useful for creating NEW products
     setErr(null);
     try {
       const priceValue = toNumOrNull(priceMin);
       let productIdToUse = productId;
 
       if (kind === "product" && createNewProduct) {
+        // ... (creation logic same as before)
         const trimmedName = newProductName.trim();
         const trimmedDesc = newProductDescription.trim();
         if (!productCategoryId) { setErr("Выбери категорию товара."); return; }
@@ -821,22 +749,45 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     } catch (e: any) { setErr(e?.message || String(e)); }
   }
 
-  async function saveItemPrice(it: CompanyItem, nextPriceMin: number | null) {
+  // ✅ New Logic: Upsert Price directly from table
+  async function upsertPrice(kind: "product" | "service", id: IdLike, valueStr: string) {
     setErr(null);
-    setSavingId(it.id);
-    setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, price_min: nextPriceMin, price_max: null } : x)));
+    const priceValue = toNumOrNull(valueStr);
+    
+    // Find existing company item
+    const existing = items.find(it => 
+      it.kind === kind && 
+      (kind === "product" ? String(it.product_id) === String(id) : String(it.service_id) === String(id))
+    );
+
     try {
-      await jreq(`${API}/company-items/${it.id}`, "PATCH", { price_min: nextPriceMin, price_max: null });
+      if (priceValue === null) {
+        // If empty => delete if exists
+        if (existing) {
+          setSavingId(existing.id); // Hack: use ID for loading state
+          await jreq(`${API}/company-items/${existing.id}`, "DELETE");
+        }
+      } else {
+        // If value => create or update
+        if (existing) {
+          setSavingId(existing.id);
+          await jreq(`${API}/company-items/${existing.id}`, "PATCH", { price_min: priceValue });
+        } else {
+          // Creating doesn't have an ID yet, maybe show global loading? 
+          // Or we can use a temporary ID like `new_${kind}_${id}`
+          const body: any = { kind, price_min: priceValue };
+          if (kind === "service") body.service_id = Number(id);
+          if (kind === "product") body.product_id = Number(id);
+          await jreq(`${API}/company-items`, "POST", body);
+        }
+      }
+      // Reload data to reflect changes (and get new IDs)
       await loadAll();
     } catch (e: any) {
       setErr(e?.message || String(e));
-      await loadAll();
-    } finally { setSavingId(null); }
-  }
-
-  async function delItem(id: number) {
-    setErr(null);
-    try { await jreq(`${API}/company-items/${id}`, "DELETE"); await loadAll(); } catch (e: any) { setErr(e?.message || String(e)); }
+    } finally {
+      setSavingId(null);
+    }
   }
 
   async function logout() {
@@ -888,24 +839,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     if (!target) return null;
     return products.find((p) => String(p.name || "").trim().toLowerCase() === target) || null;
   }, [newProductName, products]);
-
-  const filteredItems = useMemo(() => {
-    const q = itemsQuery.trim().toLowerCase();
-    return (items || []).filter((it) => {
-      if (it.kind === "custom") return false;
-      if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
-      
-      // ✅ FIX: Фильтрация по выбранной категории
-      if (itemsCategoryFilter) {
-          const cat = categoryByItem(it);
-          if (cat !== itemsCategoryFilter) return false;
-      }
-
-      if (!q) return true;
-      const t = titleByItem(it).toLowerCase();
-      return t.includes(q);
-    });
-  }, [items, itemsQuery, itemsKindFilter, itemsCategoryFilter, titleByItem, categoryByItem]);
 
   const filteredCatalogProducts = useMemo(() => {
     const q = catalogQuery.trim().toLowerCase();
@@ -1095,77 +1028,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             </>
           )}
 
-          {/* ===================== PRICE ===================== */}
-          {activeMainTab === "catalog" && (
-            <div className={styles.card}>
-              <div className={styles.cardHead}>
-                <h2 className={styles.h2}>Позиции прайса</h2>
-              </div>
-
-              <div className={styles.filtersRow}>
-                <div className={styles.field}>
-                  <div className={styles.label}>Тип</div>
-                  <select className={styles.input} value={itemsKindFilter} onChange={(e) => setItemsKindFilter(e.target.value as any)}>
-                    <option value="all">Все</option>
-                    <option value="service">Услуги</option>
-                    <option value="product">Товары</option>
-                  </select>
-                </div>
-
-                {/* ✅ Новый фильтр по категориям */}
-                <div className={styles.field} style={{ minWidth: 200 }}>
-                  <div className={styles.label}>Категория</div>
-                  <select className={styles.input} value={itemsCategoryFilter} onChange={(e) => setItemsCategoryFilter(e.target.value)}>
-                    <option value="">Все категории</option>
-                    {availableCategories.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className={`${styles.field} ${styles.fieldWide}`}>
-                  <div className={styles.label}>Поиск</div>
-                  <input className={styles.input} value={itemsQuery} onChange={(e) => setItemsQuery(e.target.value)} placeholder="Название…" />
-                </div>
-              </div>
-
-              <div className={styles.listCompact}>
-                {filteredItems.map((it) => {
-                  const draft = priceDraft[it.id] ?? (it.price_min == null ? "" : String(it.price_min));
-                  return (
-                    <div key={it.id} className={styles.row}>
-                      <div className={styles.rowMain}>
-                        <div className={styles.rowTitle}>
-                          <div className={styles.rowTitleTop}>
-                            <span className={`${styles.badge} ${styles["badge_" + it.kind]}`}>{kindLabel(it.kind)}</span>
-                            <span className={styles.rowName}>{titleByItem(it)}</span>
-                            {/* ✅ Вывод названия категории компактно */}
-                            <span style={{ color: "#888", fontSize: "13px", marginLeft: "10px" }}>{categoryByItem(it)}</span>
-                          </div>
-                          <div className={styles.rowMeta}>
-                            {/* ✅ УБРАН ID, оставлен только статус сохранения */}
-                            {savingId === it.id ? <span className={styles.savingInline}>сохранение…</span> : null}
-                          </div>
-                        </div>
-                        <div className={styles.rowPrice}>
-                          <label className={styles.miniField}>
-                            <span className={styles.miniLabel}>Цена от, ₽</span>
-                            <input className={styles.input} value={draft} onChange={(e) => setPriceDraft((prev) => ({ ...prev, [it.id]: e.target.value }))} onBlur={() => { const v = toNumOrNull(priceDraft[it.id] ?? draft); saveItemPrice(it, v); }} inputMode="decimal" />
-                          </label>
-                          {/* ✅ УБРАН БЛОК "ИТОГО" */}
-                        </div>
-                        <div className={styles.rowActions}>
-                          <button className={styles.btnGhost} onClick={() => delItem(it.id)}>Удалить</button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!filteredItems.length && <div className={styles.empty}>Пока нет позиций (или фильтр всё скрыл).</div>}
-              </div>
-            </div>
-          )}
-
           {/* ===================== LEADS ===================== */}
           {activeMainTab === "leads" && (
             <div className={styles.card}>
@@ -1259,16 +1121,46 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
               </div>
               <div style={{ width: "100%", overflowX: "auto" }}>
                 <table className={styles.catalogTable}>
-                  <thead className={styles.catalogThead}><tr><th className={styles.catalogPhotoCell}>Фото</th><th>Название</th><th>Категория</th><th>Slug</th></tr></thead>
+                  <thead className={styles.catalogThead}><tr><th className={styles.catalogPhotoCell}>Фото</th><th>Название</th><th>Категория</th><th>Slug</th><th>Цена от, ₽</th></tr></thead>
                   <tbody className={styles.catalogTbody}>
-                    {activeCatalogTab === "products" && filteredCatalogProducts.map((p) => (
-                      <tr key={`p-${String(p.id)}`}><td className={styles.catalogPhotoCell}><div className={styles.catalogPhoto}><span style={{ opacity: 0.55 }}>🧱</span></div></td><td><div className={styles.catalogName}>{p.name}</div><div className={styles.catalogMeta}>ID: {String(p.id)}</div></td><td>{catNameById(p.category_id ?? null)}</td><td><div className={styles.catalogSlug}>{p.slug || "—"}</div></td></tr>
-                    ))}
-                    {activeCatalogTab === "services" && filteredCatalogServices.map((s) => (
-                      <tr key={`s-${String(s.id)}`}><td className={styles.catalogPhotoCell}><div className={styles.catalogPhoto}><span style={{ opacity: 0.55 }}>🛠️</span></div></td><td><div className={styles.catalogName}>{s.name}</div><div className={styles.catalogMeta}>ID: {String(s.id)}</div></td><td>{normCat(s.category)}</td><td><div className={styles.catalogSlug}>{s.slug || "—"}</div></td></tr>
-                    ))}
-                    {activeCatalogTab === "products" && filteredCatalogProducts.length === 0 && (<tr><td colSpan={4}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
-                    {activeCatalogTab === "services" && filteredCatalogServices.length === 0 && (<tr><td colSpan={4}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
+                    {activeCatalogTab === "products" && filteredCatalogProducts.map((p) => {
+                      const pid = String(p.id);
+                      const key = `product_${pid}`;
+                      return (
+                        <tr key={key}><td className={styles.catalogPhotoCell}><div className={styles.catalogPhoto}><span style={{ opacity: 0.55 }}>🧱</span></div></td><td><div className={styles.catalogName}>{p.name}</div><div className={styles.catalogMeta}>ID: {pid}</div></td><td>{catNameById(p.category_id ?? null)}</td><td><div className={styles.catalogSlug}>{p.slug || "—"}</div></td>
+                        <td>
+                          <input 
+                            className={styles.input} 
+                            style={{width: 100, padding: '6px 10px'}} 
+                            placeholder="0" 
+                            value={priceDraft[key] ?? ""}
+                            onChange={(e) => setPriceDraft(prev => ({...prev, [key]: e.target.value}))}
+                            onBlur={(e) => upsertPrice('product', p.id, e.target.value)}
+                          />
+                        </td>
+                        </tr>
+                      );
+                    })}
+                    {activeCatalogTab === "services" && filteredCatalogServices.map((s) => {
+                      const sid = String(s.id);
+                      const key = `service_${sid}`;
+                      return (
+                        <tr key={key}><td className={styles.catalogPhotoCell}><div className={styles.catalogPhoto}><span style={{ opacity: 0.55 }}>🛠️</span></div></td><td><div className={styles.catalogName}>{s.name}</div><div className={styles.catalogMeta}>ID: {sid}</div></td><td>{normCat(s.category)}</td><td><div className={styles.catalogSlug}>{s.slug || "—"}</div></td>
+                        <td>
+                          <input 
+                            className={styles.input} 
+                            style={{width: 100, padding: '6px 10px'}} 
+                            placeholder="0" 
+                            value={priceDraft[key] ?? ""}
+                            onChange={(e) => setPriceDraft(prev => ({...prev, [key]: e.target.value}))}
+                            onBlur={(e) => upsertPrice('service', s.id, e.target.value)}
+                          />
+                        </td>
+                        </tr>
+                      );
+                    })}
+                    {activeCatalogTab === "products" && filteredCatalogProducts.length === 0 && (<tr><td colSpan={5}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
+                    {activeCatalogTab === "services" && filteredCatalogServices.length === 0 && (<tr><td colSpan={5}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
                   </tbody>
                 </table>
               </div>
