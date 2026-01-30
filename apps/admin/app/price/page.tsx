@@ -18,14 +18,14 @@ const SITE =
 
 type IdLike = string | number;
 
-type Service = {
+export type Service = {
   id: IdLike;
   name: string;
   slug: string;
   category?: string | null;
 };
 
-type Product = {
+export type Product = {
   id: IdLike;
   name: string;
   slug: string;
@@ -33,7 +33,7 @@ type Product = {
   category?: string | null;
 };
 
-type CategoryFlat = {
+export type CategoryFlat = {
   id: number;
   slug: string;
   name: string;
@@ -102,14 +102,14 @@ type LeadItem = {
   created_at: string;
 };
 
-type PickedPhoto = {
+export type PickedPhoto = {
   name: string;
   size: number;
   type: string;
   dataUrl: string;
 };
 
-type SpecRow = { name: string; value: string };
+export type SpecRow = { name: string; value: string };
 
 async function jget(url: string) {
   const r = await fetch(url, { credentials: "include", cache: "no-store" });
@@ -933,7 +933,8 @@ export default function PricePage() {
     return list;
   }, [services, catalogQuery, catalogSvcCat]);
 
-  return <div className={styles.shell}>
+  return (
+    <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarInner}>
           <div className={styles.brand}>
@@ -1086,7 +1087,6 @@ export default function PricePage() {
                   </select>
                 </div>
 
-                {/* ✅ Новый фильтр по категориям */}
                 <div className={styles.field} style={{ minWidth: 200 }}>
                   <div className={styles.label}>Категория</div>
                   <select className={styles.input} value={itemsCategoryFilter} onChange={(e) => setItemsCategoryFilter(e.target.value)}>
@@ -1113,11 +1113,9 @@ export default function PricePage() {
                           <div className={styles.rowTitleTop}>
                             <span className={`${styles.badge} ${styles["badge_" + it.kind]}`}>{kindLabel(it.kind)}</span>
                             <span className={styles.rowName}>{titleByItem(it)}</span>
-                            {/* ✅ Вывод названия категории */}
                             <span style={{ color: "#888", fontSize: "13px", marginLeft: "10px" }}>{categoryByItem(it)}</span>
                           </div>
                           <div className={styles.rowMeta}>
-                            {/* ✅ УБРАН ID, оставлен только статус сохранения */}
                             {savingId === it.id ? <span className={styles.savingInline}>сохранение…</span> : null}
                           </div>
                         </div>
@@ -1126,7 +1124,6 @@ export default function PricePage() {
                             <span className={styles.miniLabel}>Цена от, ₽</span>
                             <input className={styles.input} value={draft} onChange={(e) => setPriceDraft((prev) => ({ ...prev, [it.id]: e.target.value }))} onBlur={() => { const v = toNumOrNull(priceDraft[it.id] ?? draft); saveItemPrice(it, v); }} inputMode="decimal" />
                           </label>
-                          {/* ✅ УБРАН БЛОК "ИТОГО" */}
                         </div>
                         <div className={styles.rowActions}>
                           <button className={styles.btnGhost} onClick={() => delItem(it.id)}>Удалить</button>
@@ -1269,7 +1266,8 @@ export default function PricePage() {
             productId={productId}
             setProductId={setProductId}
             filteredProductsForAdd={filteredProductsForAdd}
-            duplicateProduct={duplicateProduct}
+            // ✅ FIX: Coerce duplicateProduct to boolean
+            duplicateProduct={!!duplicateProduct}
             newProductName={newProductName}
             setNewProductName={setNewProductName}
             newProductDescription={newProductDescription}
@@ -1293,4 +1291,5 @@ export default function PricePage() {
         )}
       </main>
     </div>
+  );
 }
