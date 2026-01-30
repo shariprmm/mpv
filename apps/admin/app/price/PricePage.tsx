@@ -135,6 +135,18 @@ async function jget(url: string) {
   return data;
 }
 
+async function jgetOptional(url: string, allowedStatuses: number[] = [404]) {
+  try {
+    return await jget(url);
+  } catch (e: any) {
+    const msg = String(e?.message || "");
+    const match = msg.match(/HTTP\s+(\d+)/);
+    if (match && allowedStatuses.includes(Number(match[1]))) return null;
+    if (allowedStatuses.some((code) => msg.includes(String(code)))) return null;
+    throw e;
+  }
+}
+
 async function jreq(
   url: string,
   method: "POST" | "PATCH" | "DELETE",
@@ -572,7 +584,21 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       jget(`${API}/product-categories?flat=1`),
     ]);
     const svcItems: Service[] = svc.items || [];
-    const svcCatItems: ServiceCategory[] = svcCats.categories || [];
+    const svcCats =
+      (await jgetOptional(`${API}/service-categories?flat=1`)) ??
+      (await jgetOptional(`${API}/public/services/categories`));
+    let svcCatItems: ServiceCategory[] = (svcCats?.categories || svcCats?.result || svcCats?.items || []) as ServiceCategory[];
+    if (!svcCatItems.length) {
+      const uniqNames = Array.from(
+        new Set(svcItems.map((item) => (item.category ? String(item.category).trim() : "")).filter(Boolean))
+      );
+      svcCatItems = uniqNames.map((name, idx) => ({
+        id: idx + 1,
+        slug: slugifyRu(name),
+        name,
+        parent_id: null,
+      }));
+    }
     const prdItems: Product[] = (prd.items || prd.result || []) as Product[];
     const catItems: CategoryFlat[] = (cats.result || cats.items || []) as CategoryFlat[];
     const serverItems: CompanyItem[] = comp.items || [];
