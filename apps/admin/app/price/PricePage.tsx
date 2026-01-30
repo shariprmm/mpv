@@ -764,29 +764,35 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       if (priceValue === null) {
         // If empty => delete if exists
         if (existing) {
-          setSavingId(existing.id); // Hack: use ID for loading state
           await jreq(`${API}/company-items/${existing.id}`, "DELETE");
+          // Remove locally
+          setItems(prev => prev.filter(it => it.id !== existing.id));
         }
       } else {
         // If value => create or update
         if (existing) {
-          setSavingId(existing.id);
           await jreq(`${API}/company-items/${existing.id}`, "PATCH", { price_min: priceValue });
+          // Update locally
+          setItems(prev => prev.map(it => it.id === existing.id ? { ...it, price_min: priceValue } : it));
         } else {
-          // Creating doesn't have an ID yet, maybe show global loading? 
-          // Or we can use a temporary ID like `new_${kind}_${id}`
+          // Creating
           const body: any = { kind, price_min: priceValue };
           if (kind === "service") body.service_id = Number(id);
           if (kind === "product") body.product_id = Number(id);
-          await jreq(`${API}/company-items`, "POST", body);
+          
+          const created = await jreq(`${API}/company-items`, "POST", body);
+          
+          // Add locally if server returned the object
+          if (created && created.item) {
+             setItems(prev => [...prev, created.item]);
+          }
         }
       }
-      // Reload data to reflect changes (and get new IDs)
-      await loadAll();
+      // We do NOT call loadAll() here to prevent flashing of old data
     } catch (e: any) {
       setErr(e?.message || String(e));
-    } finally {
-      setSavingId(null);
+      // On error, we might want to reload to be safe
+      await loadAll();
     }
   }
 
