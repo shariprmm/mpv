@@ -3173,6 +3173,21 @@ app.post(
       if (!custom_title) custom_title = "";
     }
 
+    if (kind === "service" || kind === "product") {
+      const rDup = await pool.query(
+        `
+        SELECT id
+        FROM company_items
+        WHERE company_id=$1 AND kind=$2 AND service_id IS NOT DISTINCT FROM $3 AND product_id IS NOT DISTINCT FROM $4
+        LIMIT 1
+        `,
+        [companyId, kind, service_id, product_id]
+      );
+      if (rDup.rowCount) {
+        return res.status(409).json({ ok: false, error: "already_exists" });
+      }
+    }
+
     const rIns = await pool.query(
       `
       INSERT INTO company_items

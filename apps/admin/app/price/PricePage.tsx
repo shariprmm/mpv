@@ -735,6 +735,13 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       // После создания товара, привязываем его к компании
       if (kind === "product" && !productIdToUse) { setErr("Выбери товар."); return; }
       if (kind === "service" && !serviceId) { setErr("Выбери услугу."); return; }
+      const existing = items.find((it) =>
+        it.kind === kind &&
+        (kind === "service"
+          ? String(it.service_id) === String(serviceId)
+          : String(it.product_id) === String(productIdToUse))
+      );
+      if (existing) { setErr("Эта позиция уже добавлена в ваш прайс."); return; }
       const body: any = { kind, price_min: priceValue, price_max: null };
       if (kind === "service") body.service_id = serviceId ? Number(serviceId) : null;
       if (kind === "product") body.product_id = productIdToUse ? Number(productIdToUse) : null;
