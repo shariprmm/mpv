@@ -135,6 +135,18 @@ async function jget(url: string) {
   return data;
 }
 
+async function jgetOptional(url: string, allowedStatuses: number[] = [404]) {
+  try {
+    return await jget(url);
+  } catch (e: any) {
+    const msg = String(e?.message || "");
+    const match = msg.match(/HTTP\s+(\d+)/);
+    if (match && allowedStatuses.includes(Number(match[1]))) return null;
+    if (allowedStatuses.some((code) => msg.includes(String(code)))) return null;
+    throw e;
+  }
+}
+
 async function jreq(
   url: string,
   method: "POST" | "PATCH" | "DELETE",
