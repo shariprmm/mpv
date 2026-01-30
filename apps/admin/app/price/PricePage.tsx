@@ -45,9 +45,8 @@ export type CategoryFlat = {
   sort_order?: number;
 };
 
-// Это запись в прайс-листе компании (связь товара и цены)
 type CompanyItem = {
-  id: number; // ID записи в прайс-листе (НЕ ID товара)
+  id: number;
   kind: "service" | "product" | "custom";
   price_min: number | null;
   price_max: number | null;
@@ -257,12 +256,51 @@ function normDashesSpaces(s: string) {
     .trim();
 }
 
+function ensureSep(prev: string) {
+  const s = prev.trim();
+  if (!s) return "";
+  if (/[;,]\s*$/.test(s)) return s + " ";
+  return s + "; ";
+}
+
+function upsertBlock(prevRaw: string, key: string, value: string) {
+  const normalized = normDashesSpaces(prevRaw || "");
+
+  if (key === "круглосуточно") return "круглосуточно";
+
+  if (key === "ежедневно") {
+    const cleaned = normalized
+      .replace(/(^|[;,\s])будни\s+[^;,\n]+/gi, " ")
+      .replace(/(^|[;,\s])выходные\s+[^;,\n]+/gi, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/\s*;\s*;\s*/g, "; ")
+      .trim()
+      .replace(/^[;,\s]+|[;,\s]+$/g, "");
+
+    const re = new RegExp(`(^|[;,\\s])${key}\\s+[^;,\\n]+`, "i");
+    if (re.test(cleaned)) return cleaned.replace(re, `$1${value}`).trim();
+    return (cleaned ? ensureSep(cleaned) : "") + value;
+  }
+
+  const re = new RegExp(`(^|[;,\\s])${key}\\s+[^;,\\n]+`, "i");
+  if (re.test(normalized)) return normalized.replace(re, `$1${value}`).trim();
+  return ensureSep(normalized) + value;
+}
+
 function applyWorkHoursPreset(
   prev: string,
   preset: "weekdays" | "daily" | "24" | "weekend" | "break"
 ) {
-  // ... (логика та же, сокращаю для краткости)
-  return prev + " " + preset; 
+  const base = prev || "";
+  if (preset === "weekdays")
+    return upsertBlock(base, "будни", "будни 10:00-19:00");
+  if (preset === "weekend")
+    return upsertBlock(base, "выходные", "выходные 10:00-18:00");
+  if (preset === "break")
+    return upsertBlock(base, "перерыв", "перерыв 12:00-13:00");
+  if (preset === "daily")
+    return upsertBlock(base, "ежедневно", "ежедневно 10:00-19:00");
+  return upsertBlock(base, "круглосуточно", "круглосуточно");
 }
 
 /* =========================
@@ -275,15 +313,19 @@ function digitsOnly(s: string) {
 function formatRuPhoneMasked(input: string) {
   let d = digitsOnly(input);
   if (!d) return "";
+
   if (d[0] === "8") d = "7" + d.slice(1);
   if (d.length === 10) d = "7" + d;
   d = d.slice(0, 11);
+
   if (d[0] !== "7") return "+" + d;
+
   const a = d.slice(1);
   const p1 = a.slice(0, 3);
   const p2 = a.slice(3, 6);
   const p3 = a.slice(6, 8);
   const p4 = a.slice(8, 10);
+
   let out = "+7";
   if (p1) out += ` (${p1}`;
   if (p1.length === 3) out += ")";
@@ -312,8 +354,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
   const [services, setServices] = useState<Service[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  
-  // items - это список того, что компания УЖЕ продает (с ценами)
   const [items, setItems] = useState<CompanyItem[]>([]);
 
   const [productCategories, setProductCategories] = useState<CategoryFlat[]>([]);
@@ -363,8 +403,10 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [priceDraft, setPriceDraft] = useState<Record<string, string>>({}); 
 
   const [catalogQuery, setCatalogQuery] = useState("");
-  const [catalogCatId, setCatalogCatId] = useState<string>("");
-  const [catalogSvcCat, setCatalogSvcCat] = useState<string>("");
+  
+  // Фильтры
+  const [catalogCatId, setCatalogCatId] = useState<string>(""); // Фильтр для Товаров
+  const [catalogSvcCat, setCatalogSvcCat] = useState<string>(""); // Фильтр для Услуг
 
   // 1. Формируем список категорий ДЛЯ ФИЛЬТРА УСЛУГ (из всех услуг)
   const serviceCategories = useMemo(() => {
@@ -529,8 +571,10 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setProductCategories(catItems);
     setItems(serverItems);
 
-    // Заполняем черновики цен (чтобы в инпутах были значения)
+    // Initial draft for inputs
     const draft: Record<string, string> = {};
+    
+    // Fill draft from existing company items using string IDs to be safe
     for (const it of serverItems) {
       if (it.kind === 'product' && it.product_id) {
         draft[`product_${it.product_id}`] = it.price_min != null ? String(it.price_min) : "";
@@ -599,24 +643,48 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   }, []);
 
   useEffect(() => {
+    if (kind !== "service") return;
+    if (!services.length) return;
+    const list = serviceCategory ? services.filter((s) => normCat(s.category) === normCat(serviceCategory)) : services;
+    const allowed = new Set(list.map((s) => String(s.id)));
+    if (!allowed.has(String(serviceId))) setServiceId(list[0] ? String(list[0].id) : "");
+  }, [serviceCategory, services, kind]);
+
+  useEffect(() => {
+    if (kind !== "product") return;
+    setProductId("");
+  }, [productCategoryId, kind]);
+
+  useEffect(() => {
+    if (kind === "product") return;
+    setCreateNewProduct(false);
+  }, [kind]);
+
+  useEffect(() => {
+    if (!createNewProduct) return;
+    setNewProductSlug(slugifyRu(newProductName));
+  }, [newProductName, createNewProduct]);
+
+  useEffect(() => {
     if (activeMainTab !== "leads") return;
     loadLeads();
   }, [activeMainTab, leadsStatus]);
 
   async function addItem() {
-    // Эта функция осталась только для создания НОВЫХ товаров с нуля через модалку
-    // Привязка существующих теперь идет через таблицу
+    // Legacy add function from modal, still useful for creating NEW products
     setErr(null);
     try {
       const priceValue = toNumOrNull(priceMin);
       let productIdToUse = productId;
 
       if (kind === "product" && createNewProduct) {
-        // ... создание нового товара (как раньше) ...
+        // ... (creation logic same as before)
         const trimmedName = newProductName.trim();
         const trimmedDesc = newProductDescription.trim();
         if (!productCategoryId) { setErr("Выбери категорию товара."); return; }
         if (!trimmedName) { setErr("Укажи название товара."); return; }
+        if (!trimmedDesc) { setErr("Добавь описание товара."); return; }
+        if (!newProductCover) { setErr("Загрузи cover-картинку товара."); return; }
         if (priceValue == null) { setErr("Укажи цену товара."); return; }
 
         const duplicate = products.find(
@@ -628,8 +696,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
         }
 
         const coverUpload = await jreq(`${API}/company/upload-image`, "POST", {
-          dataUrl: newProductCover?.dataUrl,
-          filename: newProductCover?.name,
+          dataUrl: newProductCover.dataUrl,
+          filename: newProductCover.name,
           prefix: `product-cover-${me?.company?.id || "company"}`,
         });
 
@@ -692,7 +760,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setErr(null);
     const priceValue = toNumOrNull(valueStr);
     
-    // Ищем, есть ли уже этот товар в прайсе компании
+    // Ищем, есть ли уже этот товар в прайсе компании (приводим ID к строке для надежности)
     const existing = items.find(it => 
       it.kind === kind && 
       (kind === "product" ? String(it.product_id) === String(id) : String(it.service_id) === String(id))
@@ -717,15 +785,13 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
           setItems(prev => prev.map(it => it.id === existing.id ? { ...it, price_min: priceValue } : it));
         } else {
           // Если нет - создаем (POST)
-          // setSavingId нельзя, т.к. ID еще нет, можно добавить глобальный лоадер
           const body: any = { kind, price_min: priceValue };
           if (kind === "service") body.service_id = Number(id);
           if (kind === "product") body.product_id = Number(id);
           
           const created = await jreq(`${API}/company-items`, "POST", body);
           
-          // ВАЖНО: Добавляем созданный объект (с новым ID) в items,
-          // чтобы следующее редактирование пошло в ветку 'existing' (PATCH)
+          // ВАЖНО: Добавляем созданный объект (с новым ID) в items
           if (created && created.item) {
              setItems(prev => [...prev, created.item]);
           }
@@ -733,8 +799,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       }
     } catch (e: any) {
       setErr(e?.message || String(e));
-      // Если ошибка рассинхрона - перезагружаем всё
-      await loadAll();
+      await loadAll(); // fallback
     } finally {
       setSavingId(null);
     }
@@ -831,7 +896,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     
     // Фильтр по категории
     if (catId && products.some((p) => p.category_id != null)) {
-      const out = getCatIdsRecursive(catId); 
+      const out = getCatIdsRecursive(catId); // Helper function
       list = list.filter((p) => {
         const cid = Number(p.category_id || 0);
         return cid && out.has(cid);
@@ -849,7 +914,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     
     list.sort((a, b) => String(a.name).localeCompare(String(b.name), "ru"));
     return list;
-  }, [products, catalogQuery, catalogCatId, catChildren]); 
+  }, [products, catalogQuery, catalogCatId, catChildren]); // catChildren needed
 
   const filteredCatalogServices = useMemo(() => {
     const q = catalogQuery.trim().toLowerCase();
@@ -928,7 +993,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
           {/* ===================== COMPANY ===================== */}
           {activeMainTab === "company" && (
             <div className={styles.profileContainer}>
-              {/* Profile code (omitted for brevity, assume updated) */}
+              
+              {/* Card 1: Основная информация */}
               <div className={styles.card}>
                 <div className={styles.cardHead}>
                   <h2 className={styles.h2}>Основные данные</h2>
@@ -936,25 +1002,51 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
                     {savingProfile ? "Сохранение..." : "Сохранить"}
                   </button>
                 </div>
+                
                 <div className={styles.formGrid}>
                   <div className={styles.fullWidth}>
                     <div className={styles.field}>
                       <label className={styles.label}>Название компании</label>
-                      <input className={styles.input} value={pName} onChange={(e) => setPName(e.target.value)} placeholder="Например: ООО СтройМастер" />
+                      <input 
+                        className={styles.input} 
+                        value={pName} 
+                        onChange={(e) => setPName(e.target.value)} 
+                        placeholder="Например: ООО СтройМастер" 
+                      />
                     </div>
                   </div>
+
                   <div className={styles.field}>
                     <label className={styles.label}>Телефон</label>
-                    <input className={styles.input} value={pPhone} onChange={(e) => setPPhone(formatRuPhoneMasked(e.target.value))} onBlur={(e) => setPPhone(formatRuPhoneMasked(e.target.value))} placeholder="+7 (999) 000-00-00" />
+                    <input 
+                      className={styles.input} 
+                      value={pPhone} 
+                      onChange={(e) => setPPhone(formatRuPhoneMasked(e.target.value))} 
+                      onBlur={(e) => setPPhone(formatRuPhoneMasked(e.target.value))} 
+                      placeholder="+7 (999) 000-00-00" 
+                    />
                   </div>
+
                   <div className={styles.field}>
                     <label className={styles.label}>Адрес офиса</label>
-                    <input className={styles.input} value={pAddress} onChange={(e) => setPAddress(e.target.value)} placeholder="Город, улица, дом, офис" />
+                    <input 
+                      className={styles.input} 
+                      value={pAddress} 
+                      onChange={(e) => setPAddress(e.target.value)} 
+                      placeholder="Город, улица, дом, офис" 
+                    />
                   </div>
+
                   <div className={styles.fullWidth}>
                     <div className={styles.field}>
                       <label className={styles.label}>Режим работы</label>
-                      <input className={styles.input} value={pHours} onChange={(e) => setPHours(e.target.value)} onBlur={() => setPHours((v) => normDashesSpaces(v))} placeholder="Например: Пн-Пт 09:00-18:00" />
+                      <input 
+                        className={styles.input} 
+                        value={pHours} 
+                        onChange={(e) => setPHours(e.target.value)} 
+                        onBlur={() => setPHours((v) => normDashesSpaces(v))} 
+                        placeholder="Например: Пн-Пт 09:00-18:00" 
+                      />
                       <div className={styles.workChips}>
                         <button className={styles.chip} onClick={() => setPHours((v) => applyWorkHoursPreset(v, "weekdays"))}>Будни</button>
                         <button className={styles.chip} onClick={() => setPHours((v) => applyWorkHoursPreset(v, "daily"))}>Ежедневно</button>
@@ -965,42 +1057,120 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
                   </div>
                 </div>
               </div>
-              
+
+              {/* Card 2: Медиа и Контакты */}
               <div className={styles.card}>
-                <div className={styles.cardHead}><h2 className={styles.h2}>Брендинг и контакты</h2></div>
+                <div className={styles.cardHead}>
+                  <h2 className={styles.h2}>Брендинг и контакты</h2>
+                </div>
+
                 <div className={styles.mediaSplit}>
+                  {/* Левая колонка: Логотип */}
                   <div className={styles.logoArea}>
                     <div className={styles.label}>Логотип</div>
-                    <div className={styles.logoPreview}>{logoPreview ? <img src={logoPreview} alt="Logo" /> : <div className={styles.logoPlaceholder}><span>🖼️</span><span>Нет логотипа</span></div>}</div>
-                    <label className={styles.logoInputLabel}>{logoFileName ? "Изменить файл" : "Загрузить логотип"}<input type="file" accept="image/*" onChange={(e) => onPickLogo(e.target.files?.[0] || null)} style={{ display: "none" }} /></label>
+                    <div className={styles.logoPreview}>
+                      {logoPreview ? (
+                        <img src={logoPreview} alt="Logo" />
+                      ) : (
+                        <div className={styles.logoPlaceholder}>
+                          <span>🖼️</span>
+                          <span>Нет логотипа</span>
+                        </div>
+                      )}
+                    </div>
+                    <label className={styles.logoInputLabel}>
+                      {logoFileName ? "Изменить файл" : "Загрузить логотип"}
+                      <input 
+                        type="file" 
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml" 
+                        onChange={(e) => onPickLogo(e.target.files?.[0] || null)} 
+                        style={{ display: "none" }} 
+                      />
+                    </label>
+                    <div className={styles.hint}>PNG, JPG, SVG до 3MB</div>
                   </div>
+
+                  {/* Правая колонка: Соцсети */}
                   <div className={styles.field}>
                     <div className={styles.label}>Сайт и социальные сети</div>
                     <div className={styles.socialGrid}>
-                      <div className={styles.field}><input className={styles.input} value={pSite} onChange={(e) => setPSite(e.target.value)} onBlur={() => setPSite(v => v ? normalizeUrl(v) : "")} placeholder="Сайт" /></div>
-                      <div className={styles.field}><input className={styles.input} value={pVk} onChange={(e) => setPVk(e.target.value)} onBlur={() => setPVk(v => v ? normalizeUrl(v) : "")} placeholder="ВКонтакте" /></div>
-                      <div className={styles.field}><input className={styles.input} value={pTg} onChange={(e) => setPTg(e.target.value)} onBlur={() => setPTg(v => v ? normalizeUrl(v) : "")} placeholder="Telegram" /></div>
-                      <div className={styles.field}><input className={styles.input} value={pYt} onChange={(e) => setPYt(e.target.value)} onBlur={() => setPYt(v => v ? normalizeUrl(v) : "")} placeholder="YouTube" /></div>
+                      <div className={styles.field}>
+                        <input className={styles.input} value={pSite} onChange={(e) => setPSite(e.target.value)} onBlur={() => setPSite(v => v ? normalizeUrl(v) : "")} placeholder="Сайт (https://...)" />
+                      </div>
+                      <div className={styles.field}>
+                        <input className={styles.input} value={pVk} onChange={(e) => setPVk(e.target.value)} onBlur={() => setPVk(v => v ? normalizeUrl(v) : "")} placeholder="ВКонтакте" />
+                      </div>
+                      <div className={styles.field}>
+                        <input className={styles.input} value={pTg} onChange={(e) => setPTg(e.target.value)} onBlur={() => setPTg(v => v ? normalizeUrl(v) : "")} placeholder="Telegram" />
+                      </div>
+                      <div className={styles.field}>
+                        <input className={styles.input} value={pYt} onChange={(e) => setPYt(e.target.value)} onBlur={() => setPYt(v => v ? normalizeUrl(v) : "")} placeholder="YouTube" />
+                      </div>
+                    </div>
+                    <div className={styles.hint}>Ссылки на профили помогают повысить доверие клиентов.</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Описание и Портфолио */}
+              <div className={styles.card}>
+                <div className={styles.cardHead}>
+                  <h2 className={styles.h2}>О компании и портфолио</h2>
+                  <button className={styles.btnPrimary} onClick={() => saveProfile()} disabled={savingProfile}>
+                    {savingProfile ? "Сохранение..." : "Сохранить"}
+                  </button>
+                </div>
+
+                <div className={styles.formGrid}>
+                  <div className={styles.fullWidth}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Описание деятельности</label>
+                      <textarea 
+                        className={styles.textarea} 
+                        value={about} 
+                        onChange={(e) => setAbout(e.target.value)} 
+                        placeholder="Расскажите о вашем опыте, преимуществах и подходе к работе..." 
+                      />
+                      <div className={styles.hint}>Рекомендуем: 300-2000 символов.</div>
+                    </div>
+                  </div>
+
+                  <div className={styles.fullWidth}>
+                    <div className={styles.photosHeader}>
+                      <div>
+                        <div className={styles.label}>Примеры работ (Портфолио)</div>
+                        <div className={styles.hint}>Загрузите фото реальных объектов (до 40 шт).</div>
+                      </div>
+                      <label className={styles.uploadBtn}>
+                        + Добавить фото
+                        <input 
+                          type="file" 
+                          accept="image/png,image/jpeg,image/webp" 
+                          multiple 
+                          onChange={(e) => onPickCompanyPhotos(e.target.files)} 
+                          style={{ display: "none" }} 
+                        />
+                      </label>
+                    </div>
+
+                    <div className={styles.photosGrid}>
+                      {companyPhotos.map((src, idx) => (
+                        <div key={`exist-${idx}`} className={styles.photoItem}>
+                          <img src={absPublicUrl(src)!} alt="portfolio" />
+                          <button className={styles.photoRemove} onClick={() => removeCompanyPhoto(idx)}>×</button>
+                        </div>
+                      ))}
+                      {pickedCompanyPhotos.map((ph, idx) => (
+                        <div key={`new-${idx}`} className={styles.photoItem}>
+                          <img src={ph.dataUrl} alt="new upload" />
+                          <button className={styles.photoRemove} onClick={() => removePickedCompanyPhoto(idx)}>×</button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className={styles.card}>
-                <div className={styles.cardHead}><h2 className={styles.h2}>О компании и портфолио</h2></div>
-                <div className={styles.formGrid}>
-                  <div className={styles.fullWidth}>
-                    <div className={styles.field}><label className={styles.label}>Описание</label><textarea className={styles.textarea} value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Опишите вашу компанию..." /></div>
-                  </div>
-                  <div className={styles.fullWidth}>
-                    <div className={styles.photosHeader}><div><div className={styles.label}>Примеры работ</div></div><label className={styles.uploadBtn}>+ Добавить<input type="file" accept="image/*" multiple onChange={(e) => onPickCompanyPhotos(e.target.files)} style={{ display: "none" }} /></label></div>
-                    <div className={styles.photosGrid}>
-                      {companyPhotos.map((src, idx) => (<div key={`ex-${idx}`} className={styles.photoItem}><img src={absPublicUrl(src)!} alt="" /><button className={styles.photoRemove} onClick={() => removeCompanyPhoto(idx)}>×</button></div>))}
-                      {pickedCompanyPhotos.map((ph, idx) => (<div key={`new-${idx}`} className={styles.photoItem}><img src={ph.dataUrl} alt="" /><button className={styles.photoRemove} onClick={() => removePickedCompanyPhoto(idx)}>×</button></div>))}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
@@ -1020,26 +1190,55 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
                   <button type="button" className={styles.btnGhost} onClick={loadLeads}>Обновить</button>
                 </div>
               </div>
+
+              {leadsError ? <div className={styles.err}>Ошибка: {leadsError}</div> : null}
+              {leadsLoading ? <div className={styles.hint}>Загрузка…</div> : null}
+
               <div style={{ width: "100%", overflowX: "auto" }}>
                 <table className={styles.catalogTable}>
-                  <thead className={styles.catalogThead}><tr><th>ID</th><th>Дата</th><th>Контакт</th><th>Сообщение</th><th>Статус</th><th></th></tr></thead>
+                  <thead className={styles.catalogThead}>
+                    <tr>
+                      <th>ID</th>
+                      <th>Дата</th>
+                      <th>Контакт</th>
+                      <th>Сообщение</th>
+                      <th>Статус</th>
+                      <th>Действия</th>
+                    </tr>
+                  </thead>
                   <tbody className={styles.catalogTbody}>
-                    {leads.map((lead) => (
-                      <tr key={lead.id}>
-                        <td>#{lead.id}</td>
-                        <td>{lead.created_at ? new Date(lead.created_at).toLocaleString() : "—"}</td>
-                        <td>{[lead.contact_name, lead.phone].filter(Boolean).join(" · ")}</td>
-                        <td>{lead.message || "—"}</td>
-                        <td><span className={`${styles.leadStatus} ${styles[`leadStatus_${lead.status}`]}`}>{lead.status}</span></td>
-                        <td>
-                          <div className={styles.leadsActions}>
-                            <button className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "in_work")}>В работу</button>
-                            <button className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "done")}>Закрыть</button>
-                          </div>
+                    {leads.map((lead) => {
+                      const contact = [lead.contact_name, lead.phone, lead.email].filter(Boolean).join(" · ") || "—";
+                      const created = lead.created_at ? new Date(lead.created_at).toLocaleString() : "—";
+                      return (
+                        <tr key={lead.id}>
+                          <td>#{lead.id}</td>
+                          <td>{created}</td>
+                          <td>{contact}</td>
+                          <td>{lead.message || lead.custom_title || "—"}</td>
+                          <td>
+                            <span className={`${styles.leadStatus} ${styles[`leadStatus_${lead.status}`]}`}>
+                              {lead.status}
+                            </span>
+                          </td>
+                          <td>
+                            <div className={styles.leadsActions}>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "new")}>new</button>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "in_work")}>in_work</button>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "done")}>done</button>
+                              <button type="button" className={styles.btnGhost} onClick={() => setLeadStatus(lead.id, "spam")}>spam</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!leads.length && !leadsLoading ? (
+                      <tr>
+                        <td colSpan={6}>
+                          <div className={styles.empty}>Пока заявок нет.</div>
                         </td>
                       </tr>
-                    ))}
-                    {!leads.length && !leadsLoading && <tr><td colSpan={6}><div className={styles.empty}>Заявок нет</div></td></tr>}
+                    ) : null}
                   </tbody>
                 </table>
               </div>
@@ -1056,9 +1255,9 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
                   <button type="button" className={activeCatalogTab === "services" ? styles.btnPrimary : styles.btnGhost} onClick={() => setActiveCatalogTab("services")}>Услуги</button>
                 </div>
               </div>
-              <div className={styles.hint} style={{ marginBottom: 12 }}>Укажите цену, чтобы товар появился в вашем прайс-листе.</div>
+              <div className={styles.hint} style={{ marginBottom: 12 }}>Эти данные используются в кабинете и на карточке компании.</div>
               <div className={styles.filtersRow}>
-                <div className={`${styles.field} ${styles.fieldWide}`}><div className={styles.label}>Поиск</div><input className={styles.input} value={catalogQuery} onChange={(e) => setCatalogQuery(e.target.value)} placeholder="Название..." /></div>
+                <div className={`${styles.field} ${styles.fieldWide}`}><div className={styles.label}>Поиск</div><input className={styles.input} value={catalogQuery} onChange={(e) => setCatalogQuery(e.target.value)} placeholder="Название или slug…" /></div>
                 {activeCatalogTab === "products" ? (
                   <div className={styles.field}><div className={styles.label}>Категория</div><select className={styles.input} value={catalogCatId} onChange={(e) => setCatalogCatId(e.target.value)}><option value="">Все</option>{productCategoryOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select></div>
                 ) : null}
