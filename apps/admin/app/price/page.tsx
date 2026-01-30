@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import React, { useEffect, useMemo, useState } from "react";
 import "react-quill/dist/quill.snow.css";
 import styles from "./price.module.css";
+import AddItemForm from "./AddItemForm";
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -1251,83 +1252,44 @@ export default function PricePage() {
 
         {/* ===================== Drawer ===================== */}
         {showAdd && (
-          <div className={styles.drawerOverlay} role="dialog" aria-modal="true">
-            <div className={styles.drawer}>
-              <div className={styles.drawerHead}><div><div className={styles.drawerTitle}>Добавить позицию</div><div className={styles.drawerSub}>Добавь услугу или товар с ценой. Для товара можно создать карточку с нуля.</div></div><button className={styles.btnGhost} onClick={() => setShowAdd(false)}>Закрыть</button></div>
-              <div className={styles.formGrid}>
-                <div className={styles.field}><div className={styles.label}>Тип</div><select className={styles.input} value={kind} onChange={(e) => setKind(e.target.value as any)}><option value="service">Услуга</option><option value="product">Товар</option></select></div>
-                {kind === "service" && (
-                  <>
-                    <div className={styles.field}><div className={styles.label}>Категория</div><select className={styles.input} value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value)}>{serviceCategories.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}</select></div>
-                    <div className={`${styles.field} ${styles.fieldWide}`}><div className={styles.label}>Услуга</div><select className={styles.input} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>{filteredServicesForAdd.map((s) => (<option key={String(s.id)} value={String(s.id)}>{s.name}</option>))}</select></div>
-                  </>
-                )}
-                {kind === "product" && (
-                  <>
-                    <div className={styles.field}><div className={styles.label}>Категория товара</div><select className={styles.input} value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}><option value="">— выбери категорию —</option>{productCategoryOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select></div>
-                    <div className={`${styles.field} ${styles.fieldWide}`}>
-                      <div className={styles.label}>Создать новый товар</div>
-                      <label className={styles.toggleRow}>
-                        <input type="checkbox" checked={createNewProduct} onChange={(e) => setCreateNewProduct(e.target.checked)} />
-                        <span>Создать товар с нуля</span>
-                      </label>
-                    </div>
-                    {!createNewProduct && (
-                      <div className={`${styles.field} ${styles.fieldWide}`}>
-                        <div className={styles.label}>Товар</div><select className={styles.input} value={productId} onChange={(e) => setProductId(e.target.value)}><option value="">— выбери товар —</option>{filteredProductsForAdd.map((p) => (<option key={String(p.id)} value={String(p.id)}>{p.name}</option>))}</select>
-                        {productCategoryId && filteredProductsForAdd.length === 0 && (<div className={styles.hint}>В этой категории пока нет товаров. Проверь category_id у товара в БД/API.</div>)}
-                      </div>
-                    )}
-                    {createNewProduct && (
-                      <>
-                        <div className={`${styles.field} ${styles.fieldWide}`}>
-                          <div className={styles.label}>Название товара</div>
-                          <input className={`${styles.input} ${duplicateProduct ? styles.inputError : ""}`} value={newProductName} onChange={(e) => setNewProductName(e.target.value)} placeholder="Напр. Пластиковые окна" />
-                          <div className={styles.hint}>С таким названием товар будет отображаться в каталоге.</div>
-                          {duplicateProduct && (<div className={styles.fieldError}>Товар с таким названием уже существует. Выбери его из списка.</div>)}
-                        </div>
-                        {/* Slug hidden intentionally */}
-                        <div className={`${styles.field} ${styles.fieldWide}`}>
-                          <div className={styles.label}>Описание товара (каноничное)</div>
-                          <textarea className={`${styles.input} ${styles.textarea}`} value={newProductDescription} onChange={(e) => setNewProductDescription(e.target.value)} placeholder="Каноничное описание товара" />
-                          <div className={styles.hint}>Опиши преимущества и характеристики. Это важно для SEO.</div>
-                        </div>
-                        <div className={`${styles.field} ${styles.fieldWide}`}>
-                          <div className={styles.label}>Cover-картинка товара</div>
-                          <div className={styles.coverRow}>
-                            <input className={styles.input} type="file" accept="image/*" onChange={(e) => onPickProductCover(e.target.files?.[0] || null)} />
-                            {newProductCover && (
-                              <div className={styles.coverPreview}>
-                                <img src={newProductCover.dataUrl} alt="cover-preview" />
-                                <button type="button" className={styles.photoDel} onClick={() => setNewProductCover(null)} title="Убрать">×</button>
-                              </div>
-                            )}
-                          </div>
-                          <div className={styles.hint}>Первое фото, которое увидит клиент.</div>
-                        </div>
-                        <div className={`${styles.field} ${styles.fieldWide}`}>
-                          <div className={styles.label}>Характеристики (до 10)</div>
-                          <div className={styles.specsList}>
-                            {newProductSpecs.map((row, idx) => (
-                              <div key={`spec-${idx}`} className={styles.specRow}>
-                                <input className={styles.input} value={row.name} onChange={(e) => updateSpecRow(idx, "name", e.target.value)} placeholder="Название" />
-                                <input className={styles.input} value={row.value} onChange={(e) => updateSpecRow(idx, "value", e.target.value)} placeholder="Значение" />
-                                <button type="button" className={styles.specRemove} onClick={() => removeSpecRow(idx)}>×</button>
-                              </div>
-                            ))}
-                          </div>
-                          <button type="button" className={styles.btnGhost} onClick={addSpecRow} disabled={newProductSpecs.length >= 10}>Добавить характеристику</button>
-                          <div className={styles.hint}>Например: Объем - 5 л, Вес - 10 кг.</div>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-                <div className={styles.field}><div className={styles.label}>Цена от, ₽</div><input className={styles.input} value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="Напр. 1500" inputMode="decimal" /></div>
-              </div>
-            </div>
-            <div className={styles.drawerFooter}><button className={styles.btnGhost} onClick={() => { resetNewItemForm(); setShowAdd(false); }}>Отмена</button><button className={styles.btnPrimary} onClick={addItem}>Добавить</button></div>
-          </div>
+          <AddItemForm
+            kind={kind}
+            setKind={setKind}
+            serviceCategories={serviceCategories}
+            serviceCategory={serviceCategory}
+            setServiceCategory={setServiceCategory}
+            serviceId={serviceId}
+            setServiceId={setServiceId}
+            filteredServicesForAdd={filteredServicesForAdd}
+            productCategoryOptions={productCategoryOptions}
+            productCategoryId={productCategoryId}
+            setProductCategoryId={setProductCategoryId}
+            createNewProduct={createNewProduct}
+            setCreateNewProduct={setCreateNewProduct}
+            productId={productId}
+            setProductId={setProductId}
+            filteredProductsForAdd={filteredProductsForAdd}
+            duplicateProduct={duplicateProduct}
+            newProductName={newProductName}
+            setNewProductName={setNewProductName}
+            newProductDescription={newProductDescription}
+            setNewProductDescription={setNewProductDescription}
+            newProductCover={newProductCover}
+            setNewProductCover={setNewProductCover}
+            onPickProductCover={onPickProductCover}
+            newProductSpecs={newProductSpecs}
+            updateSpecRow={updateSpecRow}
+            removeSpecRow={removeSpecRow}
+            addSpecRow={addSpecRow}
+            priceMin={priceMin}
+            setPriceMin={setPriceMin}
+            onClose={() => setShowAdd(false)}
+            onCancel={() => {
+              resetNewItemForm();
+              setShowAdd(false);
+            }}
+            onAdd={addItem}
+          />
         )}
       </main>
     </div>
