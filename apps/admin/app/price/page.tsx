@@ -146,7 +146,6 @@ async function jreq(
   return data;
 }
 
-// Ensure ReactQuill is loaded only on client
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 function toNumOrNull(v: any): number | null {
@@ -487,41 +486,57 @@ export default function PricePage() {
     return (id: number | null | undefined) => (id ? map.get(id) || "—" : "—");
   }, [productCategories]);
 
-  // Хелпер для получения названия категории у элемента прайс-листа
+  // ✅ FIX: Правильно определяем категорию для элемента прайс-листа
   const categoryByItem = useMemo(() => {
+    // 1. Мапа услуг: ID услуги -> Категория (строка)
     const sMap = new Map<string, string>();
-    for (const s of services) sMap.set(String(s.id), normCat(s.category));
+    for (const s of services) {
+        sMap.set(String(s.id), normCat(s.category));
+    }
 
+    // 2. Мапа товаров: ID товара -> Категория (название из дерева категорий или строка)
     const pMap = new Map<string, string>();
     for (const p of products) {
       let cName = "—";
       if (p.category_id) {
+        // Если есть ID категории, ищем название в справочнике
         cName = catNameById(p.category_id) || "—";
       } else if (p.category) {
+        // Fallback на текстовое поле, если оно есть
         cName = p.category;
       }
       pMap.set(String(p.id), cName);
     }
 
+    // Возвращаем функцию, которая по CompanyItem вернет название категории
     return (it: CompanyItem) => {
-      if (it.kind === "service") return sMap.get(String(it.service_id)) || "—";
-      if (it.kind === "product") return pMap.get(String(it.product_id)) || "—";
-      return "—";
+      if (it.kind === "service") {
+          return sMap.get(String(it.service_id)) || "—";
+      }
+      if (it.kind === "product") {
+          return pMap.get(String(it.product_id)) || "—";
+      }
+      return "—"; // Для custom
     };
   }, [services, products, catNameById]);
 
-  // Формируем список доступных категорий для фильтра на основе текущих items
+  // ✅ FIX: Вычисляем список категорий ДИНАМИЧЕСКИ на основе того, что есть в списке filteredItems (но до фильтрации по категории)
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
-    // Предварительно фильтруем по типу, чтобы в селекте категорий были только актуальные
+    
+    // Берем все items, фильтруем только по Типу (Услуга/Товар), но НЕ по категории
     const preFiltered = items.filter((it) => {
+      if (it.kind === "custom") return false; 
       if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
       return true;
     });
+
+    // Собираем категории из этих элементов
     for (const it of preFiltered) {
       const cat = categoryByItem(it);
       if (cat && cat !== "—") set.add(cat);
     }
+    
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
   }, [items, itemsKindFilter, categoryByItem]);
 
@@ -875,7 +890,7 @@ export default function PricePage() {
       if (it.kind === "custom") return false;
       if (itemsKindFilter !== "all" && it.kind !== itemsKindFilter) return false;
       
-      // Фильтр по категории
+      // ✅ FIX: Фильтрация по выбранной категории
       if (itemsCategoryFilter) {
           const cat = categoryByItem(it);
           if (cat !== itemsCategoryFilter) return false;
