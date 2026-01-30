@@ -676,6 +676,25 @@ app.get(
   })
 );
 
+app.get(
+  "/company/services",
+  requireAuth,
+  aw(async (_req, res) => {
+    const r = await pool.query(`
+      select
+        s.id,
+        s.name,
+        s.slug,
+        coalesce(sc.name, s.category_slug, '') as category,
+        s.cover_image as image_url
+      from services_catalog s
+      left join service_categories sc on sc.id = s.category_id
+      order by category asc, s.name asc
+    `);
+    res.json({ ok: true, items: r.rows });
+  })
+);
+
 /* =========================================================
    PRODUCTS
    ✅ РОВНО ОДИН GET /products

@@ -555,7 +555,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     const meData = (await jget(`${API}/auth/me`)) as MeResp;
     setMe(meData);
     const [svc, prd, comp, prof, cats] = await Promise.all([
-      jget(`${API}/services`),
+      jget(`${API}/company/services`),
       jget(`${API}/products`),
       jget(`${API}/companies/${meData.company.id}`),
       jget(`${API}/company/profile`),
