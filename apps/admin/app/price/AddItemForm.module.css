@@ -1,61 +1,309 @@
+/* apps/admin/app/price/AddItemForm.module.css */
+
 .drawerOverlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 18px;
+  backdrop-filter: blur(4px);
+  z-index: 1000; /* Высокий z-index, чтобы перекрывать всё */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .drawer {
-  width: min(920px, 100%);
+  width: 100%;
+  max-width: 600px; /* Оптимальная ширина для формы */
   max-height: 90vh;
-  overflow: auto;
-  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
   background: #fff;
-  box-shadow: 0 18px 60px rgba(10, 20, 40, 0.28);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
 }
 
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Header */
 .drawerHead {
+  flex-shrink: 0;
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid rgba(31, 36, 48, 0.10);
+  justify-content: space-between;
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .drawerTitle {
-  font-weight: 900;
-  font-size: 18px;
-  color: #1f2430;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
 }
 
 .drawerSub {
-  margin-top: 6px;
-  font-size: 13px;
-  color: rgba(31, 36, 48, 0.65);
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
 }
 
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 16px;
+  transition: color 0.2s;
+}
+.closeBtn:hover { color: #111; }
+
+/* Body (Scrollable) */
+.drawerBody {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+/* Grid & Layout */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+/* Form Elements */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #555;
+  letter-spacing: 0.03em;
+}
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111;
+  background: #fff;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  border-color: #111;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.inputError {
+  border-color: #dc2626;
+}
+
+/* Custom Checkbox */
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 10px 14px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  transition: background 0.2s;
+}
+.toggleLabel:hover { background: #f0f0f0; }
+.toggleLabel input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #111;
+}
+.toggleText {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* File Upload */
+.uploadBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fileInput {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.previewImg {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+.removeBtn:hover { color: #dc2626; }
+
+/* Specs */
+.specsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.specRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 30px;
+  gap: 10px;
+  align-items: center;
+}
+
+.specBtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  justify-self: start;
+}
+.specBtn:hover { text-decoration: underline; }
+.specBtn:disabled { color: #ccc; cursor: not-allowed; text-decoration: none; }
+
+/* Footer */
 .drawerFooter {
+  flex-shrink: 0;
+  padding: 20px 32px 32px;
+  border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 16px;
-  border-top: 1px solid rgba(31, 36, 48, 0.10);
+  gap: 12px;
 }
 
-@media (max-width: 920px) {
-  .drawerOverlay {
-    padding: 0;
-  }
+.btnPrimary {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+  transition: opacity 0.2s;
+}
+.btnPrimary:hover { opacity: 0.9; }
 
+.btnGhost {
+  background: #fff;
+  color: #555;
+  border: 1px solid #ddd;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.2s;
+}
+.btnGhost:hover { background: #f5f5f5; color: #111; }
+
+/* Mobile */
+@media (max-width: 640px) {
   .drawer {
-    width: 100%;
-    height: 100vh;
     max-height: 100vh;
     border-radius: 0;
+    height: 100%;
   }
+  .drawerHead { padding: 20px; }
+  .drawerBody { padding: 20px; }
+  .row { grid-template-columns: 1fr; }
+  .specRow { grid-template-columns: 1fr 1fr 30px; } /* Keep specs side-by-side if possible, or stack */
 }
