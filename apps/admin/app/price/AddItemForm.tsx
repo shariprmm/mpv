@@ -45,7 +45,7 @@ type Props = {
   productId: string;
   setProductId: (value: string) => void;
   filteredProductsForAdd: Product[];
-  duplicateProduct: Product | null;
+  duplicateProduct: boolean;
   newProductName: string;
   setNewProductName: (value: string) => void;
   newProductDescription: string;
