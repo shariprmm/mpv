@@ -1,4 +1,4 @@
-// apps/admin/app/price/PricePage.tsx
+// apps/admin/app/price/page.tsx
 "use client";
 
 import Link from "next/link";
@@ -23,6 +23,7 @@ export type Service = {
   name: string;
   slug: string;
   category?: string | null;
+  image_url?: string | null; // ✅ Добавлено поле для картинки
 };
 
 export type Product = {
@@ -31,6 +32,7 @@ export type Product = {
   slug: string;
   category_id?: number | null;
   category?: string | null;
+  image_url?: string | null; // ✅ Добавлено поле для картинки
 };
 
 export type CategoryFlat = {
@@ -473,15 +475,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     return (id: number | null | undefined) => (id ? map.get(id) || "—" : "—");
   }, [productCategories]);
 
-  // Хелпер: Получение цены компании для конкретного товара/услуги
-  const getCompanyPrice = (kind: "product" | "service", id: IdLike) => {
-    const item = items.find(it => 
-      it.kind === kind && 
-      (kind === "product" ? String(it.product_id) === String(id) : String(it.service_id) === String(id))
-    );
-    return item ? item.price_min : null;
-  };
-
   function resetNewItemForm() {
     setPriceMin("");
     setServiceId("");
@@ -764,6 +757,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       if (priceValue === null) {
         // If empty => delete if exists
         if (existing) {
+          setSavingId(existing.id); // Hack: use ID for loading state
           await jreq(`${API}/company-items/${existing.id}`, "DELETE");
           // Remove locally
           setItems(prev => prev.filter(it => it.id !== existing.id));
@@ -771,6 +765,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       } else {
         // If value => create or update
         if (existing) {
+          setSavingId(existing.id);
           await jreq(`${API}/company-items/${existing.id}`, "PATCH", { price_min: priceValue });
           // Update locally
           setItems(prev => prev.map(it => it.id === existing.id ? { ...it, price_min: priceValue } : it));
@@ -793,6 +788,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       setErr(e?.message || String(e));
       // On error, we might want to reload to be safe
       await loadAll();
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -1127,46 +1124,66 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
               </div>
               <div style={{ width: "100%", overflowX: "auto" }}>
                 <table className={styles.catalogTable}>
-                  <thead className={styles.catalogThead}><tr><th className={styles.catalogPhotoCell}>Фото</th><th>Название</th><th>Категория</th><th>Slug</th><th>Цена от, ₽</th></tr></thead>
+                  <thead className={styles.catalogThead}><tr><th className={styles.catalogPhotoCell}>Фото</th><th>Название</th><th>Категория</th><th>Цена от, ₽</th></tr></thead>
                   <tbody className={styles.catalogTbody}>
                     {activeCatalogTab === "products" && filteredCatalogProducts.map((p) => {
                       const pid = String(p.id);
                       const key = `product_${pid}`;
+                      const img = absPublicUrl(p.image_url);
                       return (
-                        <tr key={key}><td className={styles.catalogPhotoCell}><div className={styles.catalogPhoto}><span style={{ opacity: 0.55 }}>🧱</span></div></td><td><div className={styles.catalogName}>{p.name}</div><div className={styles.catalogMeta}>ID: {pid}</div></td><td>{catNameById(p.category_id ?? null)}</td><td><div className={styles.catalogSlug}>{p.slug || "—"}</div></td>
-                        <td>
-                          <input 
-                            className={styles.input} 
-                            style={{width: 100, padding: '6px 10px'}} 
-                            placeholder="0" 
-                            value={priceDraft[key] ?? ""}
-                            onChange={(e) => setPriceDraft(prev => ({...prev, [key]: e.target.value}))}
-                            onBlur={(e) => upsertPrice('product', p.id, e.target.value)}
-                          />
-                        </td>
+                        <tr key={key}>
+                          <td className={styles.catalogPhotoCell}>
+                            <div className={styles.catalogPhoto}>
+                              {img ? <img src={img} alt="" style={{width: '100%', height: '100%', objectFit: 'cover'}} /> : <span style={{ opacity: 0.55 }}>🧱</span>}
+                            </div>
+                          </td>
+                          <td>
+                            <div className={styles.catalogName}>{p.name}</div>
+                          </td>
+                          <td>{catNameById(p.category_id ?? null)}</td>
+                          <td>
+                            <input 
+                              className={styles.input} 
+                              style={{width: 100, padding: '6px 10px'}} 
+                              placeholder="0" 
+                              value={priceDraft[key] ?? ""}
+                              onChange={(e) => setPriceDraft(prev => ({...prev, [key]: e.target.value}))}
+                              onBlur={(e) => upsertPrice('product', p.id, e.target.value)}
+                            />
+                          </td>
                         </tr>
                       );
                     })}
                     {activeCatalogTab === "services" && filteredCatalogServices.map((s) => {
                       const sid = String(s.id);
                       const key = `service_${sid}`;
+                      const img = absPublicUrl(s.image_url);
                       return (
-                        <tr key={key}><td className={styles.catalogPhotoCell}><div className={styles.catalogPhoto}><span style={{ opacity: 0.55 }}>🛠️</span></div></td><td><div className={styles.catalogName}>{s.name}</div><div className={styles.catalogMeta}>ID: {sid}</div></td><td>{normCat(s.category)}</td><td><div className={styles.catalogSlug}>{s.slug || "—"}</div></td>
-                        <td>
-                          <input 
-                            className={styles.input} 
-                            style={{width: 100, padding: '6px 10px'}} 
-                            placeholder="0" 
-                            value={priceDraft[key] ?? ""}
-                            onChange={(e) => setPriceDraft(prev => ({...prev, [key]: e.target.value}))}
-                            onBlur={(e) => upsertPrice('service', s.id, e.target.value)}
-                          />
-                        </td>
+                        <tr key={key}>
+                          <td className={styles.catalogPhotoCell}>
+                            <div className={styles.catalogPhoto}>
+                              {img ? <img src={img} alt="" style={{width: '100%', height: '100%', objectFit: 'cover'}} /> : <span style={{ opacity: 0.55 }}>🛠️</span>}
+                            </div>
+                          </td>
+                          <td>
+                            <div className={styles.catalogName}>{s.name}</div>
+                          </td>
+                          <td>{normCat(s.category)}</td>
+                          <td>
+                            <input 
+                              className={styles.input} 
+                              style={{width: 100, padding: '6px 10px'}} 
+                              placeholder="0" 
+                              value={priceDraft[key] ?? ""}
+                              onChange={(e) => setPriceDraft(prev => ({...prev, [key]: e.target.value}))}
+                              onBlur={(e) => upsertPrice('service', s.id, e.target.value)}
+                            />
+                          </td>
                         </tr>
                       );
                     })}
-                    {activeCatalogTab === "products" && filteredCatalogProducts.length === 0 && (<tr><td colSpan={5}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
-                    {activeCatalogTab === "services" && filteredCatalogServices.length === 0 && (<tr><td colSpan={5}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
+                    {activeCatalogTab === "products" && filteredCatalogProducts.length === 0 && (<tr><td colSpan={4}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
+                    {activeCatalogTab === "services" && filteredCatalogServices.length === 0 && (<tr><td colSpan={4}><div className={styles.empty}>Ничего не найдено.</div></td></tr>)}
                   </tbody>
                 </table>
               </div>
