@@ -53,7 +53,7 @@
 
 .tagsTitle {
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .tagList {
@@ -148,7 +148,7 @@
 }
 
 .catLabelActive {
-  font-weight: 500;
+  font-weight: 400;
   opacity: 1;
 }
 
@@ -347,7 +347,7 @@
 .rubricatorTitle {
   font-size: 12.5px;
   line-height: 1.15;
-  font-weight: 600;
+  font-weight: 400;
   color: #111;
 
   display: -webkit-box;

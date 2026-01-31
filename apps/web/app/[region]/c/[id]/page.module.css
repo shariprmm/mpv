@@ -191,7 +191,7 @@
 
 .LeadModalTitle{
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 400;
   color: #111;
 }
 
@@ -986,7 +986,7 @@
 
 .ReviewsTitle {
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .ReviewsAvg {
@@ -1104,7 +1104,7 @@
 
 .RatingValue {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   opacity: 0.9;
 }
 

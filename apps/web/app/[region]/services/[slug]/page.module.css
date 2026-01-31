@@ -137,7 +137,7 @@
 
   font-size: 14px;
   line-height: 1.15;
-  font-weight: 600;
+  font-weight: 400;
 
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -278,7 +278,7 @@
 }
 
 .specCellKey {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .specCellVal {

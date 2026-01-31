@@ -58,7 +58,7 @@
   border-radius: 12px;
   color: #111;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   text-decoration: none;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -352,7 +352,7 @@
   background: rgba(255, 255, 255, 0.95);
   color: #111;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -409,13 +409,13 @@
 
 .blogDate {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   opacity: 0.5;
 }
 
 .blogMore {
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 400;
   font-size: 13px;
   color: #2563eb;
 }
@@ -495,7 +495,7 @@
 .rubricatorTitle {
   font-size: 12.5px;
   line-height: 1.15;
-  font-weight: 600;
+  font-weight: 400;
   color: #111;
 
   display: -webkit-box;
@@ -585,7 +585,7 @@
 .catTileTitle {
   font-size: 14px;
   line-height: 1.2;
-  font-weight: 600;
+  font-weight: 400;
   color: #111;
   max-width: 120px;
 }
