@@ -156,7 +156,7 @@
 
 .specVal {
   color: #111;
-  font-weight: 500;
+  font-weight: 400;
   text-align: right;
   max-width: 60%;
 }
@@ -219,7 +219,7 @@
 
 .priceMain {
   font-size: 32px;
-  font-weight: 800;
+  font-weight: 400;
   color: #111;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -233,7 +233,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   margin-bottom: 20px;
   width: 100%;
   box-sizing: border-box;
@@ -248,7 +248,7 @@
   background: #111;
   color: #fff;
   border-radius: 12px;
-  font-weight: 600;
+  font-weight: 400;
   text-decoration: none;
   font-size: 16px;
   transition: opacity 0.2s, transform 0.1s;
@@ -403,7 +403,7 @@
 
 .ReviewsTitle {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .ReviewsAvg {
@@ -425,7 +425,7 @@
 
 .UgcTitle {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .UgcDesc {
@@ -542,7 +542,7 @@
   border: 0;
   border-radius: 999px;
   padding: 10px 14px;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 14px;
   cursor: pointer;
   text-decoration: none;

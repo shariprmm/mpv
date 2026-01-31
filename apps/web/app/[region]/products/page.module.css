@@ -112,7 +112,7 @@
 }
 
 .simpleCardTitle {
-  font-weight: 500;
+  font-weight: 400;
   font-size: 15px;
   line-height: 1.25;
   color: #111;
@@ -177,7 +177,7 @@
   right: 40px;
   font-size: 12px;
   line-height: 1.2;
-  font-weight: 600;
+  font-weight: 400;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
