@@ -18,6 +18,7 @@ type LeadFormState = {
   phone: string;
   email: string;
   message: string;
+  agreement: boolean; // ✅ Добавлено поле
 };
 
 const DEFAULT_FORM: LeadFormState = {
@@ -25,6 +26,7 @@ const DEFAULT_FORM: LeadFormState = {
   phone: "",
   email: "",
   message: "",
+  agreement: true, // По умолчанию можно поставить true или false
 };
 
 export default function OfferLeadModal({ companyId, companyName }: Props) {
@@ -41,12 +43,20 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
     }
   }, [searchParams]);
 
+  // ✅ Валидация теперь требует галочку
   const canSubmit = useMemo(() => {
-    return Boolean(form.phone.trim() || form.email.trim());
-  }, [form.phone, form.email]);
+    const hasContact = Boolean(form.phone.trim() || form.email.trim());
+    return hasContact && form.agreement;
+  }, [form.phone, form.email, form.agreement]);
 
-  const onChange = (key: keyof LeadFormState) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const onChange = (key: keyof LeadFormState) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  };
+
+  const onToggleAgreement = () => {
+    setForm((prev) => ({ ...prev, agreement: !prev.agreement }));
   };
 
   const reset = () => {
@@ -65,7 +75,7 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
     setError("");
 
     if (!canSubmit) {
-      setError("Укажите телефон или email для связи.");
+      setError("Заполните контакты и подтвердите согласие.");
       return;
     }
 
@@ -133,7 +143,10 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
 
             {sent ? (
               <div className={styles.LeadModalSuccess}>
-                Спасибо! Мы отправили заявку компании. Они свяжутся с вами в ближайшее время.
+                <div className={styles.SuccessIcon}>✓</div>
+                <h3>Заявка отправлена!</h3>
+                <p>Компания получила ваше предложение и свяжется с вами в ближайшее время.</p>
+                <button className={`${styles.Btn} ${styles.BtnNormal}`} onClick={onClose} style={{marginTop: 20}}>Закрыть</button>
               </div>
             ) : (
               <form className={styles.LeadModalForm} onSubmit={onSubmit}>
@@ -180,8 +193,20 @@ export default function OfferLeadModal({ companyId, companyName }: Props) {
                   </label>
                 </div>
 
+                {/* ✅ Чекбокс согласия */}
+                <label className={styles.LeadModalAgreement}>
+                  <input 
+                    type="checkbox" 
+                    checked={form.agreement} 
+                    onChange={onToggleAgreement} 
+                  />
+                  <span>
+                    Я даю согласие на обработку моих персональных данных
+                  </span>
+                </label>
+
                 {error ? <div className={styles.LeadModalError}>{error}</div> : null}
-                <div className={styles.LeadModalHint}>* Укажите телефон или email, чтобы компания могла связаться.</div>
+                <div className={styles.LeadModalHint}>* Укажите телефон или email для связи.</div>
 
                 <div className={styles.LeadModalActions}>
                   <button type="button" className={`${styles.Btn} ${styles.BtnNormal}`} onClick={onClose}>
