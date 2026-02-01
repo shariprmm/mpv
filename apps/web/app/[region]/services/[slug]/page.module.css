@@ -55,7 +55,7 @@
 .cardBlock {
   background: #fff;
   border-radius: 20px;
-  padding: 32px;
+  padding: 15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
@@ -353,7 +353,7 @@
 
 @media (max-width: 600px) {
   .wrap {
-    padding: 0 16px 40px;
+    padding: 0px 0px;
   }
 
   .h1 {
@@ -441,7 +441,7 @@
 
   /* -- Прочее -- */
   .cardBlock {
-    padding: 20px;
+    
     border-radius: 16px;
   }
   
