@@ -676,6 +676,75 @@ app.get(
   })
 );
 
+// POST /services
+app.post(
+  "/services",
+  aw(async (req, res) => {
+    try {
+      const name = sanitizeText(req.body?.name, 500);
+      const slugRaw = cleanStr(req.body?.slug);
+      const categoryId = Number(req.body?.category_id || 0);
+
+      if (!name) return res.status(400).json({ ok: false, error: "bad_name" });
+      if (!Number.isFinite(categoryId) || categoryId <= 0)
+        return res.status(400).json({ ok: false, error: "bad_category_id" });
+
+      const cat = await pool.query("select slug from service_categories where id=$1", [
+        categoryId,
+      ]);
+      const categorySlug = cat.rows?.[0]?.slug || "general";
+
+      const slugBase = slugifyRu(slugRaw || name);
+      if (!slugBase) return res.status(400).json({ ok: false, error: "bad_slug" });
+
+      const dupeName = await pool.query(
+        "select id from services_catalog where lower(trim(name))=lower(trim($1)) limit 1",
+        [name]
+      );
+      if (dupeName.rowCount) return res.status(409).json({ ok: false, error: "name_exists" });
+
+      let slug = slugBase;
+      for (let i = 0; i < 50; i++) {
+        const dupe = await pool.query("select id from services_catalog where slug=$1 limit 1", [
+          slug,
+        ]);
+        if (!dupe.rowCount) break;
+        slug = `${slugBase}-${i + 1}`;
+      }
+
+      const description = sanitizeText(req.body?.description, 50000);
+      const cover_image = cleanStr(req.body?.cover_image);
+      const seo_h1 = sanitizeText(req.body?.seo_h1, 300);
+      const seo_title = sanitizeText(req.body?.seo_title, 700);
+      const seo_description = sanitizeText(req.body?.seo_description, 1500);
+      const seo_text = sanitizeText(req.body?.seo_text, 50000);
+
+      const ins = await pool.query(
+        `insert into services_catalog (name, slug, category_id, category_slug, description, cover_image, seo_h1, seo_title, seo_description, seo_text)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         returning id, name, slug, category_id`,
+        [
+          name,
+          slug,
+          categoryId,
+          categorySlug,
+          description ?? null,
+          cover_image ?? null,
+          seo_h1 ?? null,
+          seo_title ?? null,
+          seo_description ?? null,
+          seo_text ?? null,
+        ]
+      );
+
+      res.json({ ok: true, item: ins.rows[0] });
+    } catch (e) {
+      console.error("POST /services failed", e);
+      res.status(500).json({ ok: false, error: "services_create_failed" });
+    }
+  })
+);
+
 app.get(
   "/company/services",
   requireAuth,
@@ -692,6 +761,51 @@ app.get(
       order by category asc, s.name asc
     `);
     res.json({ ok: true, items: r.rows });
+  })
+);
+
+app.get(
+  "/company/products",
+  requireAuth,
+  aw(async (req, res) => {
+    try {
+      const categoryIdRaw = req.query.category_id;
+      const categoryId =
+        categoryIdRaw !== undefined && categoryIdRaw !== null && String(categoryIdRaw).trim()
+          ? Number(categoryIdRaw)
+          : null;
+
+      if (!categoryId || !Number.isFinite(categoryId) || categoryId <= 0) {
+        const r = await pool.query(
+          `select id, name, slug, category, category_id, cover_image as image_url
+           from products
+           order by category_id nulls last, name asc`
+        );
+        return res.json({ ok: true, items: r.rows });
+      }
+
+      const r = await pool.query(
+        `
+        WITH RECURSIVE tree AS (
+          SELECT id FROM product_categories WHERE id = $1
+          UNION ALL
+          SELECT c.id
+          FROM product_categories c
+          JOIN tree t ON c.parent_id = t.id
+        )
+        SELECT p.id, p.name, p.slug, p.category, p.category_id, p.cover_image as image_url
+        FROM products p
+        WHERE p.category_id IN (SELECT id FROM tree)
+        ORDER BY p.name asc
+        `,
+        [categoryId]
+      );
+
+      return res.json({ ok: true, items: r.rows });
+    } catch (e) {
+      console.error("GET /company/products error", e);
+      return res.status(500).json({ ok: false, error: "company_products_failed" });
+    }
   })
 );
 
@@ -2800,7 +2914,7 @@ app.post(
     if (!dataUrl) return res.status(400).json({ ok: false, error: "no_dataUrl" });
 
     const prefix = prefixRaw.replace(/[^a-z0-9-_]+/gi, "-").slice(0, 60) || "company";
-    const saved = await saveDataUrlImageGeneric({
+    const saved = await saveDataUrlImageAsWebp({
       prefix,
       dataUrl,
       filenameHint: filename,
@@ -3082,10 +3196,13 @@ const itemsR = await pool.query(
 
     s.name as service_name,
     s.slug as service_slug,
+    s.cover_image as service_image_url,
     sc.name as service_category_name,
 
     p.name as product_name,
     p.slug as product_slug,
+    p.cover_image as product_image_url,
+    pc.name as product_category_path,
 
     ci.custom_title,
     ci.description,
@@ -3100,6 +3217,7 @@ const itemsR = await pool.query(
   left join services_catalog s on s.id = ci.service_id
   left join service_categories sc on sc.id = s.category_id
   left join products p on p.id = ci.product_id
+  left join product_categories pc on pc.id = p.category_id
   where ci.company_id=$1
   order by ci.kind asc, coalesce(s.name, p.name, ci.custom_title) asc
   `,
@@ -3133,14 +3251,20 @@ app.get(
         ci.currency,
         s.name AS service_name,
         s.slug AS service_slug,
+        s.cover_image AS service_image_url,
+        sc.name AS service_category_name,
         p.name AS product_name,
         p.slug AS product_slug,
+        p.cover_image AS product_image_url,
+        pc.name AS product_category_path,
         ci.custom_title,
         ci.description,
         ci.photos
       FROM company_items ci
       left join services_catalog s on s.id = ci.service_id
+      left join service_categories sc on sc.id = s.category_id
       LEFT JOIN products p ON p.id = ci.product_id
+      left join product_categories pc on pc.id = p.category_id
       WHERE ci.company_id = $1
       ORDER BY ci.kind ASC, COALESCE(s.name, p.name, ci.custom_title) ASC, ci.id DESC
       `,

@@ -45,6 +45,14 @@ export type CategoryFlat = {
   sort_order?: number;
 };
 
+type ServiceCategory = {
+  id: number;
+  slug: string;
+  name: string;
+  parent_id?: number | null;
+  sort_order?: number | null;
+};
+
 type CompanyItem = {
   id: number;
   kind: "service" | "product" | "custom";
@@ -56,6 +64,10 @@ type CompanyItem = {
   custom_title?: string | null;
   service_name?: string | null;
   product_name?: string | null;
+  service_image_url?: string | null;
+  product_image_url?: string | null;
+  service_category_name?: string | null;
+  product_category_path?: string | null;
   description?: string | null;
   photos?: string[] | null;
 };
@@ -358,6 +370,9 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
   const [productCategories, setProductCategories] = useState<CategoryFlat[]>([]);
   const [productCategoryId, setProductCategoryId] = useState<string>("");
+  const [serviceCategoryOptions, setServiceCategoryOptions] = useState<
+    { value: string; label: string; slug: string }[]
+  >([]);
 
   const [err, setErr] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -389,10 +404,16 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [kind, setKind] = useState<"service" | "product">("service");
   const [serviceCategory, setServiceCategory] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
+  const [serviceCategoryId, setServiceCategoryId] = useState<string>("");
   const [productId, setProductId] = useState<string>("");
   const [priceMin, setPriceMin] = useState<string>("");
   const [showAdd, setShowAdd] = useState(false);
+  const [createNewService, setCreateNewService] = useState(false);
   const [createNewProduct, setCreateNewProduct] = useState(false);
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceSlug, setNewServiceSlug] = useState("");
+  const [newServiceDescription, setNewServiceDescription] = useState("");
+  const [newServiceCover, setNewServiceCover] = useState<PickedPhoto | null>(null);
   const [newProductName, setNewProductName] = useState("");
   const [newProductSlug, setNewProductSlug] = useState("");
   const [newProductDescription, setNewProductDescription] = useState("");
@@ -488,7 +509,13 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setPriceMin("");
     setServiceId("");
     setProductId("");
+    setServiceCategoryId("");
+    setCreateNewService(false);
     setCreateNewProduct(false);
+    setNewServiceName("");
+    setNewServiceSlug("");
+    setNewServiceDescription("");
+    setNewServiceCover(null);
     setNewProductName("");
     setNewProductSlug("");
     setNewProductDescription("");
@@ -537,6 +564,22 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setNewProductCover({ name: file.name, size: file.size, type: file.type, dataUrl });
   }
 
+  async function onPickServiceCover(file: File | null) {
+    if (!file) return;
+    setErr(null);
+    const fileType = String(file.type || "").toLowerCase();
+    if (!["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"].includes(fileType)) {
+      setErr("Поддерживаются только изображения PNG/JPG/WEBP/SVG.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErr("Размер файла не должен превышать 5 МБ.");
+      return;
+    }
+    const dataUrl = await fileToDataUrl(file);
+    setNewServiceCover({ name: file.name, size: file.size, type: file.type, dataUrl });
+  }
+
   function updateSpecRow(idx: number, field: "name" | "value", value: string) {
     setNewProductSpecs((prev) =>
       prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
@@ -555,22 +598,37 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setErr(null);
     const meData = (await jget(`${API}/auth/me`)) as MeResp;
     setMe(meData);
-    const [svc, prd, comp, prof, cats] = await Promise.all([
-      jget(`${API}/services`),
-      jget(`${API}/products`),
+    const [svc, prd, comp, prof, cats, svcCats] = await Promise.all([
+      jget(`${API}/company/services`),
+      jget(`${API}/company/products`),
       jget(`${API}/companies/${meData.company.id}`),
       jget(`${API}/company/profile`),
       jget(`${API}/product-categories?flat=1`),
+      jget(`${API}/public/services/categories`),
     ]);
     const svcItems: Service[] = svc.items || [];
     const prdItems: Product[] = (prd.items || prd.result || []) as Product[];
     const catItems: CategoryFlat[] = (cats.result || cats.items || []) as CategoryFlat[];
+    const svcCatItems: ServiceCategory[] = (svcCats.categories || svcCats.items || []) as ServiceCategory[];
     const serverItems: CompanyItem[] = comp.items || [];
 
     setServices(svcItems);
     setProducts(prdItems);
     setProductCategories(catItems);
     setItems(serverItems);
+
+    const serviceCatSorted = svcCatItems.slice(0).sort((a, b) => {
+      const ao = a.sort_order ?? 100;
+      const bo = b.sort_order ?? 100;
+      if (ao !== bo) return ao - bo;
+      return a.name.localeCompare(b.name, "ru");
+    });
+    const svcCatOptions = serviceCatSorted.map((c) => ({
+      value: String(c.id),
+      label: c.name,
+      slug: c.slug,
+    }));
+    setServiceCategoryOptions(svcCatOptions);
 
     // Initial draft for inputs
     const draft: Record<string, string> = {};
@@ -605,6 +663,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     
     const firstProductCategoryId = catItems.length ? String(catItems[0].id) : "";
     setProductCategoryId((prev) => prev || firstProductCategoryId);
+    const firstServiceCategoryId = svcCatOptions.length ? svcCatOptions[0].value : "";
+    setServiceCategoryId((prev) => prev || firstServiceCategoryId);
   }
 
   async function loadLeads() {
@@ -662,17 +722,34 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   }, [kind]);
 
   useEffect(() => {
+    if (kind === "service") return;
+    setCreateNewService(false);
+  }, [kind]);
+
+  useEffect(() => {
     if (!showAdd) {
       setAddItemErr(null);
       return;
     }
     setAddItemErr(null);
-  }, [showAdd, kind, serviceId, productId, productCategoryId, createNewProduct]);
+  }, [showAdd, kind, serviceId, productId, productCategoryId, createNewProduct, createNewService, serviceCategoryId]);
+
+  useEffect(() => {
+    if (!showAdd) return;
+    if (!serviceCategoryId && serviceCategoryOptions.length) {
+      setServiceCategoryId(serviceCategoryOptions[0].value);
+    }
+  }, [showAdd, serviceCategoryId, serviceCategoryOptions]);
 
   useEffect(() => {
     if (!createNewProduct) return;
     setNewProductSlug(slugifyRu(newProductName));
   }, [newProductName, createNewProduct]);
+
+  useEffect(() => {
+    if (!createNewService) return;
+    setNewServiceSlug(slugifyRu(newServiceName));
+  }, [newServiceName, createNewService]);
 
   useEffect(() => {
     if (activeMainTab !== "leads") return;
@@ -686,6 +763,70 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     try {
       const priceValue = toNumOrNull(priceMin);
       let productIdToUse = productId;
+      let serviceIdToUse = serviceId;
+
+      if (kind === "service" && createNewService) {
+        const trimmedName = newServiceName.trim();
+        const trimmedDesc = newServiceDescription.trim();
+        if (!serviceCategoryId) { setErr("Выбери категорию услуги."); return; }
+        if (!trimmedName) { setErr("Укажи название услуги."); return; }
+        if (!trimmedDesc) { setErr("Добавь описание услуги."); return; }
+        if (!newServiceCover) { setErr("Загрузи cover-картинку услуги."); return; }
+        if (priceValue == null) { setErr("Укажи цену услуги."); return; }
+
+        const selectedCategoryName =
+          serviceCategoryOptions.find((o) => o.value === serviceCategoryId)?.label || "";
+        const duplicate = services.find(
+          (s) =>
+            String(s.name || "").trim().toLowerCase() === trimmedName.toLowerCase() &&
+            (!selectedCategoryName || normCat(s.category) === normCat(selectedCategoryName))
+        );
+        if (duplicate) {
+          setErr("Услуга с таким названием уже существует. Выбери её из списка.");
+          return;
+        }
+
+        const coverUpload = await jreq(`${API}/company/upload-image`, "POST", {
+          dataUrl: newServiceCover.dataUrl,
+          filename: newServiceCover.name,
+          prefix: `service-cover-${me?.company?.id || "company"}`,
+        });
+
+        const priceLabel = formatPriceForSeo(priceValue);
+        const seoTitle = `${trimmedName} — ${companyTitle} ${regionName}. Цена от ${priceLabel} ₽`;
+        const seoH1 = `${trimmedName} от ${companyTitle} в ${regionName}`;
+        const seoDescription =
+          `Заказать ${trimmedName} от компании ${companyTitle} в регионе ${regionName}. ` +
+          `Цена от ${priceLabel} ₽.`;
+
+        const created = await jreq(`${API}/services`, "POST", {
+          name: trimmedName,
+          slug: newServiceSlug || slugifyRu(trimmedName),
+          category_id: Number(serviceCategoryId),
+          description: trimmedDesc,
+          cover_image: coverUpload?.url,
+          seo_h1: seoH1,
+          seo_title: seoTitle,
+          seo_description: seoDescription,
+        });
+
+        serviceIdToUse = created?.item?.id ? String(created.item.id) : "";
+        if (!serviceIdToUse) {
+          setErr("Не удалось создать услугу. Попробуй ещё раз.");
+          return;
+        }
+
+        setServices((prev) => [
+          ...prev,
+          {
+            id: serviceIdToUse,
+            name: trimmedName,
+            slug: created?.item?.slug || newServiceSlug || slugifyRu(trimmedName),
+            category: selectedCategoryName,
+            image_url: coverUpload?.url,
+          },
+        ]);
+      }
 
       if (kind === "product" && createNewProduct) {
         // ... (creation logic same as before)
@@ -740,23 +881,35 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
           setErr("Не удалось создать товар. Попробуй ещё раз.");
           return;
         }
+
+        setProducts((prev) => [
+          ...prev,
+          {
+            id: productIdToUse,
+            name: trimmedName,
+            slug: created?.item?.slug || newProductSlug || slugifyRu(trimmedName),
+            category_id: Number(productCategoryId),
+            category: created?.item?.category,
+            image_url: coverUpload?.url,
+          },
+        ]);
       }
 
       // После создания товара, привязываем его к компании
       if (kind === "product" && !productIdToUse) { setErr("Выбери товар."); return; }
-      if (kind === "service" && !serviceId) { setErr("Выбери услугу."); return; }
+      if (kind === "service" && !serviceIdToUse) { setErr("Выбери услугу."); return; }
       const existsInCompany = items.some((item) => {
         if (item.kind !== kind) return false;
         return kind === "product"
           ? String(item.product_id) === String(productIdToUse)
-          : String(item.service_id) === String(serviceId);
+          : String(item.service_id) === String(serviceIdToUse);
       });
       if (existsInCompany) {
         setAddItemErr(kind === "product" ? "Этот товар уже добавлен в прайс." : "Эта услуга уже добавлена в прайс.");
         return;
       }
       const body: any = { kind, price_min: priceValue, price_max: null };
-      if (kind === "service") body.service_id = serviceId ? Number(serviceId) : null;
+      if (kind === "service") body.service_id = serviceIdToUse ? Number(serviceIdToUse) : null;
       if (kind === "product") body.product_id = productIdToUse ? Number(productIdToUse) : null;
       
       const createdItem = await jreq(`${API}/company-items`, "POST", body);
@@ -764,7 +917,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
       // Обновляем локально, чтобы не перезагружать всю страницу
       if (createdItem && createdItem.item) {
         setItems(prev => [...prev, createdItem.item]);
-        const key = kind === 'product' ? `product_${productIdToUse}` : `service_${serviceId}`;
+        const key = kind === 'product' ? `product_${productIdToUse}` : `service_${serviceIdToUse}`;
         setPriceDraft(prev => ({ ...prev, [key]: String(priceValue) }));
       } else {
         await loadAll();
@@ -919,9 +1072,22 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
     const q = catalogQuery.trim().toLowerCase();
     const catId = catalogCatId ? Number(catalogCatId) : 0;
+    const productMap = new Map(products.map((p) => [String(p.id), p]));
     
     // 2. Фильтруем глобальный список товаров: оставляем только те, что есть у компании
-    let list = products.filter((p) => allowedProductIds.has(String(p.id)));
+    let list = Array.from(allowedProductIds).map((id) => {
+      const product = productMap.get(id);
+      if (product) return product;
+      const item = items.find((it) => it.kind === "product" && String(it.product_id) === id);
+      return {
+        id,
+        name: item?.product_name || "Без названия",
+        slug: item?.product_name ? slugifyRu(item.product_name) : "",
+        category_id: null,
+        category: item?.product_category_path || null,
+        image_url: item?.product_image_url || null,
+      } as Product;
+    });
 
     // 3. Дополнительные фильтры (категория, поиск)
     if (catId && products.some((p) => p.category_id != null)) {
@@ -954,9 +1120,21 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
     const q = catalogQuery.trim().toLowerCase();
     const cat = catalogSvcCat ? normCat(catalogSvcCat) : "";
+    const serviceMap = new Map(services.map((s) => [String(s.id), s]));
     
     // 2. Фильтруем глобальный список услуг
-    let list = services.filter((s) => allowedServiceIds.has(String(s.id)));
+    let list = Array.from(allowedServiceIds).map((id) => {
+      const service = serviceMap.get(id);
+      if (service) return service;
+      const item = items.find((it) => it.kind === "service" && String(it.service_id) === id);
+      return {
+        id,
+        name: item?.service_name || "Без названия",
+        slug: item?.service_name ? slugifyRu(item.service_name) : "",
+        category: item?.service_category_name || null,
+        image_url: item?.service_image_url || null,
+      } as Service;
+    });
 
     if (cat) list = list.filter((s) => normCat(s.category) === cat);
     if (q) {
@@ -1407,6 +1585,11 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             serviceId={serviceId}
             setServiceId={setServiceId}
             filteredServicesForAdd={filteredServicesForAdd}
+            serviceCategoryOptions={serviceCategoryOptions}
+            serviceCategoryId={serviceCategoryId}
+            setServiceCategoryId={setServiceCategoryId}
+            createNewService={createNewService}
+            setCreateNewService={setCreateNewService}
             productCategoryOptions={productCategoryOptions}
             productCategoryId={productCategoryId}
             setProductCategoryId={setProductCategoryId}
@@ -1417,6 +1600,13 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             filteredProductsForAdd={filteredProductsForAdd}
             // ✅ FIX: Coerce duplicateProduct to boolean
             duplicateProduct={!!duplicateProduct}
+            newServiceName={newServiceName}
+            setNewServiceName={setNewServiceName}
+            newServiceDescription={newServiceDescription}
+            setNewServiceDescription={setNewServiceDescription}
+            newServiceCover={newServiceCover}
+            setNewServiceCover={setNewServiceCover}
+            onPickServiceCover={onPickServiceCover}
             newProductName={newProductName}
             setNewProductName={setNewProductName}
             newProductDescription={newProductDescription}
