@@ -1068,9 +1068,22 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
     const q = catalogQuery.trim().toLowerCase();
     const catId = catalogCatId ? Number(catalogCatId) : 0;
+    const productMap = new Map(products.map((p) => [String(p.id), p]));
     
     // 2. Фильтруем глобальный список товаров: оставляем только те, что есть у компании
-    let list = products.filter((p) => allowedProductIds.has(String(p.id)));
+    let list = Array.from(allowedProductIds).map((id) => {
+      const product = productMap.get(id);
+      if (product) return product;
+      const item = items.find((it) => it.kind === "product" && String(it.product_id) === id);
+      return {
+        id,
+        name: item?.product_name || "Без названия",
+        slug: item?.product_name ? slugifyRu(item.product_name) : "",
+        category_id: null,
+        category: null,
+        image_url: null,
+      } as Product;
+    });
 
     // 3. Дополнительные фильтры (категория, поиск)
     if (catId && products.some((p) => p.category_id != null)) {
@@ -1103,9 +1116,21 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
     const q = catalogQuery.trim().toLowerCase();
     const cat = catalogSvcCat ? normCat(catalogSvcCat) : "";
+    const serviceMap = new Map(services.map((s) => [String(s.id), s]));
     
     // 2. Фильтруем глобальный список услуг
-    let list = services.filter((s) => allowedServiceIds.has(String(s.id)));
+    let list = Array.from(allowedServiceIds).map((id) => {
+      const service = serviceMap.get(id);
+      if (service) return service;
+      const item = items.find((it) => it.kind === "service" && String(it.service_id) === id);
+      return {
+        id,
+        name: item?.service_name || "Без названия",
+        slug: item?.service_name ? slugifyRu(item.service_name) : "",
+        category: null,
+        image_url: null,
+      } as Service;
+    });
 
     if (cat) list = list.filter((s) => normCat(s.category) === cat);
     if (q) {
