@@ -676,6 +676,75 @@ app.get(
   })
 );
 
+// POST /services
+app.post(
+  "/services",
+  aw(async (req, res) => {
+    try {
+      const name = sanitizeText(req.body?.name, 500);
+      const slugRaw = cleanStr(req.body?.slug);
+      const categoryId = Number(req.body?.category_id || 0);
+
+      if (!name) return res.status(400).json({ ok: false, error: "bad_name" });
+      if (!Number.isFinite(categoryId) || categoryId <= 0)
+        return res.status(400).json({ ok: false, error: "bad_category_id" });
+
+      const cat = await pool.query("select slug from service_categories where id=$1", [
+        categoryId,
+      ]);
+      const categorySlug = cat.rows?.[0]?.slug || "general";
+
+      const slugBase = slugifyRu(slugRaw || name);
+      if (!slugBase) return res.status(400).json({ ok: false, error: "bad_slug" });
+
+      const dupeName = await pool.query(
+        "select id from services_catalog where lower(trim(name))=lower(trim($1)) limit 1",
+        [name]
+      );
+      if (dupeName.rowCount) return res.status(409).json({ ok: false, error: "name_exists" });
+
+      let slug = slugBase;
+      for (let i = 0; i < 50; i++) {
+        const dupe = await pool.query("select id from services_catalog where slug=$1 limit 1", [
+          slug,
+        ]);
+        if (!dupe.rowCount) break;
+        slug = `${slugBase}-${i + 1}`;
+      }
+
+      const description = sanitizeText(req.body?.description, 50000);
+      const cover_image = cleanStr(req.body?.cover_image);
+      const seo_h1 = sanitizeText(req.body?.seo_h1, 300);
+      const seo_title = sanitizeText(req.body?.seo_title, 700);
+      const seo_description = sanitizeText(req.body?.seo_description, 1500);
+      const seo_text = sanitizeText(req.body?.seo_text, 50000);
+
+      const ins = await pool.query(
+        `insert into services_catalog (name, slug, category_id, category_slug, description, cover_image, seo_h1, seo_title, seo_description, seo_text, show_on_site)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true)
+         returning id, name, slug, category_id`,
+        [
+          name,
+          slug,
+          categoryId,
+          categorySlug,
+          description ?? null,
+          cover_image ?? null,
+          seo_h1 ?? null,
+          seo_title ?? null,
+          seo_description ?? null,
+          seo_text ?? null,
+        ]
+      );
+
+      res.json({ ok: true, item: ins.rows[0] });
+    } catch (e) {
+      console.error("POST /services failed", e);
+      res.status(500).json({ ok: false, error: "services_create_failed" });
+    }
+  })
+);
+
 app.get(
   "/company/services",
   requireAuth,
@@ -2266,8 +2335,8 @@ app.post(
       const seo_text = sanitizeText(req.body?.seo_text, 50000);
 
       const ins = await pool.query(
-        `insert into products (name, slug, category, category_id, description, cover_image, specs, seo_h1, seo_title, seo_description, seo_text)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        `insert into products (name, slug, category, category_id, description, cover_image, specs, seo_h1, seo_title, seo_description, seo_text, show_on_site)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true)
          returning id, name, slug, category, category_id`,
         [
           name,
@@ -2800,7 +2869,7 @@ app.post(
     if (!dataUrl) return res.status(400).json({ ok: false, error: "no_dataUrl" });
 
     const prefix = prefixRaw.replace(/[^a-z0-9-_]+/gi, "-").slice(0, 60) || "company";
-    const saved = await saveDataUrlImageGeneric({
+    const saved = await saveDataUrlImageAsWebp({
       prefix,
       dataUrl,
       filenameHint: filename,
