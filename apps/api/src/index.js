@@ -2335,8 +2335,8 @@ app.post(
       const seo_text = sanitizeText(req.body?.seo_text, 50000);
 
       const ins = await pool.query(
-        `insert into products (name, slug, category, category_id, description, cover_image, specs, seo_h1, seo_title, seo_description, seo_text)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        `insert into products (name, slug, category, category_id, description, cover_image, specs, seo_h1, seo_title, seo_description, seo_text, show_on_site)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true)
          returning id, name, slug, category, category_id`,
         [
           name,
@@ -2869,7 +2869,7 @@ app.post(
     if (!dataUrl) return res.status(400).json({ ok: false, error: "no_dataUrl" });
 
     const prefix = prefixRaw.replace(/[^a-z0-9-_]+/gi, "-").slice(0, 60) || "company";
-    const saved = await saveDataUrlImageGeneric({
+    const saved = await saveDataUrlImageAsWebp({
       prefix,
       dataUrl,
       filenameHint: filename,
