@@ -764,6 +764,51 @@ app.get(
   })
 );
 
+app.get(
+  "/company/products",
+  requireAuth,
+  aw(async (req, res) => {
+    try {
+      const categoryIdRaw = req.query.category_id;
+      const categoryId =
+        categoryIdRaw !== undefined && categoryIdRaw !== null && String(categoryIdRaw).trim()
+          ? Number(categoryIdRaw)
+          : null;
+
+      if (!categoryId || !Number.isFinite(categoryId) || categoryId <= 0) {
+        const r = await pool.query(
+          `select id, name, slug, category, category_id, cover_image as image_url
+           from products
+           order by category_id nulls last, name asc`
+        );
+        return res.json({ ok: true, items: r.rows });
+      }
+
+      const r = await pool.query(
+        `
+        WITH RECURSIVE tree AS (
+          SELECT id FROM product_categories WHERE id = $1
+          UNION ALL
+          SELECT c.id
+          FROM product_categories c
+          JOIN tree t ON c.parent_id = t.id
+        )
+        SELECT p.id, p.name, p.slug, p.category, p.category_id, p.cover_image as image_url
+        FROM products p
+        WHERE p.category_id IN (SELECT id FROM tree)
+        ORDER BY p.name asc
+        `,
+        [categoryId]
+      );
+
+      return res.json({ ok: true, items: r.rows });
+    } catch (e) {
+      console.error("GET /company/products error", e);
+      return res.status(500).json({ ok: false, error: "company_products_failed" });
+    }
+  })
+);
+
 /* =========================================================
    PRODUCTS
    ✅ РОВНО ОДИН GET /products
