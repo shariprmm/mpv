@@ -28,6 +28,11 @@ type Props = {
   serviceId: string;
   setServiceId: (value: string) => void;
   filteredServicesForAdd: Service[];
+  serviceCategoryOptions: { value: string; label: string; slug: string }[];
+  serviceCategoryId: string;
+  setServiceCategoryId: (value: string) => void;
+  createNewService: boolean;
+  setCreateNewService: (value: boolean) => void;
   
   productCategoryOptions: { value: string; label: string }[];
   productCategoryId: string;
@@ -39,6 +44,14 @@ type Props = {
   filteredProductsForAdd: Product[];
   duplicateProduct: boolean;
   
+  newServiceName: string;
+  setNewServiceName: (value: string) => void;
+  newServiceDescription: string;
+  setNewServiceDescription: (value: string) => void;
+  newServiceCover: PickedPhoto | null;
+  setNewServiceCover: (value: PickedPhoto | null) => void;
+  onPickServiceCover: (file: File | null) => void;
+
   newProductName: string;
   setNewProductName: (value: string) => void;
   newProductDescription: string;
@@ -65,10 +78,15 @@ export default function AddItemForm(props: Props) {
     kind, setKind,
     serviceCategories, serviceCategory, setServiceCategory,
     serviceId, setServiceId, filteredServicesForAdd,
+    serviceCategoryOptions, serviceCategoryId, setServiceCategoryId,
+    createNewService, setCreateNewService,
     productCategoryOptions, productCategoryId, setProductCategoryId,
     createNewProduct, setCreateNewProduct,
     productId, setProductId, filteredProductsForAdd,
     duplicateProduct,
+    newServiceName, setNewServiceName,
+    newServiceDescription, setNewServiceDescription,
+    newServiceCover, setNewServiceCover, onPickServiceCover,
     newProductName, setNewProductName,
     newProductDescription, setNewProductDescription,
     newProductCover, setNewProductCover, onPickProductCover,
@@ -113,24 +131,90 @@ export default function AddItemForm(props: Props) {
 
             {/* --- УСЛУГА --- */}
             {kind === "service" && (
-              <div className={styles.row}>
+              <>
                 <div className={styles.field}>
-                  <label className={styles.label}>Категория</label>
-                  <select className={styles.select} value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value)}>
-                    {serviceCategories.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <label className={styles.toggleLabel}>
+                    <input type="checkbox" checked={createNewService} onChange={(e) => setCreateNewService(e.target.checked)} />
+                    <span className={styles.toggleText}>Создать услугу с нуля</span>
+                  </label>
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Услуга</label>
-                  <select className={styles.select} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-                    {filteredServicesForAdd.map((s) => (
-                      <option key={String(s.id)} value={String(s.id)}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+
+                {!createNewService ? (
+                  <div className={styles.row}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Категория</label>
+                      <select className={styles.select} value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value)}>
+                        {serviceCategories.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Услуга</label>
+                      <select className={styles.select} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                        <option value="">— Выберите услугу —</option>
+                        {filteredServicesForAdd.map((s) => (
+                          <option key={String(s.id)} value={String(s.id)}>{s.name}</option>
+                        ))}
+                      </select>
+                      {serviceCategory && filteredServicesForAdd.length === 0 && (
+                        <div className={styles.hint}>В этой категории нет услуг. Создайте новую.</div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Категория услуги</label>
+                      <select className={styles.select} value={serviceCategoryId} onChange={(e) => setServiceCategoryId(e.target.value)}>
+                        <option value="">— Выберите категорию —</option>
+                        {serviceCategoryOptions.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>Название услуги</label>
+                      <input
+                        className={styles.input}
+                        value={newServiceName}
+                        onChange={(e) => setNewServiceName(e.target.value)}
+                        placeholder="Например: Монтаж септика"
+                      />
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>Описание</label>
+                      <textarea
+                        className={styles.textarea}
+                        value={newServiceDescription}
+                        onChange={(e) => setNewServiceDescription(e.target.value)}
+                        placeholder="Краткое описание услуги и её преимуществ..."
+                      />
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>Фотография (Cover)</label>
+                      {!newServiceCover ? (
+                        <div className={styles.uploadBox}>
+                          <label className={styles.uploadBtn}>
+                            <input type="file" className={styles.fileInput} accept="image/*" onChange={(e) => onPickServiceCover(e.target.files?.[0] || null)} />
+                            📁 Выбрать файл
+                          </label>
+                          <span className={styles.hint}>PNG, JPG, WEBP до 5Мб</span>
+                        </div>
+                      ) : (
+                        <div className={styles.preview}>
+                          <img src={newServiceCover.dataUrl} alt="preview" className={styles.previewImg} />
+                          <span style={{ fontSize: 13, flexGrow: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{newServiceCover.name}</span>
+                          <button onClick={() => setNewServiceCover(null)} className={styles.removeBtn}>×</button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
             )}
 
             {/* --- ТОВАР --- */}
