@@ -64,6 +64,10 @@ type CompanyItem = {
   custom_title?: string | null;
   service_name?: string | null;
   product_name?: string | null;
+  service_image_url?: string | null;
+  product_image_url?: string | null;
+  service_category_name?: string | null;
+  product_category_path?: string | null;
   description?: string | null;
   photos?: string[] | null;
 };

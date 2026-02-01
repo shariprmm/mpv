@@ -3196,10 +3196,13 @@ const itemsR = await pool.query(
 
     s.name as service_name,
     s.slug as service_slug,
+    s.cover_image as service_image_url,
     sc.name as service_category_name,
 
     p.name as product_name,
     p.slug as product_slug,
+    p.cover_image as product_image_url,
+    pc.path_name as product_category_path,
 
     ci.custom_title,
     ci.description,
@@ -3214,6 +3217,7 @@ const itemsR = await pool.query(
   left join services_catalog s on s.id = ci.service_id
   left join service_categories sc on sc.id = s.category_id
   left join products p on p.id = ci.product_id
+  left join product_categories pc on pc.id = p.category_id
   where ci.company_id=$1
   order by ci.kind asc, coalesce(s.name, p.name, ci.custom_title) asc
   `,
@@ -3247,14 +3251,20 @@ app.get(
         ci.currency,
         s.name AS service_name,
         s.slug AS service_slug,
+        s.cover_image AS service_image_url,
+        sc.name AS service_category_name,
         p.name AS product_name,
         p.slug AS product_slug,
+        p.cover_image AS product_image_url,
+        pc.path_name AS product_category_path,
         ci.custom_title,
         ci.description,
         ci.photos
       FROM company_items ci
       left join services_catalog s on s.id = ci.service_id
+      left join service_categories sc on sc.id = s.category_id
       LEFT JOIN products p ON p.id = ci.product_id
+      left join product_categories pc on pc.id = p.category_id
       WHERE ci.company_id = $1
       ORDER BY ci.kind ASC, COALESCE(s.name, p.name, ci.custom_title) ASC, ci.id DESC
       `,
