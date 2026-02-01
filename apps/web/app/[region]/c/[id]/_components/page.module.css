@@ -1,0 +1,284 @@
+/* --- Modal Overlay --- */
+.LeadModalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* --- Modal Card --- */
+.LeadModal {
+  background: #fff;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  padding: 40px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Header --- */
+.LeadModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.LeadModalTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.LeadModalSubtitle {
+  font-size: 15px;
+  color: #666;
+}
+
+.LeadModalClose {
+  background: transparent;
+  border: 1px solid #e5e5e5;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #111;
+  font-size: 16px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.LeadModalClose:hover {
+  background: #f5f5f5;
+  border-color: #d4d4d4;
+}
+
+/* --- Form --- */
+.LeadModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.LeadModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.LeadModalField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Растягиваем Email и Комментарий */
+.LeadModalField:nth-child(3),
+.LeadModalField:nth-child(4),
+.LeadModalFieldWide {
+  grid-column: 1 / -1;
+}
+
+.LeadModalField span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  margin-left: 2px;
+}
+
+/* --- Inputs --- */
+.LeadModalInput,
+.LeadModalTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-family: inherit;
+  color: #111;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.LeadModalInput::placeholder,
+.LeadModalTextarea::placeholder {
+  color: #aaa;
+  font-weight: 300;
+}
+
+.LeadModalInput:focus,
+.LeadModalTextarea:focus {
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.LeadModalTextarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* --- Agreement Checkbox --- */
+.LeadModalAgreement {
+  display: flex;
+  align-items: flex-start; /* Выравнивание по верху для длинного текста */
+  gap: 10px;
+  cursor: pointer;
+  margin-top: -4px;
+}
+
+.LeadModalAgreement input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #111; /* Цвет галочки под стиль проекта */
+}
+
+.LeadModalAgreement span {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* --- Misc --- */
+.LeadModalError {
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #fee2e2;
+}
+
+.LeadModalHint {
+  font-size: 13px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* --- Success State --- */
+.LeadModalSuccess {
+  text-align: center;
+  padding: 40px 0;
+  color: #111;
+}
+
+.SuccessIcon {
+  width: 60px;
+  height: 60px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+/* --- Actions --- */
+.LeadModalActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f5f5f5;
+}
+
+/* --- Buttons --- */
+.Btn {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.BtnNormal {
+  background: transparent;
+  color: #666;
+}
+
+.BtnNormal:hover {
+  background: #f5f5f5;
+  color: #111;
+}
+
+.BtnAction {
+  background: #111;
+  color: #fff;
+}
+
+.BtnAction:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+.BtnAction:disabled {
+  background: #e5e5e5;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- Mobile --- */
+@media (max-width: 600px) {
+  .LeadModal {
+    padding: 24px;
+    border-radius: 20px;
+    margin: 10px;
+  }
+  
+  .LeadModalGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .LeadModalActions {
+    flex-direction: column-reverse;
+    width: 100%;
+    gap: 12px;
+  }
+  
+  .Btn {
+    width: 100%;
+    padding: 16px;
+  }
+}
