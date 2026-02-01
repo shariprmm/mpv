@@ -3202,7 +3202,7 @@ const itemsR = await pool.query(
     p.name as product_name,
     p.slug as product_slug,
     p.cover_image as product_image_url,
-    pc.path_name as product_category_path,
+    pc.name as product_category_path,
 
     ci.custom_title,
     ci.description,
@@ -3256,7 +3256,7 @@ app.get(
         p.name AS product_name,
         p.slug AS product_slug,
         p.cover_image AS product_image_url,
-        pc.path_name AS product_category_path,
+        pc.name AS product_category_path,
         ci.custom_title,
         ci.description,
         ci.photos
