@@ -48,6 +48,8 @@
 
 .sideColumn {
   min-width: 0;
+  /* Важно для sticky позиционирования внутри грида */
+  height: 100%; 
 }
 
 /* --- Универсальный блок (карточка) --- */
@@ -55,7 +57,7 @@
   background: #fff;
   border-radius: 20px;
   padding: 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); /* Мягкая современная тень */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
@@ -74,7 +76,6 @@
   border-radius: 16px;
   overflow: hidden;
   background: #f9f9f9;
-  /* Адаптивная высота: квадрат на мобилках, 4:3 или фиксированная на десктопе */
   aspect-ratio: 4/3;
   display: flex;
   align-items: center;
@@ -84,7 +85,7 @@
 .heroImg {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Чтобы фото товара влезало целиком */
+  object-fit: contain;
   display: block;
   transition: transform 0.3s ease;
 }
@@ -105,7 +106,6 @@
   margin-top: 4px;
 }
 
-/* Глобальные стили для GalleryLightbox внутри контейнера */
 .thumbsContainer :global(.mpvGalleryGrid) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -118,7 +118,7 @@
   cursor: pointer;
   border: 2px solid transparent;
   transition: border-color 0.2s;
-  aspect-ratio: 1; /* Квадратные миниатюры */
+  aspect-ratio: 1;
   position: relative;
 }
 
@@ -162,9 +162,9 @@
   color: #666;
   font-size: 15px;
   padding-right: 16px;
-  background: #fff; /* Чтобы перекрыть пунктир если нужно */
+  background: #fff;
   position: relative;
-  top: 5px; /* Визуальная компенсация для baseline */
+  top: 5px;
 }
 
 .specVal {
@@ -197,7 +197,7 @@
 /* --- Сайдбар (Summary / Price) --- */
 .stickySummary {
   position: sticky;
-  top: 24px;
+  top: 80px; /* Отступ сверху, чтобы не прилипало к самому краю (учтите высоту хедера) */
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -211,6 +211,8 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* Важно для корректного отображения ширины */
+  box-sizing: border-box; 
 }
 
 .priceHeader {
@@ -253,20 +255,22 @@
   justify-content: center;
   width: 100%;
   padding: 18px;
-  background: #111;
+  /* Яркий синий цвет (как в логотипе/акцентах) */
+  background: #2563eb; 
   color: #fff;
   border-radius: 14px;
   font-weight: 600;
   text-decoration: none;
   font-size: 16px;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); /* Цветная тень */
+  box-sizing: border-box; /* Гарантирует, что паддинги не расширяют кнопку */
 }
 
 .summaryBtn:hover {
-  background: #222;
+  background: #1d4ed8; /* Темнее при наведении */
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
 }
 
 /* --- Секция Компаний (внизу) --- */
@@ -309,7 +313,7 @@
   color: #111;
 }
 
-/* --- Reviews Styles (Сохраняем стили отзывов) --- */
+/* --- Reviews Styles --- */
 .ReviewsHeaderRow {
   display: flex;
   justify-content: space-between;
@@ -345,17 +349,17 @@
 
 @media (max-width: 1024px) {
   .productGrid {
-    grid-template-columns: 1fr; /* Одна колонка */
+    grid-template-columns: 1fr;
     gap: 24px;
   }
 
-  /* Сайдбар с ценой уходит под фото (или над, см. ниже) */
-  .sideColumn {
-    order: -1; /* Поднимаем блок цены НАВЕРХ на мобильных, как на маркетплейсах */
+  /* Сбрасываем фиксацию на мобильных, чтобы не перекрывало контент */
+  .stickySummary {
+    position: static; 
   }
 
-  .stickySummary {
-    position: static;
+  .sideColumn {
+    order: -1; 
   }
 
   .priceCard {
@@ -394,9 +398,8 @@
     margin-bottom: 24px;
   }
 
-  /* -- Модернизация галереи на мобильных -- */
   .galleryBlock {
-    padding: 0; /* Убираем паддинг у карточки, чтобы фото было крупным */
+    padding: 0;
     background: transparent;
     box-shadow: none;
     border: none;
@@ -404,23 +407,23 @@
 
   .heroImgWrap {
     border-radius: 12px;
-    aspect-ratio: 1 / 1; /* Квадратное фото на мобильном */
+    aspect-ratio: 1 / 1;
     background: #fff;
     border: 1px solid rgba(0,0,0,0.05);
   }
 
-  /* Горизонтальный скролл для миниатюр на мобильном */
+  /* Горизонтальный скролл для миниатюр */
   .thumbsContainer {
     margin-top: 12px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px; /* Место для скроллбара */
-    margin-left: -4px; /* Компенсация */
+    padding-bottom: 8px;
+    margin-left: -4px;
     margin-right: -4px;
   }
 
   .thumbsContainer :global(.mpvGalleryGrid) {
-    display: flex; /* Flex вместо Grid для скролла */
+    display: flex;
     gap: 8px;
     padding: 0 4px;
     width: max-content;
@@ -433,7 +436,7 @@
     border-radius: 8px;
   }
 
-  /* -- Адаптация блока цены -- */
+  /* Блок цены на мобильном */
   .priceCard {
     padding: 16px;
     flex-direction: column;
@@ -450,7 +453,7 @@
   }
   
   .priceLabel {
-    display: none; /* Убираем лейбл "Цена в..." для компактности */
+    display: none;
   }
   
   .priceMain {
@@ -468,7 +471,6 @@
     padding: 10px;
   }
 
-  /* -- Характеристики -- */
   .cardBlock {
     padding: 20px;
     border-radius: 16px;
