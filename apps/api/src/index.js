@@ -720,8 +720,8 @@ app.post(
       const seo_text = sanitizeText(req.body?.seo_text, 50000);
 
       const ins = await pool.query(
-        `insert into services_catalog (name, slug, category_id, category_slug, description, cover_image, seo_h1, seo_title, seo_description, seo_text, show_on_site)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true)
+        `insert into services_catalog (name, slug, category_id, category_slug, description, cover_image, seo_h1, seo_title, seo_description, seo_text)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
          returning id, name, slug, category_id`,
         [
           name,
