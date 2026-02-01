@@ -599,8 +599,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     const meData = (await jget(`${API}/auth/me`)) as MeResp;
     setMe(meData);
     const [svc, prd, comp, prof, cats, svcCats] = await Promise.all([
-      jget(`${API}/company/services`),
-      jget(`${API}/company/products`),
+      jget(`${API}/services`),
+      jget(`${API}/products`),
       jget(`${API}/companies/${meData.company.id}`),
       jget(`${API}/company/profile`),
       jget(`${API}/product-categories?flat=1`),
@@ -1084,8 +1084,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
         name: item?.product_name || "Без названия",
         slug: item?.product_name ? slugifyRu(item.product_name) : "",
         category_id: null,
-        category: item?.product_category_path || null,
-        image_url: item?.product_image_url || null,
+        category: null,
+        image_url: null,
       } as Product;
     });
 
@@ -1131,8 +1131,8 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
         id,
         name: item?.service_name || "Без названия",
         slug: item?.service_name ? slugifyRu(item.service_name) : "",
-        category: item?.service_category_name || null,
-        image_url: item?.service_image_url || null,
+        category: null,
+        image_url: null,
       } as Service;
     });
 

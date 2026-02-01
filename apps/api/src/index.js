@@ -2380,8 +2380,8 @@ app.post(
       const seo_text = sanitizeText(req.body?.seo_text, 50000);
 
       const ins = await pool.query(
-        `insert into products (name, slug, category, category_id, description, cover_image, specs, seo_h1, seo_title, seo_description, seo_text)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        `insert into products (name, slug, category, category_id, description, cover_image, specs, seo_h1, seo_title, seo_description, seo_text, show_on_site)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true)
          returning id, name, slug, category, category_id`,
         [
           name,
@@ -3202,7 +3202,7 @@ const itemsR = await pool.query(
     p.name as product_name,
     p.slug as product_slug,
     p.cover_image as product_image_url,
-    pc.name as product_category_path,
+    pc.path_name as product_category_path,
 
     ci.custom_title,
     ci.description,
@@ -3256,7 +3256,7 @@ app.get(
         p.name AS product_name,
         p.slug AS product_slug,
         p.cover_image AS product_image_url,
-        pc.name AS product_category_path,
+        pc.path_name AS product_category_path,
         ci.custom_title,
         ci.description,
         ci.photos
