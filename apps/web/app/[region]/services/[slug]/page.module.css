@@ -1,508 +1,467 @@
 /* apps/web/app/[region]/services/[slug]/page.module.css */
 
 .wrap {
-  max-width: 1200px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 0px 12px;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  padding: 0 16px 60px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #111;
+  box-sizing: border-box;
+  font-weight: 300;
 }
 
-.muted {
-  opacity: 0.7;
-}
-
+/* --- Заголовки --- */
 .h1Row {
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  flex-wrap: wrap;
-  margin-top: 10px;
+  margin: 20px 0 24px;
 }
 
 .h1 {
   margin: 0;
-  font-size: 40px;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  font-weight: 400;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .h2 {
-  margin: 0;
-  font-size: 26px;
-  line-height: 1.25;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  line-height: 1.3;
 }
 
-/* ====== NEW: unified section card (Gallery / Specs / Companies / SEO) ====== */
-.sectionCard {
-  margin-top: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.10);
-  border-radius: 18px;
-  padding: 16px;
-  background: #fff;
-}
-
-.sectionTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.sectionHint {
-  font-size: 13px;
-  opacity: 0.65;
-}
-
-/* legacy section styles (оставил, чтобы не ломать CategoriesTileRow) */
-.section {
-  margin-top: 18px;
-}
-
-/* шапка секции (используется в CategoriesTileRow) */
-.sectionHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.sectionMeta {
-  opacity: 0.7;
-}
-
-.sectionLink {
-  opacity: 0.72;
-  text-decoration: none;
-  color: inherit;
-  white-space: nowrap;
-  font-weight: 400;
-}
-
-.sectionLink:hover {
-  opacity: 1;
-  text-decoration: underline;
-}
-
-.divider {
-  margin-top: 14px;
-  height: 1px;
-  background: rgba(0, 0, 0, 0.06);
-}
-
-/* ===== ✅ КАТЕГОРИИ ПЛИТКАМИ 140×70 (как на /[region]) ===== */
-
-.rubricatorGrid {
-  margin-top: 14px;
-
+/* --- Основная сетка страницы --- */
+.pageGrid {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 140px;
-  grid-template-rows: repeat(2, 70px);
-  gap: 12px;
-
-  overflow-x: auto;
-  padding: 10px 2px 12px;
-
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-
-.rubricatorTile {
-  position: relative;
-  display: block;
-  width: 140px;
-  height: 70px;
-
-  border-radius: 14px;
-  background: #f7f7f7;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-
-  text-decoration: none;
-  color: inherit;
-
-  overflow: hidden;
-  scroll-snap-align: start;
-}
-
-.rubricatorTitle {
-  position: absolute;
-  left: 12px;
-  top: 10px;
-  right: 50px;
-
-  font-size: 14px;
-  line-height: 1.15;
-  font-weight: 400;
-
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.rubricatorImg {
-  position: absolute;
-  right: 8px;
-  bottom: 6px;
-
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-
-  opacity: 0.95;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* аккуратный скроллбар */
-.rubricatorGrid::-webkit-scrollbar {
-  height: 8px;
-}
-.rubricatorGrid::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 999px;
-}
-
-/* ====== HERO (как в товарах) ====== */
-
-.hero {
-  display: grid;
-  /* ✅ Было 420px, стало 520px */
-  grid-template-columns: 520px 1fr;
-  gap: 16px;
-  margin: 10px 0 16px;
+  grid-template-columns: minmax(0, 1fr) 380px; /* Контент + Широкий сайдбар */
+  gap: 32px;
   align-items: start;
+  margin-bottom: 40px;
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+
+.sideColumn {
+  min-width: 0;
+  height: 100%; 
+}
+
+/* --- Универсальный блок (карточка) --- */
+.cardBlock {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* --- Блок Фотографий --- */
+.galleryBlock {
+  composes: cardBlock;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .heroImgWrap {
-  border-radius: 18px;
+  width: 100%;
+  position: relative;
+  border-radius: 16px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #f9f9f9;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .heroImg {
   width: 100%;
-  /* ✅ Фиксируем высоту 520px и обрезаем лишнее */
-  height: 520px;
-  object-fit: cover;
-  display: block;
-}
-
-/* чтобы длинный текст не "обрезался" и не ломал грид */
-.heroText {
-  min-width: 0;
-  overflow: visible;
-  max-height: none;
-}
-
-/* short desc */
-.shortDesc {
-  font-size: 15px;
-  line-height: 1.5;
-  color: rgba(0, 0, 0, 0.78);
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 16px;
-  padding: 14px 14px;
-
-  /* ❌ Убираем pre-line, так как теперь у нас HTML */
-  /* white-space: pre-line; */
-  
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-/* ✅ Добавляем стили для контента внутри редактора (заголовки, списки) */
-.shortDesc p {
-  margin: 0 0 10px 0;
-}
-.shortDesc p:last-child {
-  margin-bottom: 0;
-}
-
-.shortDesc ul, 
-.shortDesc ol {
-  margin: 10px 0;
-  padding-left: 24px; /* Отступ слева для точек/цифр */
-}
-
-.shortDesc li {
-  margin-bottom: 6px;
-  list-style-type: disc; /* Возвращаем точки */
-}
-.shortDesc ol li {
-  list-style-type: decimal; /* Возвращаем цифры */
-}
-
-.shortDesc h2, 
-.shortDesc h3 {
-  margin: 16px 0 8px;
-  font-weight: 400;
-  line-height: 1.25;
-}
-
-/* ====== SPECS TABLE (как в товарах) ====== */
-
-.specTable {
-  width: 100%;
-  border: 1px solid rgba(0, 0, 0, 0.10);
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.specRow {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-}
-
-.specRow:nth-child(odd) {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.specCellKey,
-.specCellVal {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  min-width: 0;
-}
-
-.specRow:last-child .specCellKey,
-.specRow:last-child .specCellVal {
-  border-bottom: 0;
-}
-
-.specCellKey {
-  font-weight: 400;
-}
-
-.specCellVal {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-/* ====== Companies grid (CompanyCard) ====== */
-
-.cardsGrid {
-  display: grid;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-/* ===== SEO text внутри sectionCard ===== */
-
-.seoP {
-  margin: 0;
-  line-height: 1.6;
-  opacity: 0.92;
-}
-
-.seoP2 {
-  margin: 10px 0 0;
-  line-height: 1.6;
-  opacity: 0.92;
-}
-
-.seoUl {
-  margin: 10px 0 0;
-  padding-left: 18px;
-}
-
-.seoLi {
-  margin: 6px 0;
-}
-
-.backRow {
-  margin-top: 24px;
-}
-
-/*
-  ✅ Next.js CSS Modules (pure mode):
-  global-селекторы в *.module.css должны содержать хотя бы 1 локальный класс.
-  Поэтому оборачиваем в .wrap ...
-*/
-
-.wrap :global(.mpvGalleryGrid) {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.wrap :global(.mpvGalleryItem) {
-  padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
-  border-radius: 14px;
-  overflow: hidden;
-  cursor: pointer;
-  display: block;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.wrap :global(.mpvGalleryItem:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
-}
-
-.wrap :global(.mpvGalleryImg) {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  display: block;
-}
-
-/* Lightbox */
-
-.wrap :global(.mpvLbOverlay) {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-}
-
-.wrap :global(.mpvLbBackdrop) {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-}
-
-.wrap :global(.mpvLbBody) {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-}
-
-.wrap :global(.mpvLbFrame) {
-  width: min(980px, 96vw);
-  height: min(720px, 84vh);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-}
-
-.wrap :global(.mpvLbImg) {
-  width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
+  transition: transform 0.3s ease;
 }
 
-.wrap :global(.mpvLbClose) {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
-  cursor: pointer;
-  font-size: 18px;
+.missingImage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 250px;
+  background: #f5f5f5;
+  color: #999;
+  border-radius: 16px;
+  font-size: 14px;
 }
 
-.wrap :global(.mpvLbNav) {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 64px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
-  cursor: pointer;
-  font-size: 34px;
-  line-height: 1;
+/* Контейнер для миниатюр */
+.thumbsContainer {
+  margin-top: 4px;
+}
+
+/* Стили для лайтбокса внутри контейнера */
+.thumbsContainer :global(.mpvGalleryGrid) {
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
 }
 
-.wrap :global(.mpvLbPrev) {
-  left: 14px;
+.thumbsContainer :global(.mpvGalleryItem) {
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+  aspect-ratio: 1;
+  position: relative;
 }
 
-.wrap :global(.mpvLbNext) {
-  right: 14px;
+.thumbsContainer :global(.mpvGalleryItem):hover {
+  border-color: #3b82f6;
 }
 
-.wrap :global(.mpvLbCounter) {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+.thumbsContainer :global(.mpvGalleryImg) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #f5f5f5;
+}
+
+
+/* --- Блок Характеристик --- */
+.specsBlock {
+  composes: cardBlock;
+}
+
+.specTable {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.specRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px dashed #e5e5e5;
+  padding-bottom: 4px;
+}
+
+.specRow:last-child {
+  border-bottom: none;
+}
+
+.specName {
+  color: #666;
+  font-size: 15px;
+  padding-right: 16px;
+  background: #fff;
+  position: relative;
+  top: 5px;
+}
+
+.specVal {
+  color: #111;
+  font-weight: 500;
+  font-size: 15px;
+  text-align: right;
+  max-width: 50%;
+  background: #fff;
+  position: relative;
+  top: 5px;
+}
+
+/* --- Блок Описания --- */
+.descBlock {
+  composes: cardBlock;
+}
+
+.descText {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.descText p { margin-bottom: 16px; }
+.descText h3 { margin: 24px 0 12px; font-weight: 600; font-size: 20px; }
+.descText ul { margin: 16px 0; padding-left: 20px; }
+.descText li { margin-bottom: 8px; list-style: disc; }
+
+/* --- Сайдбар (Price Card) --- */
+.stickySummary {
+  position: sticky;
+  top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.priceCard {
+  composes: cardBlock;
+  padding: 32px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.priceHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.priceLabel {
   font-size: 13px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
-/* ====== Responsive ====== */
+.priceMain {
+  font-size: 36px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.02em;
+}
 
-@media (max-width: 900px) {
-  .hero {
+.companiesCount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ecfdf5;
+  color: #059669;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.summaryBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 18px;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 16px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-sizing: border-box;
+}
+
+.summaryBtn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+/* --- Секция Компаний --- */
+.companiesSection {
+  margin-top: 48px;
+}
+
+.companiesList {
+  display: grid;
+  gap: 20px;
+}
+
+.companiesListWrapper {
+  margin-top: 24px;
+}
+
+.emptyCompanies {
+  opacity: 0.6;
+  text-align: center;
+  padding: 40px;
+  background: #f9f9f9;
+  border-radius: 16px;
+}
+
+/* --- Навигация --- */
+.backRow {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid #eee;
+}
+
+.backLink {
+  text-decoration: none;
+  color: #666;
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.backLink:hover {
+  color: #111;
+}
+
+/* =========================================
+   АДАПТИВНОСТЬ
+========================================= */
+
+@media (max-width: 1024px) {
+  .pageGrid {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
 
-  /* ✅ Сбрасываем фиксированную высоту на мобильных, чтобы картинка не была огромной */
-  .heroImg {
-    height: auto;
+  .sideColumn {
+    order: -1; /* Поднимаем цену наверх */
+  }
+
+  .stickySummary {
+    position: static;
+  }
+
+  .priceCard {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .priceHeader {
+    flex: 1;
+  }
+
+  .summaryBtn {
+    width: auto;
+    padding: 12px 24px;
+  }
+  
+  .companiesCount {
+    width: 100%;
+    margin-top: 12px;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
+  .wrap {
+    padding: 0 16px 40px;
+  }
+
   .h1 {
     font-size: 26px;
   }
-  .h2 {
-    font-size: 22px;
+
+  .pageGrid {
+    gap: 20px;
+    margin-bottom: 24px;
   }
 
-  .sectionCard {
+  /* -- Галерея -- */
+  .galleryBlock {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+  }
+
+  .heroImgWrap {
+    border-radius: 12px;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+
+  /* Скролл миниатюр */
+  .thumbsContainer {
+    margin-top: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+
+  .thumbsContainer :global(.mpvGalleryGrid) {
+    display: flex;
+    gap: 8px;
+    padding: 0 4px;
+    width: max-content;
+  }
+
+  .thumbsContainer :global(.mpvGalleryItem) {
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
+    border-radius: 8px;
+  }
+
+  /* -- Цена -- */
+  .priceCard {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    border-radius: 16px;
+  }
+  
+  .priceHeader {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  
+  .priceLabel {
+    display: none;
+  }
+  
+  .priceMain {
+    font-size: 28px;
+  }
+
+  .summaryBtn {
+    width: 100%;
+    font-size: 15px;
     padding: 14px;
   }
 
-  .specRow {
-    grid-template-columns: 1fr;
+  .companiesCount {
+    font-size: 13px;
+    padding: 10px;
   }
 
-  .specCellKey {
-    border-bottom: 0;
-    padding-bottom: 6px;
+  /* -- Прочее -- */
+  .cardBlock {
+    padding: 20px;
+    border-radius: 16px;
   }
-
-  .specCellVal {
-    padding-top: 0;
+  
+  .specName {
+    font-size: 14px;
   }
-}
-
-@media (max-width: 960px) {
-  .wrap :global(.mpvGalleryGrid) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .wrap :global(.mpvGalleryImg) {
-    height: 170px;
+  
+  .specVal {
+    font-size: 14px;
   }
 }
-.scrollRow {
-  overflow-x: auto;
-}
 
-.mutedTop {
-  margin-top: 10px;
-}
+/* Lightbox styles (Global) */
+.wrap :global(.mpvLbOverlay) { position: fixed; inset: 0; z-index: 1000; }
+.wrap :global(.mpvLbBackdrop) { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); border: 0; padding: 0; cursor: pointer; }
+.wrap :global(.mpvLbBody) { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; }
+.wrap :global(.mpvLbFrame) { width: min(980px, 96vw); height: min(720px, 84vh); background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; overflow: hidden; display: grid; place-items: center; }
+.wrap :global(.mpvLbImg) { width: 100%; height: 100%; object-fit: contain; display: block; }
+.wrap :global(.mpvLbClose) { position: absolute; top: 14px; right: 14px; width: 42px; height: 42px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(0, 0, 0, 0.35); color: #fff; cursor: pointer; font-size: 18px; }
+.wrap :global(.mpvLbNav) { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 64px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(0, 0, 0, 0.35); color: #fff; cursor: pointer; font-size: 34px; line-height: 1; display: grid; place-items: center; }
+.wrap :global(.mpvLbPrev) { left: 14px; }
+.wrap :global(.mpvLbNext) { right: 14px; }
+.wrap :global(.mpvLbCounter) { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 13px; }
