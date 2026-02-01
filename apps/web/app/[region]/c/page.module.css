@@ -159,3 +159,260 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Modal Overlay --- */
+.LeadModalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px); /* Современное размытие фона */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* --- Modal Body --- */
+.LeadModal {
+  background: #fff;
+  width: 100%;
+  max-width: 580px;
+  border-radius: 24px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Header --- */
+.LeadModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.LeadModalTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.LeadModalSubtitle {
+  font-size: 15px;
+  color: #666;
+}
+
+.LeadModalClose {
+  background: transparent;
+  border: 1px solid #e5e5e5;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #111;
+  font-size: 14px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.LeadModalClose:hover {
+  background: #f5f5f5;
+  border-color: #d4d4d4;
+}
+
+/* --- Form Layout --- */
+.LeadModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.LeadModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Две колонки для Имени и Телефона */
+  gap: 20px;
+}
+
+/* --- Fields --- */
+.LeadModalField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Растягиваем Email и Комментарий на всю ширину */
+.LeadModalField:nth-child(3), /* Email */
+.LeadModalField:nth-child(4)  /* Message */ 
+{
+  grid-column: 1 / -1;
+}
+
+.LeadModalField span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  margin-left: 2px;
+}
+
+/* --- Inputs & Textarea --- */
+.LeadModalInput,
+.LeadModalTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 16px; /* 16px чтобы iOS не зумил инпуты */
+  font-family: inherit;
+  color: #111;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.LeadModalInput::placeholder,
+.LeadModalTextarea::placeholder {
+  color: #aaa;
+  font-weight: 300;
+}
+
+.LeadModalInput:focus,
+.LeadModalTextarea:focus {
+  border-color: #111; /* Строгий черный фокус в стиле проекта */
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.LeadModalTextarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+
+/* --- Errors & Hints --- */
+.LeadModalError {
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #fee2e2;
+}
+
+.LeadModalHint {
+  font-size: 13px;
+  color: #888;
+  margin-top: 8px;
+}
+
+.LeadModalSuccess {
+  text-align: center;
+  padding: 60px 0;
+  font-size: 20px;
+  color: #059669;
+  font-weight: 500;
+}
+
+/* --- Actions (Buttons) --- */
+.LeadModalActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f5f5f5;
+}
+
+.Btn {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 28px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  border: none;
+}
+
+/* Кнопка Отмены - простая текстовая */
+.BtnNormal {
+  background: transparent;
+  color: #666;
+}
+
+.BtnNormal:hover {
+  background: #f5f5f5;
+  color: #111;
+}
+
+/* Основная кнопка - Черная (как в дизайне About) */
+.BtnAction {
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+}
+
+.BtnAction:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+.BtnAction:disabled {
+  background: #e5e5e5;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- Mobile --- */
+@media (max-width: 600px) {
+  .LeadModal {
+    padding: 24px;
+    border-radius: 20px;
+    max-width: 100%;
+    margin: 10px;
+  }
+  
+  .LeadModalGrid {
+    grid-template-columns: 1fr; /* Поля в одну колонку */
+    gap: 16px;
+  }
+  
+  .LeadModalTitle {
+    font-size: 24px;
+  }
+  
+  .LeadModalActions {
+    flex-direction: column-reverse; /* Кнопки друг под другом */
+    width: 100%;
+    gap: 12px;
+  }
+  
+  .Btn {
+    width: 100%;
+    text-align: center;
+    padding: 16px;
+  }
+}
