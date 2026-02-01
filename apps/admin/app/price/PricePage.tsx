@@ -877,6 +877,18 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
           setErr("Не удалось создать товар. Попробуй ещё раз.");
           return;
         }
+
+        setProducts((prev) => [
+          ...prev,
+          {
+            id: productIdToUse,
+            name: trimmedName,
+            slug: created?.item?.slug || newProductSlug || slugifyRu(trimmedName),
+            category_id: Number(productCategoryId),
+            category: created?.item?.category,
+            image_url: coverUpload?.url,
+          },
+        ]);
       }
 
       // После создания товара, привязываем его к компании
