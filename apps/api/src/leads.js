@@ -85,9 +85,9 @@ export function registerLeadsRoutes(app, pool, requireAuth) {
       const companyRaw = b.company_id ?? b.companyId;
       const company_id =
         companyRaw === null || companyRaw === undefined || String(companyRaw).trim() === ""
-          ? 0
+          ? null
           : Number(companyRaw);
-      if (!Number.isFinite(company_id) || company_id < 0) {
+      if (company_id !== null && (!Number.isFinite(company_id) || company_id <= 0)) {
         return res.status(400).json({ ok: false, error: "bad_company_id" });
       }
 
@@ -120,7 +120,7 @@ export function registerLeadsRoutes(app, pool, requireAuth) {
 
       const lead = r.rows[0];
       // async dispatch (не блокируем)
-      if (company_id > 0) {
+      if (company_id) {
         dispatchLead(company_id, lead);
       }
 
