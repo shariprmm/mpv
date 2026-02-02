@@ -48,14 +48,14 @@
 
 .sideColumn {
   min-width: 0;
-  height: 100%; 
+  height: 100%;
 }
 
 /* --- Универсальный блок (карточка) --- */
 .cardBlock {
   background: #fff;
   border-radius: 20px;
-  padding: 15px;
+  padding: 32px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
@@ -353,7 +353,7 @@
 
 @media (max-width: 600px) {
   .wrap {
-    padding: 0px 0px;
+    padding: 0 16px 40px;
   }
 
   .h1 {
@@ -404,11 +404,12 @@
     border-radius: 8px;
   }
 
-  /* -- Цена -- */
+  /* -- Цена (Мобильная версия) -- */
   .priceCard {
     padding: 16px;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch; /* ✅ Растягиваем кнопку на всю ширину */
+    text-align: center; /* Центрируем текст */
     gap: 16px;
     border-radius: 16px;
   }
@@ -418,6 +419,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: baseline;
+    text-align: left;
   }
   
   .priceLabel {
@@ -441,7 +443,7 @@
 
   /* -- Прочее -- */
   .cardBlock {
-    
+    padding: 20px;
     border-radius: 16px;
   }
   
@@ -456,12 +458,31 @@
 
 /* Lightbox styles (Global) */
 .wrap :global(.mpvLbOverlay) { position: fixed; inset: 0; z-index: 1000; }
-.wrap :global(.mpvLbBackdrop) { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); border: 0; padding: 0; cursor: pointer; }
+.wrap :global(.mpvLbBackdrop) { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.9); border: 0; padding: 0; cursor: pointer; } /* Затемнили фон */
 .wrap :global(.mpvLbBody) { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; }
-.wrap :global(.mpvLbFrame) { width: min(980px, 96vw); height: min(720px, 84vh); background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; overflow: hidden; display: grid; place-items: center; }
-.wrap :global(.mpvLbImg) { width: 100%; height: 100%; object-fit: contain; display: block; }
-.wrap :global(.mpvLbClose) { position: absolute; top: 14px; right: 14px; width: 42px; height: 42px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(0, 0, 0, 0.35); color: #fff; cursor: pointer; font-size: 18px; }
-.wrap :global(.mpvLbNav) { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 64px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(0, 0, 0, 0.35); color: #fff; cursor: pointer; font-size: 34px; line-height: 1; display: grid; place-items: center; }
+.wrap :global(.mpvLbFrame) { width: min(980px, 96vw); height: min(720px, 84vh); border-radius: 16px; overflow: hidden; display: grid; place-items: center; pointer-events: none; }
+.wrap :global(.mpvLbImg) { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: auto; }
+
+/* ✅ Кнопка закрытия: Отступ для iPhone Air/X (челка) и увеличенный размер */
+.wrap :global(.mpvLbClose) { 
+  position: absolute; 
+  top: calc(16px + env(safe-area-inset-top)); 
+  right: 16px; 
+  width: 44px; 
+  height: 44px; 
+  border-radius: 999px; 
+  border: 1px solid rgba(255, 255, 255, 0.3); 
+  background: rgba(0, 0, 0, 0.5); 
+  color: #fff; 
+  cursor: pointer; 
+  font-size: 20px; 
+  z-index: 2000; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wrap :global(.mpvLbNav) { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 64px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(0, 0, 0, 0.35); color: #fff; cursor: pointer; font-size: 34px; line-height: 1; display: grid; place-items: center; z-index: 1500; }
 .wrap :global(.mpvLbPrev) { left: 14px; }
 .wrap :global(.mpvLbNext) { right: 14px; }
-.wrap :global(.mpvLbCounter) { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 13px; }
+.wrap :global(.mpvLbCounter) { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(0, 0, 0, 0.5); color: #fff; font-size: 13px; z-index: 1500; }
