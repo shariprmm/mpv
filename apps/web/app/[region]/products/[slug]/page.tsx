@@ -8,6 +8,7 @@ import GalleryLightbox from "@/components/GalleryLightbox";
 import CompanyCard from "@/components/CompanyCard/CompanyCard";
 import { renderTemplate } from "@/lib/renderTemplate";
 import ProductReviewsBlock from "./_components/ProductReviewsBlock";
+import QuizBanner from "./_components/QuizBanner";
 import {
   SITE_URL,
   buildProductSeo,
@@ -255,6 +256,19 @@ export default async function ProductPage({
   const descriptionHtml = renderTemplate(product.description || product.short_description || "", ctx);
   const categories = normalizeCategoriesPayload(categoriesRes.data);
   const { current: currentCategory, parent: parentCategory } = resolveCategoryByProduct(categories, product);
+  const quizConfigId = (() => {
+    const hints = [
+      productName,
+      currentCategory?.name,
+      parentCategory?.name,
+      currentCategory?.slug,
+      parentCategory?.slug,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
+    const isSeptic = hints.some((value) => value.includes("септик") || value.includes("septic"));
+    return isSeptic ? "septic" : "general";
+  })();
 
   // Хлебные крошки
   const crumbs = [
@@ -383,6 +397,7 @@ export default async function ProductPage({
                             Показать предложения ↓
                         </a>
                     </div>
+                    <QuizBanner configId={quizConfigId} />
                 </div>
             </aside>
 

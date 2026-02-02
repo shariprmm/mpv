@@ -104,6 +104,51 @@
 
 }
 
+.quizBannerWrap {
+  margin-top: 16px;
+}
+
+.quizBanner {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f7f7f7 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quizBannerLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.quizBannerTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+}
+
+.quizBannerText {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.quizBannerCta {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+}
+
 
 
 /* --- Универсальный блок (карточка) --- */
