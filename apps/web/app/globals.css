@@ -275,8 +275,8 @@ p {
 }
 
 .mpvLbClose {
-  top: 10px;
-  left: 10px;
+  top: calc(10px + env(safe-area-inset-top));
+  left: calc(10px + env(safe-area-inset-left));
   font-size: 20px;
 }
 

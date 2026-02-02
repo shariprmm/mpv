@@ -750,9 +750,11 @@
 
   .summaryBtn {
 
-    width: auto;
+    width: 100%;
 
     padding: 12px 24px;
+
+    margin-top: 12px;
 
   }
 

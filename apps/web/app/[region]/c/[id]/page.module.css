@@ -829,8 +829,8 @@
 
 .LayoutMain :global(.mpvLbClose){
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: calc(14px + env(safe-area-inset-top));
+  right: calc(14px + env(safe-area-inset-right));
   width: 42px;
   height: 42px;
   border-radius: 999px;
