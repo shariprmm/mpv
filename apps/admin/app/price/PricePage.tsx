@@ -1182,16 +1182,12 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     const headers = ["ID", "Название", "Категория", "Текущая цена"];
     
     // 2. Формируем строки данных
-    const rows = products.map((p) => {
-      // Ищем цену компании для этого товара
-      const item = items.find(
-        (it) => it.kind === "product" && String(it.product_id) === String(p.id)
-      );
-      const price = item?.price_min ?? 0;
-      
+    const rows = productsForExport.map((p) => {
+      const price = p.price_min ?? 0;
+
       // Экранируем кавычки для CSV формата
       const safeName = `"${String(p.name).replace(/"/g, '""')}"`;
-      const safeCat = `"${String(catNameById(p.category_id)).replace(/"/g, '""')}"`;
+      const safeCat = `"${String(p.category_name || "Без категории").replace(/"/g, '""')}"`;
       
       return [p.id, safeName, safeCat, price].join(";");
     });
@@ -1349,15 +1345,20 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
   // Подготавливаем данные для шаблона CSV (объединяем товары и текущие цены)
   const productsForExport = useMemo(() => {
-    return products.map(p => {
-      // Ищем, есть ли цена в items
-      const item = items.find(it => it.kind === 'product' && String(it.product_id) === String(p.id));
-      return {
-        ...p,
-        category_name: catNameById(p.category_id), // функция catNameById уже есть в коде
-        price_min: item ? item.price_min : null
-      };
-    });
+    const productMap = new Map(products.map((p) => [String(p.id), p]));
+    return items
+      .filter((it) => it.kind === "product" && it.product_id != null)
+      .map((it) => {
+        const pid = String(it.product_id);
+        const product = productMap.get(pid);
+        return {
+          id: product?.id ?? it.product_id,
+          name: product?.name ?? it.product_name ?? "Без названия",
+          category_id: product?.category_id ?? null,
+          category_name: product ? catNameById(product.category_id) : it.product_category_path || "Без категории",
+          price_min: it.price_min ?? 0,
+        };
+      });
   }, [products, items, catNameById]);
 
   return (
