@@ -17,6 +17,7 @@ const MENU_ITEMS = [
   { title: "Заявки", href: "/master/leads" },
   { title: "Статьи блога", href: "/master/blog-posts" },
   { title: "Категории блога", href: "/master/blog-categories" },
+  { title: "Импорт из Google Sheets", href: "/master/import" },
 ];
 
 export default function MasterLayout({ children }: { children: React.ReactNode }) {

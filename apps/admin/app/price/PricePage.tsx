@@ -616,6 +616,182 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     setNewServiceCover({ name: file.name, size: file.size, type: file.type, dataUrl });
   }
 
+  async function onImportPriceFile(file: File | null) {
+    if (!file) return;
+    setErr(null);
+    setImportSummary("");
+    setImportErrors([]);
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErr("Размер файла не должен превышать 10 МБ.");
+      return;
+    }
+
+    setImportLoading(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      if (!sheet) throw new Error("Не удалось прочитать лист Excel.");
+
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }) as any[][];
+      if (!rows.length) throw new Error("Файл пустой.");
+
+      const headerRow = rows[0] || [];
+      const headerMap: Record<string, number> = {};
+      headerRow.forEach((cell: any, idx: number) => {
+        const key = normalizeHeader(cell);
+        if (key) headerMap[key] = idx;
+      });
+
+      const dataRows = rows.slice(1).filter((row) =>
+        row.some((cell) => String(cell ?? "").trim() !== "")
+      );
+
+      if (!dataRows.length) throw new Error("В файле нет данных для импорта.");
+
+      const errors: string[] = [];
+      let processed = 0;
+      let updated = 0;
+      let skipped = 0;
+      const draft = { ...priceDraft };
+
+      for (let i = 0; i < dataRows.length; i += 1) {
+        const row = dataRows[i];
+        const rowNumber = i + 2;
+        processed += 1;
+
+        const rowKindValue = getCellValue(row, headerMap, ["kind", "type", "тип", "вид"]);
+        const rowKind = parseKind(rowKindValue) || (activeCatalogTab === "products" ? "product" : "service");
+
+        const idValue = getCellValue(row, headerMap, [
+          "id",
+          "product_id",
+          "service_id",
+          "товар_id",
+          "услуга_id",
+          "ид",
+        ]);
+        const slugValue = getCellValue(row, headerMap, ["slug", "артикул", "article", "code"]);
+        const nameValue = getCellValue(row, headerMap, ["name", "название", "наименование", "title"]);
+        const priceValueRaw = getCellValue(row, headerMap, [
+          "price",
+          "цена",
+          "стоимость",
+          "price_min",
+          "min_price",
+          "ценамин",
+          "ценаот",
+          "ценаотруб",
+          "pricefrom",
+        ]);
+
+        const priceValue = toNumOrNull(priceValueRaw);
+        if (priceValue == null) {
+          skipped += 1;
+          errors.push(`Строка ${rowNumber}: не указана цена.`);
+          continue;
+        }
+
+        const idText = String(idValue ?? "").trim();
+        const slugText = normalizeLookup(slugValue);
+        const nameText = normalizeLookup(nameValue);
+
+        let targetId: IdLike | null = null;
+        if (rowKind === "product") {
+          const byId = idText
+            ? products.find((p) => String(p.id) === idText)
+            : null;
+          const bySlug = slugText
+            ? products.find((p) => normalizeLookup(p.slug) === slugText)
+            : null;
+          const byName = nameText
+            ? products.find((p) => normalizeLookup(p.name) === nameText)
+            : null;
+          targetId = (byId || bySlug || byName)?.id ?? null;
+        } else {
+          const byId = idText
+            ? services.find((s) => String(s.id) === idText)
+            : null;
+          const bySlug = slugText
+            ? services.find((s) => normalizeLookup(s.slug) === slugText)
+            : null;
+          const byName = nameText
+            ? services.find((s) => normalizeLookup(s.name) === nameText)
+            : null;
+          targetId = (byId || bySlug || byName)?.id ?? null;
+        }
+
+        if (!targetId) {
+          skipped += 1;
+          errors.push(`Строка ${rowNumber}: не удалось найти позицию по ID/slug/названию.`);
+          continue;
+        }
+
+        await upsertPrice(rowKind, targetId, String(priceValue));
+        const key = rowKind === "product" ? `product_${targetId}` : `service_${targetId}`;
+        draft[key] = String(priceValue);
+        updated += 1;
+      }
+
+      setPriceDraft(draft);
+      setImportSummary(`Импорт завершён: обработано ${processed}, обновлено ${updated}, пропущено ${skipped}.`);
+      setImportErrors(errors.slice(0, 6));
+    } catch (e: any) {
+      setErr(e?.message || String(e));
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
+  function getItemPrice(kindValue: "product" | "service", id: IdLike) {
+    const key = kindValue === "product" ? `product_${id}` : `service_${id}`;
+    const draftValue = priceDraft[key];
+    if (draftValue !== undefined && String(draftValue).trim() !== "") {
+      const parsed = toNumOrNull(draftValue);
+      if (parsed != null) return parsed;
+    }
+    const existing = items.find((it) =>
+      it.kind === kindValue &&
+      (kindValue === "product"
+        ? String(it.product_id) === String(id)
+        : String(it.service_id) === String(id))
+    );
+    return existing?.price_min ?? null;
+  }
+
+  function onExportPriceFile() {
+    setErr(null);
+    const rows =
+      activeCatalogTab === "products"
+        ? filteredCatalogProducts.map((p) => ({
+            kind: "product",
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            price: getItemPrice("product", p.id),
+          }))
+        : filteredCatalogServices.map((s) => ({
+            kind: "service",
+            id: s.id,
+            name: s.name,
+            slug: s.slug,
+            price: getItemPrice("service", s.id),
+          }));
+
+    if (!rows.length) {
+      setErr("Нет данных для экспорта.");
+      return;
+    }
+
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Price");
+    const stamp = new Date().toISOString().slice(0, 10);
+    const suffix = activeCatalogTab === "products" ? "products" : "services";
+    XLSX.writeFile(workbook, `price_${suffix}_${stamp}.xlsx`);
+  }
+
   function updateSpecRow(idx: number, field: "name" | "value", value: string) {
     setNewProductSpecs((prev) =>
       prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
