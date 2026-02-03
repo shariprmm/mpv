@@ -165,6 +165,10 @@ export async function generateMetadata({ params }: { params: { region: string; s
     const regionIn = regionLoc({ slug: regionSlug, name: regionName });
 
     const ctx = {
+      CITY: regionName,
+      CITY_IN: regionIn,
+      REGION: regionName,
+      REGION_IN: regionIn,
       region: { id: data?.region?.id ?? "", slug: regionSlug, name: regionName, in: regionIn },
       product: { id: data?.product?.id ?? "", slug: productSlug, name: productName },
       price: {
