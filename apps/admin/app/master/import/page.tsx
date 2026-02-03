@@ -11,6 +11,7 @@ type ImportResult = {
   ok: boolean;
   created?: number;
   skipped?: number;
+  error?: string;
   errors?: string[];
   items?: { id: number; slug: string; name: string }[];
 };
@@ -40,7 +41,8 @@ export default function MasterGoogleImportPage() {
       });
       const data = (await r.json()) as ImportResult;
       if (!r.ok || !data.ok) {
-        setError(String(data?.error || "Ошибка импорта"));
+        const errorMessage = data?.error || data?.errors?.join(", ") || "Ошибка импорта";
+        setError(String(errorMessage));
         return;
       }
       setResult(data);
