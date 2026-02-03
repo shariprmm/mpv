@@ -481,6 +481,41 @@
 /* =========================================
    CATALOG / TABLE
    ========================================= */
+.importBlock {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  margin-bottom: 16px;
+}
+
+.importActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  min-width: 220px;
+}
+
+.importSummary {
+  font-size: 12px;
+  color: #0f172a;
+  text-align: right;
+}
+
+.importErrors {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: #b91c1c;
+  text-align: right;
+}
+
 .filtersRow {
   display: grid;
   grid-template-columns: 200px 300px 1fr;
@@ -658,6 +693,9 @@
   .mobileTabs { display: flex; }
   
   .filtersRow { grid-template-columns: 1fr; gap: 12px; }
+  .importBlock { flex-direction: column; align-items: stretch; }
+  .importActions { align-items: flex-start; text-align: left; }
+  .importSummary, .importErrors { text-align: left; }
 }
 
 @media (max-width: 640px) {
@@ -915,4 +953,3 @@
     font-size: 12px;
   }
 }
-
