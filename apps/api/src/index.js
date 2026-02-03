@@ -326,6 +326,60 @@ function isAllowedImageMime(m) {
   return ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"].includes(mm);
 }
 
+async function saveRemoteImageAsWebp({ url, prefix, maxBytes }) {
+  let resp;
+  try {
+    resp = await fetch(url);
+  } catch (e) {
+    return { ok: false, error: "image_fetch_failed" };
+  }
+  if (!resp?.ok) return { ok: false, error: "image_fetch_failed" };
+
+  const contentType = String(resp.headers?.get("content-type") || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  let mime = contentType;
+  if (!mime) {
+    const extMatch = String(url).toLowerCase().match(/\.([a-z0-9]{2,6})(?:[?#]|$)/);
+    const ext = extMatch?.[1] || "";
+    const byExt = {
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      webp: "image/webp",
+      svg: "image/svg+xml",
+    };
+    mime = byExt[ext] || "";
+  }
+
+  if (!isAllowedImageMime(mime)) return { ok: false, error: "bad_image_type" };
+
+  const buf = Buffer.from(await resp.arrayBuffer());
+  if (!buf?.length) return { ok: false, error: "bad_image_data" };
+  if (buf.length > maxBytes) return { ok: false, error: "image_too_large" };
+
+  if (mime === "image/svg+xml") {
+    const fname = `${prefix}-${Date.now()}-${crypto.randomBytes(6).toString("hex")}.svg`;
+    const fpath = path.join(UPLOAD_DIR, fname);
+    await fs.promises.writeFile(fpath, buf);
+    return { ok: true, url: `/uploads/${fname}` };
+  }
+
+  const fname = `${prefix}-${Date.now()}-${crypto.randomBytes(6).toString("hex")}.webp`;
+  const fpath = path.join(UPLOAD_DIR, fname);
+  try {
+    await sharp(buf)
+      .rotate()
+      .webp({ quality: 82 })
+      .toFile(fpath);
+    return { ok: true, url: `/uploads/${fname}` };
+  } catch (e) {
+    console.error("sharp_convert_failed:", e);
+    return { ok: false, error: "convert_failed" };
+  }
+}
+
 async function saveDataUrlImage({ companyId, prefix, dataUrl, filenameHint, maxBytes }) {
   const parsed = parseDataUrlBase64(dataUrl);
   if (!parsed) return { ok: false, error: "bad_image_base64" };
@@ -4669,9 +4723,49 @@ app.post(
       const description = String(
         getCellValue(row, headerMap, ["description", "описание"]) || ""
       ).trim();
+      const coverRaw = getCellValue(row, headerMap, [
+        "cover_image",
+        "coverimage",
+        "cover",
+        "cover_url",
+        "image",
+        "image_url",
+      ]);
+      const seo_h1 = sanitizeText(getCellValue(row, headerMap, ["seo_h1", "h1"]), 300);
+      const seo_title = sanitizeText(getCellValue(row, headerMap, ["seo_title"]), 700);
+      const seo_description = sanitizeText(
+        getCellValue(row, headerMap, ["seo_description", "meta_description"]),
+        1500
+      );
       const categoryId = getCellValue(row, headerMap, ["category_id", "cat_id", "категория_id"]);
       const categorySlug = getCellValue(row, headerMap, ["category_slug", "category", "категория"]);
       const categoryName = getCellValue(row, headerMap, ["category_name", "категория_название"]);
+      let cover_image = null;
+
+      const coverValue = String(coverRaw || "").trim();
+      if (coverValue) {
+        if (/^https?:\/\//i.test(coverValue)) {
+          const saved = await saveRemoteImageAsWebp({
+            url: coverValue,
+            prefix: `master-${rowKind}-cover`,
+            maxBytes: 5 * 1024 * 1024,
+          });
+          if (!saved.ok) {
+            skipped += 1;
+            errors.push(
+              `Строка ${rowNumber}: не удалось загрузить cover_image (${saved.error || "ошибка"}).`
+            );
+            continue;
+          }
+          cover_image = saved.url;
+        } else if (coverValue.startsWith("/uploads/") || coverValue.startsWith("uploads/")) {
+          cover_image = coverValue.startsWith("/") ? coverValue : `/${coverValue}`;
+        } else {
+          skipped += 1;
+          errors.push(`Строка ${rowNumber}: cover_image должен быть прямой ссылкой.`);
+          continue;
+        }
+      }
 
       if (rowKind === "product") {
         const category_id = await resolveProductCategoryId({
@@ -4713,11 +4807,25 @@ app.post(
 
         const ins = await pool.query(
           `
-          insert into products (name, slug, category, category_id, description, specs)
-          values ($1,$2,$3,$4,$5,$6::jsonb)
+          insert into products (
+            name, slug, category, category_id, description, specs,
+            cover_image, seo_h1, seo_title, seo_description
+          )
+          values ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10)
           returning id, slug, name
           `,
-          [name, slugBase, category, category_id, description || "", JSON.stringify(specs)]
+          [
+            name,
+            slugBase,
+            category,
+            category_id,
+            description || "",
+            JSON.stringify(specs),
+            cover_image,
+            seo_h1 ?? null,
+            seo_title ?? null,
+            seo_description ?? null,
+          ]
         );
         created.push(ins.rows[0]);
         continue;
@@ -4745,11 +4853,24 @@ app.post(
 
         const ins = await pool.query(
           `
-          insert into services_catalog (name, slug, category_id, category_slug, description)
-          values ($1,$2,$3,$4,$5)
+          insert into services_catalog (
+            name, slug, category_id, category_slug, description,
+            cover_image, seo_h1, seo_title, seo_description
+          )
+          values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
           returning id, slug, name
           `,
-          [name, slugBase, category.id, category.slug, description || ""]
+          [
+            name,
+            slugBase,
+            category.id,
+            category.slug,
+            description || "",
+            cover_image,
+            seo_h1 ?? null,
+            seo_title ?? null,
+            seo_description ?? null,
+          ]
         );
         created.push(ins.rows[0]);
         continue;
