@@ -8,6 +8,7 @@ import * as XLSX from "xlsx";
 import "react-quill/dist/quill.snow.css";
 import styles from "./price.module.css";
 import AddItemForm from "./AddItemForm";
+import ImportExcelModal from "./ImportExcelModal";
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -459,6 +460,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
   const [importLoading, setImportLoading] = useState(false);
   const [importSummary, setImportSummary] = useState<string>("");
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [showImport, setShowImport] = useState(false);
   
   // Фильтры
   const [catalogCatId, setCatalogCatId] = useState<string>(""); // Фильтр для Товаров
@@ -802,6 +804,134 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
 
   function removeSpecRow(idx: number) {
     setNewProductSpecs((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function onImportPriceFile(file: File | null) {
+    if (!file) return;
+    setErr(null);
+    setImportSummary("");
+    setImportErrors([]);
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErr("Размер файла не должен превышать 10 МБ.");
+      return;
+    }
+
+    setImportLoading(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      if (!sheet) throw new Error("Не удалось прочитать лист Excel.");
+
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }) as any[][];
+      if (!rows.length) throw new Error("Файл пустой.");
+
+      const headerRow = rows[0] || [];
+      const headerMap: Record<string, number> = {};
+      headerRow.forEach((cell: any, idx: number) => {
+        const key = normalizeHeader(cell);
+        if (key) headerMap[key] = idx;
+      });
+
+      const dataRows = rows.slice(1).filter((row) =>
+        row.some((cell) => String(cell ?? "").trim() !== "")
+      );
+
+      if (!dataRows.length) throw new Error("В файле нет данных для импорта.");
+
+      const errors: string[] = [];
+      let processed = 0;
+      let updated = 0;
+      let skipped = 0;
+      const draft = { ...priceDraft };
+
+      for (let i = 0; i < dataRows.length; i += 1) {
+        const row = dataRows[i];
+        const rowNumber = i + 2;
+        processed += 1;
+
+        const rowKindValue = getCellValue(row, headerMap, ["kind", "type", "тип", "вид"]);
+        const rowKind = parseKind(rowKindValue) || (activeCatalogTab === "products" ? "product" : "service");
+
+        const idValue = getCellValue(row, headerMap, [
+          "id",
+          "product_id",
+          "service_id",
+          "товар_id",
+          "услуга_id",
+          "ид",
+        ]);
+        const slugValue = getCellValue(row, headerMap, ["slug", "артикул", "article", "code"]);
+        const nameValue = getCellValue(row, headerMap, ["name", "название", "наименование", "title"]);
+        const priceValueRaw = getCellValue(row, headerMap, [
+          "price",
+          "цена",
+          "стоимость",
+          "price_min",
+          "min_price",
+          "ценамин",
+          "ценаот",
+          "ценаотруб",
+          "pricefrom",
+        ]);
+
+        const priceValue = toNumOrNull(priceValueRaw);
+        if (priceValue == null) {
+          skipped += 1;
+          errors.push(`Строка ${rowNumber}: не указана цена.`);
+          continue;
+        }
+
+        const idText = String(idValue ?? "").trim();
+        const slugText = normalizeLookup(slugValue);
+        const nameText = normalizeLookup(nameValue);
+
+        let targetId: IdLike | null = null;
+        if (rowKind === "product") {
+          const byId = idText
+            ? products.find((p) => String(p.id) === idText)
+            : null;
+          const bySlug = slugText
+            ? products.find((p) => normalizeLookup(p.slug) === slugText)
+            : null;
+          const byName = nameText
+            ? products.find((p) => normalizeLookup(p.name) === nameText)
+            : null;
+          targetId = (byId || bySlug || byName)?.id ?? null;
+        } else {
+          const byId = idText
+            ? services.find((s) => String(s.id) === idText)
+            : null;
+          const bySlug = slugText
+            ? services.find((s) => normalizeLookup(s.slug) === slugText)
+            : null;
+          const byName = nameText
+            ? services.find((s) => normalizeLookup(s.name) === nameText)
+            : null;
+          targetId = (byId || bySlug || byName)?.id ?? null;
+        }
+
+        if (!targetId) {
+          skipped += 1;
+          errors.push(`Строка ${rowNumber}: не удалось найти позицию по ID/slug/названию.`);
+          continue;
+        }
+
+        await upsertPrice(rowKind, targetId, String(priceValue));
+        const key = rowKind === "product" ? `product_${targetId}` : `service_${targetId}`;
+        draft[key] = String(priceValue);
+        updated += 1;
+      }
+
+      setPriceDraft(draft);
+      setImportSummary(`Импорт завершён: обработано ${processed}, обновлено ${updated}, пропущено ${skipped}.`);
+      setImportErrors(errors.slice(0, 6));
+    } catch (e: any) {
+      setErr(e?.message || String(e));
+    } finally {
+      setImportLoading(false);
+    }
   }
 
   async function loadAll() {
@@ -1222,6 +1352,36 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     }
   }
 
+  // Функция экспорта в CSV (Excel)
+  function onExportPriceFile() {
+    // 1. Формируем заголовки
+    const headers = ["ID", "Название", "Категория", "Текущая цена"];
+    
+    // 2. Формируем строки данных
+    const rows = productsForExport.map((p) => {
+      const price = p.price_min ?? 0;
+
+      // Экранируем кавычки для CSV формата
+      const safeName = `"${String(p.name).replace(/"/g, '""')}"`;
+      const safeCat = `"${String(p.category_name || "Без категории").replace(/"/g, '""')}"`;
+      
+      return [p.id, safeName, safeCat, price].join(";");
+    });
+
+    // 3. Собираем всё вместе с BOM (для корректного открытия кириллицы в Excel)
+    const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
+
+    // 4. Скачиваем файл
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `price_export_${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   async function logout() {
     try { await jreq(`${API}/auth/logout`, "POST", {}); } catch {}
     location.href = "/login";
@@ -1359,6 +1519,24 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     return list;
   }, [services, items, catalogQuery, catalogSvcCat]);
 
+  // Подготавливаем данные для шаблона CSV (объединяем товары и текущие цены)
+  const productsForExport = useMemo(() => {
+    const productMap = new Map(products.map((p) => [String(p.id), p]));
+    return items
+      .filter((it) => it.kind === "product" && it.product_id != null)
+      .map((it) => {
+        const pid = String(it.product_id);
+        const product = productMap.get(pid);
+        return {
+          id: product?.id ?? it.product_id,
+          name: product?.name ?? it.product_name ?? "Без названия",
+          category_id: product?.category_id ?? null,
+          category_name: product ? catNameById(product.category_id) : it.product_category_path || "Без категории",
+          price_min: it.price_min ?? 0,
+        };
+      });
+  }, [products, items, catNameById]);
+
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
@@ -1405,6 +1583,9 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             {activeMainTab === "catalog" ? (
               <>
                 <button type="button" className={styles.btnGhost} onClick={onExportPriceFile}>Экспорт в Excel</button>
+                <button className={styles.btnGhost} onClick={() => setShowImport(true)}>
+                  📥 Импорт цен
+                </button>
                 <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}>+ Добавить позицию</button>
               </>
             ) : null}
@@ -1690,7 +1871,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
                 <div>
                   <div className={styles.label}>Импорт прайса из Excel</div>
                   <div className={styles.hint}>
-                    Поддерживаются XLSX/XLS/CSV. Колонки: Тип (Товар/Услуга), Название/Slug/ID, Цена. Экспорт доступен в верхней панели.
+                    Поддерживаются XLSX/XLS/CSV. Колонки: Тип (Товар/Услуга), Название/Slug/ID, Цена.
                   </div>
                 </div>
                 <div className={styles.importActions}>
@@ -1821,6 +2002,17 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
           )}
         </div>
 
+        {/* 4. Рендер модалки */}
+        {showImport && (
+          <ImportExcelModal 
+            products={productsForExport}
+            onClose={() => setShowImport(false)}
+            onSuccess={() => {
+              loadAll(); // Перезагружаем данные после импорта
+            }}
+          />
+        )}
+
         {/* ===================== Drawer ===================== */}
         {showAdd && (
           <AddItemForm
@@ -1832,11 +2024,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             serviceId={serviceId}
             setServiceId={setServiceId}
             filteredServicesForAdd={filteredServicesForAdd}
-            serviceCategoryOptions={serviceCategoryOptions}
-            serviceCategoryId={serviceCategoryId}
-            setServiceCategoryId={setServiceCategoryId}
-            createNewService={createNewService}
-            setCreateNewService={setCreateNewService}
             productCategoryOptions={productCategoryOptions}
             productCategoryId={productCategoryId}
             setProductCategoryId={setProductCategoryId}
@@ -1845,7 +2032,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             productId={productId}
             setProductId={setProductId}
             filteredProductsForAdd={filteredProductsForAdd}
-            // ✅ FIX: Coerce duplicateProduct to boolean
             duplicateProduct={!!duplicateProduct}
             newServiceName={newServiceName}
             setNewServiceName={setNewServiceName}
@@ -1867,7 +2053,12 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             addSpecRow={addSpecRow}
             priceMin={priceMin}
             setPriceMin={setPriceMin}
-            addItemError={addItemErr}
+            addItemError={addItemErr} // ✅ Was missing in previous snippet? No, it was there. But check if AddItemForm interface expects it.
+            serviceCategoryOptions={serviceCategoryOptions} // ✅ Explicitly passed
+            serviceCategoryId={serviceCategoryId} // ✅ Explicitly passed
+            setServiceCategoryId={setServiceCategoryId} // ✅ Explicitly passed
+            createNewService={createNewService} // ✅ Explicitly passed
+            setCreateNewService={setCreateNewService} // ✅ Explicitly passed
             onClose={() => setShowAdd(false)}
             onCancel={() => {
               resetNewItemForm();

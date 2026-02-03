@@ -620,6 +620,132 @@
 .btnGhost:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
 
 /* =========================================
+   IMPORT MODAL
+   ========================================= */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 200;
+}
+
+.modal {
+  width: min(760px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.modalClose {
+  border: none;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.modalClose:hover {
+  color: #0f172a;
+}
+
+.modalBody {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stepTitle {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.templateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.templateBtn:hover {
+  background: #fff;
+  border-color: #cbd5e1;
+}
+
+.hint {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.dropZone {
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  background: #f8fafc;
+}
+
+.dropZone:hover {
+  background: #fff;
+  border-color: #94a3b8;
+}
+
+.dropText {
+  font-size: 14px;
+  color: #475569;
+}
+
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.err {
+  color: #dc2626;
+  font-size: 13px;
+}
+
+/* =========================================
    LEADS STATUSES
    ========================================= */
 .leadsControls {
