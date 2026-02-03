@@ -11,6 +11,7 @@ type ImportResult = {
   ok: boolean;
   created?: number;
   skipped?: number;
+  error?: string;
   errors?: string[];
   items?: { id: number; slug: string; name: string }[];
 };
@@ -21,6 +22,47 @@ export default function MasterGoogleImportPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+
+  function onDownloadTemplate() {
+    const headers = [
+      "kind",
+      "name",
+      "category_id",
+      "category_slug",
+      "category_name",
+      "slug",
+      "cover_image",
+      "description",
+      "specs",
+      "seo_h1",
+      "seo_title",
+      "seo_description",
+    ];
+    const sampleRow = [
+      "product",
+      "Пример товара",
+      "123",
+      "kitchen",
+      "Кухни",
+      "primer-tovara",
+      "https://example.com/cover.jpg",
+      "Описание товара",
+      'Параметр: значение; Цвет: белый',
+      "H1 для карточки",
+      "SEO Title для карточки",
+      "SEO Description для карточки",
+    ];
+    const csvContent = `\uFEFF${[headers, sampleRow].map((row) => row.join(";")).join("\n")}`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "master_import_template.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,7 +82,8 @@ export default function MasterGoogleImportPage() {
       });
       const data = (await r.json()) as ImportResult;
       if (!r.ok || !data.ok) {
-        setError(String(data?.error || "Ошибка импорта"));
+        const errorMessage = data?.error || data?.errors?.join(", ") || "Ошибка импорта";
+        setError(String(errorMessage));
         return;
       }
       setResult(data);
@@ -101,6 +144,13 @@ export default function MasterGoogleImportPage() {
             disabled={loading}
           >
             {loading ? "Импортируем..." : "Запустить импорт"}
+          </button>
+          <button
+            type="button"
+            onClick={onDownloadTemplate}
+            className="inline-flex items-center px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 hover:text-gray-900 hover:border-gray-300 transition-all"
+          >
+            Скачать шаблон
           </button>
           <button
             type="button"
@@ -165,8 +215,10 @@ export default function MasterGoogleImportPage() {
             <b>category_slug</b>/<b>category_name</b>.
           </li>
           <li>
-            Необязательные: <b>slug</b>, <b>description</b>, <b>specs</b> (JSON или
-            строка вида &quot;Параметр: значение; ...&quot;).
+            Необязательные: <b>slug</b>, <b>cover_image</b> (прямая ссылка),
+            <b>description</b>, <b>specs</b> (JSON или строка вида &quot;Параметр:
+            значение; ...&quot;), <b>seo_h1</b>, <b>seo_title</b>,{" "}
+            <b>seo_description</b>.
           </li>
           <li>
             Для смешанного режима укажите колонку <b>kind</b> (product/service).
