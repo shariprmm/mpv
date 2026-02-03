@@ -9,7 +9,6 @@ const API =
 
 type ImportResult = {
   ok: boolean;
-  error?: string;
   created?: number;
   skipped?: number;
   errors?: string[];
