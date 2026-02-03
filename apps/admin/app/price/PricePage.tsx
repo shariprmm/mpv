@@ -8,7 +8,7 @@ import * as XLSX from "xlsx";
 import "react-quill/dist/quill.snow.css";
 import styles from "./price.module.css";
 import AddItemForm from "./AddItemForm";
-import ImportExcelModal from "./ImportExcelModal"; // Ensure this is imported
+import ImportExcelModal from "./ImportExcelModal";
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ||
@@ -1562,6 +1562,38 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
                 </div>
               </div>
               <div className={styles.hint} style={{ marginBottom: 12 }}>Эти данные используются в кабинете и на карточке компании.</div>
+              <div className={styles.importBlock}>
+                <div>
+                  <div className={styles.label}>Импорт прайса из Excel</div>
+                  <div className={styles.hint}>
+                    Поддерживаются XLSX/XLS/CSV. Колонки: Тип (Товар/Услуга), Название/Slug/ID, Цена.
+                  </div>
+                </div>
+                <div className={styles.importActions}>
+                  <label className={styles.uploadBtn}>
+                    {importLoading ? "Импортируем..." : "Загрузить файл"}
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={(e) => {
+                        const target = e.currentTarget;
+                        onImportPriceFile(target.files?.[0] || null);
+                        target.value = "";
+                      }}
+                      style={{ display: "none" }}
+                      disabled={importLoading}
+                    />
+                  </label>
+                  {importSummary ? <div className={styles.importSummary}>{importSummary}</div> : null}
+                  {importErrors.length ? (
+                    <ul className={styles.importErrors}>
+                      {importErrors.map((item, idx) => (
+                        <li key={`${item}-${idx}`}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              </div>
               <div className={styles.filtersRow}>
                 <div className={`${styles.field} ${styles.fieldWide}`}><div className={styles.label}>Поиск</div><input className={styles.input} value={catalogQuery} onChange={(e) => setCatalogQuery(e.target.value)} placeholder="Название или slug…" /></div>
                 {activeCatalogTab === "products" ? (
@@ -1696,6 +1728,13 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             setProductId={setProductId}
             filteredProductsForAdd={filteredProductsForAdd}
             duplicateProduct={!!duplicateProduct}
+            newServiceName={newServiceName}
+            setNewServiceName={setNewServiceName}
+            newServiceDescription={newServiceDescription}
+            setNewServiceDescription={setNewServiceDescription}
+            newServiceCover={newServiceCover}
+            setNewServiceCover={setNewServiceCover}
+            onPickServiceCover={onPickServiceCover}
             newProductName={newProductName}
             setNewProductName={setNewProductName}
             newProductDescription={newProductDescription}
@@ -1709,6 +1748,12 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             addSpecRow={addSpecRow}
             priceMin={priceMin}
             setPriceMin={setPriceMin}
+            addItemError={addItemErr} // ✅ Was missing in previous snippet? No, it was there. But check if AddItemForm interface expects it.
+            serviceCategoryOptions={serviceCategoryOptions} // ✅ Explicitly passed
+            serviceCategoryId={serviceCategoryId} // ✅ Explicitly passed
+            setServiceCategoryId={setServiceCategoryId} // ✅ Explicitly passed
+            createNewService={createNewService} // ✅ Explicitly passed
+            setCreateNewService={setCreateNewService} // ✅ Explicitly passed
             onClose={() => setShowAdd(false)}
             onCancel={() => {
               resetNewItemForm();
