@@ -61,6 +61,12 @@ export default function MasterHome() {
       href: "/master/blog-categories",
       color: "bg-teal-50 text-teal-700",
     },
+    {
+      title: "Импорт из Google Sheets",
+      desc: "Загрузка новых товаров и услуг из таблицы.",
+      href: "/master/import",
+      color: "bg-slate-50 text-slate-700",
+    },
   ];
 
   return (

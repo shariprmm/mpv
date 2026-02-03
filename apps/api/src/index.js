@@ -608,6 +608,120 @@ function requireSuperadmin(req, res, next) {
   });
 }
 
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (ch === ",") {
+      row.push(field);
+      field = "";
+      continue;
+    }
+
+    if (ch === "\n") {
+      row.push(field);
+      field = "";
+      rows.push(row);
+      row = [];
+      continue;
+    }
+
+    if (ch === "\r") {
+      continue;
+    }
+
+    field += ch;
+  }
+
+  row.push(field);
+  rows.push(row);
+  return rows;
+}
+
+function normalizeHeader(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[_-]/g, "")
+    .replace(/[()]/g, "");
+}
+
+function getCellValue(row, headerMap, aliases) {
+  for (const alias of aliases) {
+    const idx = headerMap[normalizeHeader(alias)];
+    if (idx !== undefined) return row[idx];
+  }
+  return "";
+}
+
+function parseGoogleSheetUrl(input) {
+  const url = String(input || "").trim();
+  if (!url) return null;
+  const idMatch = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (!idMatch) return null;
+  const id = idMatch[1];
+  const gidMatch = url.match(/[?&#]gid=([0-9]+)/);
+  const gid = gidMatch ? gidMatch[1] : "0";
+  return { id, gid };
+}
+
+function parseSpecs(specsRaw) {
+  const raw = String(specsRaw || "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => ({
+          name: String(item?.name || "").trim(),
+          value: String(item?.value || "").trim(),
+        }))
+        .filter((item) => item.name && item.value);
+    }
+    if (parsed && typeof parsed === "object") {
+      return Object.entries(parsed)
+        .map(([name, value]) => ({
+          name: String(name || "").trim(),
+          value: String(value ?? "").trim(),
+        }))
+        .filter((item) => item.name && item.value);
+    }
+  } catch {}
+
+  return raw
+    .split(/;|\n/)
+    .map((chunk) => chunk.split(":"))
+    .map(([name, ...rest]) => ({
+      name: String(name || "").trim(),
+      value: String(rest.join(":") || "").trim(),
+    }))
+    .filter((item) => item.name && item.value);
+}
+
 // master access by email list (env MASTER_ADMIN_EMAILS="a@b.com,c@d.com")
 async function requireMaster(req, res, next) {
   return authMiddleware(req, res, async () => {
@@ -4407,6 +4521,248 @@ app.post(
 
     if (!saved.ok) return res.status(400).json({ ok: false, error: saved.error || "upload_failed" });
     return res.json({ ok: true, url: saved.url });
+  })
+);
+
+/* =========================================================
+   MASTER: GOOGLE SHEETS IMPORT (products/services)
+========================================================= */
+app.post(
+  "/master/import/google-sheet",
+  requireMaster,
+  aw(async (req, res) => {
+    const sheetUrl = String(req.body?.sheet_url || req.body?.sheetUrl || "").trim();
+    const kindParam = String(req.body?.kind || "product").trim().toLowerCase();
+    const allowedKinds = new Set(["product", "service", "both"]);
+    if (!sheetUrl) return res.status(400).json({ ok: false, error: "bad_sheet_url" });
+    if (!allowedKinds.has(kindParam)) return res.status(400).json({ ok: false, error: "bad_kind" });
+
+    const parsed = parseGoogleSheetUrl(sheetUrl);
+    if (!parsed) return res.status(400).json({ ok: false, error: "bad_sheet_url" });
+
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${parsed.id}/export?format=csv&gid=${parsed.gid}`;
+    const resp = await fetch(csvUrl);
+    if (!resp.ok) {
+      return res.status(400).json({ ok: false, error: "sheet_fetch_failed" });
+    }
+    const csvText = await resp.text();
+    const rows = parseCsv(csvText);
+    if (!rows.length) return res.status(400).json({ ok: false, error: "empty_sheet" });
+
+    const headerRow = rows[0] || [];
+    const headerMap = {};
+    headerRow.forEach((cell, idx) => {
+      const key = normalizeHeader(cell);
+      if (key) headerMap[key] = idx;
+    });
+
+    const paramNameColumns = Object.entries(headerMap).filter(([key]) => /param\d+name/.test(key));
+    const paramValueColumns = Object.entries(headerMap).filter(([key]) => /param\d+value/.test(key));
+
+    const dataRows = rows.slice(1).filter((row) =>
+      row.some((cell) => String(cell ?? "").trim() !== "")
+    );
+
+    const errors = [];
+    const created = [];
+    let skipped = 0;
+
+    const resolveProductCategoryId = async ({ categoryId, categorySlug, categoryName }) => {
+      if (categoryId) {
+        const id = Number(categoryId);
+        if (Number.isFinite(id) && id > 0) return id;
+      }
+      const slug = String(categorySlug || "").trim();
+      if (slug) {
+        const r = await pool.query(
+          "select id from product_categories where slug=$1 limit 1",
+          [slug]
+        );
+        return r.rows?.[0]?.id || null;
+      }
+      const name = String(categoryName || "").trim();
+      if (name) {
+        const r = await pool.query(
+          "select id from product_categories where lower(name)=lower($1) limit 1",
+          [name]
+        );
+        return r.rows?.[0]?.id || null;
+      }
+      return null;
+    };
+
+    const resolveServiceCategory = async ({ categoryId, categorySlug, categoryName }) => {
+      if (categoryId) {
+        const id = Number(categoryId);
+        if (Number.isFinite(id) && id > 0) {
+          const r = await pool.query(
+            "select id, slug from service_categories where id=$1 limit 1",
+            [id]
+          );
+          return r.rows?.[0] || null;
+        }
+      }
+      const slug = String(categorySlug || "").trim();
+      if (slug) {
+        const r = await pool.query(
+          "select id, slug from service_categories where slug=$1 limit 1",
+          [slug]
+        );
+        return r.rows?.[0] || null;
+      }
+      const name = String(categoryName || "").trim();
+      if (name) {
+        const r = await pool.query(
+          "select id, slug from service_categories where lower(name)=lower($1) limit 1",
+          [name]
+        );
+        return r.rows?.[0] || null;
+      }
+      return null;
+    };
+
+    for (let i = 0; i < dataRows.length; i += 1) {
+      const row = dataRows[i];
+      const rowNumber = i + 2;
+      const rowKindRaw = String(getCellValue(row, headerMap, ["kind", "type", "тип", "вид"]) || "")
+        .trim()
+        .toLowerCase();
+      const rowKind =
+        rowKindRaw.includes("услуг") || rowKindRaw.includes("service")
+          ? "service"
+          : rowKindRaw.includes("товар") || rowKindRaw.includes("product")
+            ? "product"
+            : kindParam === "both"
+              ? ""
+              : kindParam;
+
+      if (!rowKind) {
+        skipped += 1;
+        errors.push(`Строка ${rowNumber}: не указан тип (product/service).`);
+        continue;
+      }
+
+      if (kindParam !== "both" && rowKind !== kindParam) {
+        skipped += 1;
+        continue;
+      }
+
+      const name = String(
+        getCellValue(row, headerMap, ["name", "название", "наименование", "title"]) || ""
+      ).trim();
+      if (!name) {
+        skipped += 1;
+        errors.push(`Строка ${rowNumber}: пустое название.`);
+        continue;
+      }
+
+      const slugRaw = String(
+        getCellValue(row, headerMap, ["slug", "код", "code"]) || ""
+      ).trim();
+      const slugBase = slugifyRu(slugRaw || name);
+      if (!slugBase) {
+        skipped += 1;
+        errors.push(`Строка ${rowNumber}: не удалось получить slug.`);
+        continue;
+      }
+
+      const description = String(
+        getCellValue(row, headerMap, ["description", "описание"]) || ""
+      ).trim();
+      const categoryId = getCellValue(row, headerMap, ["category_id", "cat_id", "категория_id"]);
+      const categorySlug = getCellValue(row, headerMap, ["category_slug", "category", "категория"]);
+      const categoryName = getCellValue(row, headerMap, ["category_name", "категория_название"]);
+
+      if (rowKind === "product") {
+        const category_id = await resolveProductCategoryId({
+          categoryId,
+          categorySlug,
+          categoryName,
+        });
+        if (!category_id) {
+          skipped += 1;
+          errors.push(`Строка ${rowNumber}: не найдена категория товара.`);
+          continue;
+        }
+
+        const ex = await pool.query("select id from products where slug=$1 limit 1", [slugBase]);
+        if (ex.rowCount) {
+          skipped += 1;
+          continue;
+        }
+
+        const specsRaw = getCellValue(row, headerMap, ["specs", "характеристики", "params", "параметры"]);
+        const specs = parseSpecs(specsRaw);
+
+        if (!specs.length && paramNameColumns.length && paramValueColumns.length) {
+          const pairs = [];
+          paramNameColumns.forEach(([key, idx]) => {
+            const valueIdx = headerMap[key.replace("name", "value")];
+            if (valueIdx === undefined) return;
+            const pname = String(row[idx] || "").trim();
+            const pvalue = String(row[valueIdx] || "").trim();
+            if (pname && pvalue) pairs.push({ name: pname, value: pvalue });
+          });
+          if (pairs.length) specs.push(...pairs);
+        }
+
+        const catRow = await pool.query("select slug from product_categories where id=$1 limit 1", [
+          category_id,
+        ]);
+        const category = String(catRow.rows?.[0]?.slug || "").trim() || "general";
+
+        const ins = await pool.query(
+          `
+          insert into products (name, slug, category, category_id, description, specs)
+          values ($1,$2,$3,$4,$5,$6::jsonb)
+          returning id, slug, name
+          `,
+          [name, slugBase, category, category_id, description || "", JSON.stringify(specs)]
+        );
+        created.push(ins.rows[0]);
+        continue;
+      }
+
+      if (rowKind === "service") {
+        const category = await resolveServiceCategory({
+          categoryId,
+          categorySlug,
+          categoryName,
+        });
+        if (!category?.id) {
+          skipped += 1;
+          errors.push(`Строка ${rowNumber}: не найдена категория услуги.`);
+          continue;
+        }
+
+        const ex = await pool.query("select id from services_catalog where slug=$1 limit 1", [
+          slugBase,
+        ]);
+        if (ex.rowCount) {
+          skipped += 1;
+          continue;
+        }
+
+        const ins = await pool.query(
+          `
+          insert into services_catalog (name, slug, category_id, category_slug, description)
+          values ($1,$2,$3,$4,$5)
+          returning id, slug, name
+          `,
+          [name, slugBase, category.id, category.slug, description || ""]
+        );
+        created.push(ins.rows[0]);
+        continue;
+      }
+    }
+
+    return res.json({
+      ok: true,
+      created: created.length,
+      skipped,
+      errors: errors.slice(0, 50),
+      items: created.slice(0, 20),
+    });
   })
 );
 
