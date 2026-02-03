@@ -1354,7 +1354,12 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
             <div className={styles.sub}>{me ? <><b>{companyTitle}</b> · {me.company.region_name} · {verified ? "✅ проверенная" : "⏳ не проверенная"}</> : "Загрузка…"}</div>
           </div>
           <div className={styles.topbarActions}>
-            {activeMainTab === "catalog" ? <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}>+ Добавить позицию</button> : null}
+            {activeMainTab === "catalog" ? (
+              <>
+                <button type="button" className={styles.btnGhost} onClick={onExportPriceFile}>Экспорт в Excel</button>
+                <button className={styles.btnPrimary} onClick={() => setShowAdd(true)}>+ Добавить позицию</button>
+              </>
+            ) : null}
             <button className={styles.btnGhost} onClick={logout}>Выйти</button>
           </div>
         </div>
