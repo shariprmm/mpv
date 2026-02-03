@@ -742,54 +742,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     }
   }
 
-  function getItemPrice(kindValue: "product" | "service", id: IdLike) {
-    const key = kindValue === "product" ? `product_${id}` : `service_${id}`;
-    const draftValue = priceDraft[key];
-    if (draftValue !== undefined && String(draftValue).trim() !== "") {
-      const parsed = toNumOrNull(draftValue);
-      if (parsed != null) return parsed;
-    }
-    const existing = items.find((it) =>
-      it.kind === kindValue &&
-      (kindValue === "product"
-        ? String(it.product_id) === String(id)
-        : String(it.service_id) === String(id))
-    );
-    return existing?.price_min ?? null;
-  }
-
-  function onExportPriceFile() {
-    setErr(null);
-    const rows =
-      activeCatalogTab === "products"
-        ? filteredCatalogProducts.map((p) => ({
-            kind: "product",
-            id: p.id,
-            name: p.name,
-            slug: p.slug,
-            price: getItemPrice("product", p.id),
-          }))
-        : filteredCatalogServices.map((s) => ({
-            kind: "service",
-            id: s.id,
-            name: s.name,
-            slug: s.slug,
-            price: getItemPrice("service", s.id),
-          }));
-
-    if (!rows.length) {
-      setErr("Нет данных для экспорта.");
-      return;
-    }
-
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "Price");
-    const stamp = new Date().toISOString().slice(0, 10);
-    const suffix = activeCatalogTab === "products" ? "products" : "services";
-    XLSX.writeFile(workbook, `price_${suffix}_${stamp}.xlsx`);
-  }
-
   function updateSpecRow(idx: number, field: "name" | "value", value: string) {
     setNewProductSpecs((prev) =>
       prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
@@ -1690,7 +1642,7 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
                 <div>
                   <div className={styles.label}>Импорт прайса из Excel</div>
                   <div className={styles.hint}>
-                    Поддерживаются XLSX/XLS/CSV. Колонки: Тип (Товар/Услуга), Название/Slug/ID, Цена. Экспорт доступен в верхней панели.
+                    Поддерживаются XLSX/XLS/CSV. Колонки: Тип (Товар/Услуга), Название/Slug/ID, Цена.
                   </div>
                 </div>
                 <div className={styles.importActions}>
