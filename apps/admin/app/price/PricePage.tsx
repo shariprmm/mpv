@@ -1224,36 +1224,6 @@ export default function PricePage({ activeMainTab }: PricePageProps) {
     }
   }
 
-  // Функция экспорта в CSV (Excel)
-  function onExportPriceFile() {
-    // 1. Формируем заголовки
-    const headers = ["ID", "Название", "Категория", "Текущая цена"];
-    
-    // 2. Формируем строки данных
-    const rows = productsForExport.map((p) => {
-      const price = p.price_min ?? 0;
-
-      // Экранируем кавычки для CSV формата
-      const safeName = `"${String(p.name).replace(/"/g, '""')}"`;
-      const safeCat = `"${String(p.category_name || "Без категории").replace(/"/g, '""')}"`;
-      
-      return [p.id, safeName, safeCat, price].join(";");
-    });
-
-    // 3. Собираем всё вместе с BOM (для корректного открытия кириллицы в Excel)
-    const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n");
-
-    // 4. Скачиваем файл
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `price_export_${new Date().toISOString().split("T")[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
   async function logout() {
     try { await jreq(`${API}/auth/logout`, "POST", {}); } catch {}
     location.href = "/login";
