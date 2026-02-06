@@ -8,9 +8,6 @@ import nodemailer from "nodemailer";
 import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
-import crypto from "node:crypto";
-import net from "node:net";
-import tls from "node:tls";
 import dns from "node:dns/promises";
 import { fileURLToPath } from "node:url";
 import { registerMasterRoutes } from "./master.js";
@@ -560,82 +557,15 @@ function signEmailToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
 }
 
-const SMTP_HOST = process.env.SMTP_HOST || "smtp.timeweb.ru";
-const SMTP_PORT = Number(process.env.SMTP_PORT || "465");
-const SMTP_SECURE = String(process.env.SMTP_SECURE || "1") !== "0";
+const SMTP_HOST = "smtp.timeweb.ru";
+const SMTP_PORT = 465;
+const SMTP_SECURE = true;
 const SMTP_USER = process.env.SMTP_USER || "no-reply@moydompro.ru";
 const SMTP_PASS = process.env.SMTP_PASS || "";
-const MAIL_FROM = process.env.MAIL_FROM || `МойДомПро <${SMTP_USER}>`;
-
-function extractEmailAddress(input, fallback) {
-  const raw = String(input || "").trim();
-  const match = raw.match(/<([^>]+)>/);
-  if (match?.[1]) return match[1];
-  if (raw.includes("@")) return raw;
-  return fallback;
-}
-
-function buildEmailMessage({ from, to, subject, text, html }) {
-  const headers = [
-    `From: ${from}`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    "MIME-Version: 1.0",
-  ];
-
-  if (html) {
-    const boundary = `--mdp-${crypto.randomBytes(8).toString("hex")}`;
-    headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
-    return [
-      ...headers,
-      "",
-      `--${boundary}`,
-      "Content-Type: text/plain; charset=utf-8",
-      "Content-Transfer-Encoding: 8bit",
-      "",
-      text || "",
-      `--${boundary}`,
-      "Content-Type: text/html; charset=utf-8",
-      "Content-Transfer-Encoding: 8bit",
-      "",
-      html,
-      `--${boundary}--`,
-      "",
-    ].join("\r\n");
-  }
-
-  headers.push("Content-Type: text/plain; charset=utf-8");
-  headers.push("Content-Transfer-Encoding: 8bit");
-  return [...headers, "", text || "", ""].join("\r\n");
-}
-
-async function smtpSend(commandSocket, command) {
-  return new Promise((resolve, reject) => {
-    let buffer = "";
-    const onData = (data) => {
-      buffer += data.toString();
-      const lines = buffer.split(/\r?\n/);
-      buffer = lines.pop() || "";
-      for (const line of lines) {
-        if (!line) continue;
-        if (/^[45]\d{2}\s/.test(line)) {
-          commandSocket.off("data", onData);
-          reject(new Error(line.trim()));
-          return;
-        }
-        if (/^\d{3}\s/.test(line)) {
-          commandSocket.off("data", onData);
-          resolve(line.trim());
-          return;
-        }
-      }
-    };
-    commandSocket.on("data", onData);
-    if (command) {
-      commandSocket.write(`${command}\r\n`);
-    }
-  });
-}
+const DEFAULT_FROM = '"MoyDomPro" <no-reply@moydompro.ru>';
+const RAW_FROM =
+  process.env.SMTP_FROM || process.env.DEFAULT_FROM || process.env.MAIL_FROM || DEFAULT_FROM;
+const MAIL_FROM = RAW_FROM.includes("@moydompro.ru") ? RAW_FROM : DEFAULT_FROM;
 
 async function sendEmail({ to, subject, text, html }) {
   if (!SMTP_PASS) {
@@ -643,33 +573,12 @@ async function sendEmail({ to, subject, text, html }) {
     return { ok: false, error: "smtp_not_configured" };
   }
 
-  const envelopeFrom = extractEmailAddress(MAIL_FROM, SMTP_USER);
-  const envelopeTo = extractEmailAddress(to, to);
-  const message = buildEmailMessage({ from: MAIL_FROM, to, subject, text, html });
-
-  const socket = SMTP_SECURE
-    ? tls.connect({ host: SMTP_HOST, port: SMTP_PORT })
-    : net.connect({ host: SMTP_HOST, port: SMTP_PORT });
-
-  socket.setTimeout(15000);
-  socket.on("timeout", () => socket.destroy(new Error("SMTP timeout")));
-
-  await smtpSend(socket, null);
-  await smtpSend(socket, `EHLO ${SMTP_HOST}`);
-  await smtpSend(socket, "AUTH LOGIN");
-  await smtpSend(socket, Buffer.from(SMTP_USER).toString("base64"));
-  await smtpSend(socket, Buffer.from(SMTP_PASS).toString("base64"));
-  await smtpSend(socket, `MAIL FROM:<${envelopeFrom}>`);
-  await smtpSend(socket, `RCPT TO:<${envelopeTo}>`);
-  await smtpSend(socket, "DATA");
-  await smtpSend(socket, `${message}\r\n.`);
-  await smtpSend(socket, "QUIT");
-
-  socket.end();
   const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_SECURE,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
