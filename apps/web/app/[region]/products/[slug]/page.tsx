@@ -330,7 +330,7 @@ export default async function ProductPage({
   });
 
   return (
-    <div className={styles.wrap}>
+    <div className={styles.wrap} itemScope itemType="https://schema.org/Product">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldProduct) }} />
@@ -338,7 +338,9 @@ export default async function ProductPage({
         <Breadcrumbs items={crumbs} />
 
         <div className={styles.h1Row}>
-            <h1 className={styles.h1}>{productName} в {regionIn}</h1>
+            <h1 className={styles.h1}>
+              <span itemProp="name">{productName}</span> в {regionIn}
+            </h1>
         </div>
 
         <div className={styles.productGrid}>
@@ -357,6 +359,7 @@ export default async function ProductPage({
                                     alt={productName} 
                                     className={styles.heroImg} 
                                     loading="eager"
+                                    itemProp="image"
                                 />
                             </div>
                             
@@ -378,9 +381,15 @@ export default async function ProductPage({
                         <h2 className={styles.h2}>Характеристики</h2>
                         <div className={styles.specTable}>
                             {specs.map((s, idx) => (
-                                <div key={idx} className={styles.specRow}>
-                                    <div className={styles.specName}>{s.name}</div>
-                                    <div className={styles.specVal}>{s.value}</div>
+                                <div
+                                    key={idx}
+                                    className={styles.specRow}
+                                    itemProp="additionalProperty"
+                                    itemScope
+                                    itemType="https://schema.org/PropertyValue"
+                                >
+                                    <div className={styles.specName} itemProp="name">{s.name}</div>
+                                    <div className={styles.specVal} itemProp="value">{s.value}</div>
                                 </div>
                             ))}
                         </div>
