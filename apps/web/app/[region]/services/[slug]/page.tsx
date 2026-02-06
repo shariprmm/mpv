@@ -445,6 +445,14 @@ export default async function ServicePage({
     "@id": `${seo.canonical}#service`,
   };
 
+  const ldWebPage = jsonLdWebPage({
+    url: seo.canonical,
+    name: h1,
+    description: canonicalDesc || seo.description,
+    imageUrl: canonicalImage ? absUrlMaybe(canonicalImage) : null,
+    mainEntityId: `${seo.canonical}#service`,
+  });
+
   const ctx = {
     region: { id: data?.region?.id ?? "", slug: regionSlug, name: regionName, in: regionIn },
     service: { id: data?.service?.id ?? "", slug: serviceSlug, name: serviceLabel },
