@@ -15,6 +15,7 @@ import {
   computeMinMaxFromCompanies,
   jsonLdBreadcrumb,
   jsonLdService,
+  jsonLdWebPage,
   regionLoc,
 } from "@/lib/seo";
 
@@ -433,13 +434,16 @@ export default async function ServicePage({
     { name: serviceLabel, item: seo.canonical },
   ]);
 
-  const ldService = jsonLdService({
-    url: seo.canonical,
-    name: serviceLabel,
-    regionName,
-    price: pr,
-    companiesCount: companies.length,
-  });
+  const ldService = {
+    ...jsonLdService({
+      url: seo.canonical,
+      name: serviceLabel,
+      regionName,
+      price: pr,
+      companiesCount: companies.length,
+    }),
+    "@id": `${seo.canonical}#service`,
+  };
 
   const ctx = {
     region: { id: data?.region?.id ?? "", slug: regionSlug, name: regionName, in: regionIn },
@@ -469,6 +473,14 @@ export default async function ServicePage({
   const canonicalImage = normalizePublicImageUrl(
     data?.service?.canonical_image ?? data?.service?.image_url ?? data?.service?.image
   );
+
+  const ldWebPage = jsonLdWebPage({
+    url: seo.canonical,
+    name: h1,
+    description: canonicalDesc || seo.description,
+    imageUrl: canonicalImage ? absUrlMaybe(canonicalImage) : null,
+    mainEntityId: `${seo.canonical}#service`,
+  });
 
   const galleryRaw = data?.service?.gallery ?? data?.service?.images ?? data?.service?.photos ?? null;
   const gallery = asArr(galleryRaw).map((x) => normalizePublicImageUrl(x)).filter(Boolean) as string[];
@@ -534,6 +546,7 @@ export default async function ServicePage({
   return (
     <div className={styles.wrap}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldService) }} />
       {ldImages ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldImages) }} /> : null}
 

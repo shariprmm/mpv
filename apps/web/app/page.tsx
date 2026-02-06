@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { SITE_NAME, absUrl } from "@/lib/seo";
+import SeoJsonLd from "@/components/SeoJsonLd";
+import { SITE_NAME, absUrl, jsonLdBreadcrumb, jsonLdWebPage } from "@/lib/seo";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -89,8 +90,59 @@ export default async function Page({ searchParams }: { searchParams?: { region?:
     );
   }
 
+  const canonical = absUrl("/");
+  const pageName = `${SITE_NAME} — услуги и товары для дома`;
+  const pageDesc = "Каталог услуг, товаров и компаний для загородного дома по регионам.";
+
+  const ldBreadcrumbs = jsonLdBreadcrumb([{ name: "Главная", item: canonical }]);
+  const ldPage = jsonLdWebPage({
+    url: canonical,
+    name: pageName,
+    description: pageDesc,
+    imageUrl: absUrl("/images/og-default.png"),
+  });
+
+  const itemList = (id: string, name: string, items: Array<{ name: string; url: string }>) => ({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${canonical}#${id}`,
+    name,
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    numberOfItems: items.length,
+    itemListElement: items.map((it, idx) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      name: it.name,
+      url: it.url,
+    })),
+  });
+
+  const serviceItems = (data.top_services || []).map((s: any) => ({
+    name: String(s?.name || s?.title || s?.slug || "Услуга"),
+    url: absUrl(`/${encodeURIComponent(region_slug)}/services/${encodeURIComponent(String(s?.slug || s?.id || ""))}`),
+  }));
+
+  const companyItems = (data.featured_companies || []).map((c: any) => ({
+    name: String(c?.name || `Компания #${c?.id || ""}`),
+    url: absUrl(`/${encodeURIComponent(region_slug)}/c/${encodeURIComponent(String(c?.id || ""))}`),
+  }));
+
+  const dealItems = (data.best_deals || []).map((d: any) => ({
+    name: String(d?.name || d?.title || d?.slug || "Предложение"),
+    url: absUrl(`/${encodeURIComponent(region_slug)}/products/${encodeURIComponent(String(d?.slug || d?.id || ""))}`),
+  }));
+
   return (
     <main className={styles.main}>
+      <SeoJsonLd
+        data={[
+          ldBreadcrumbs,
+          ldPage,
+          ...(serviceItems.length ? [itemList("topServices", "Популярные услуги", serviceItems)] : []),
+          ...(companyItems.length ? [itemList("featuredCompanies", "Рекомендуемые компании", companyItems)] : []),
+          ...(dealItems.length ? [itemList("bestDeals", "Лучшие предложения", dealItems)] : []),
+        ]}
+      />
       <h1 className={styles.title}>{data?.seo?.h1 || "MoyDomPro"}</h1>
       <p className={`${styles.muted} ${styles.marginTopZero}`}>
         Регион: <b>{data.region?.name}</b>
