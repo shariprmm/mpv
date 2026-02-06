@@ -626,7 +626,6 @@ export function jsonLdProduct(input: {
   modelName?: string | null;
   groupName?: string | null;
   availability?: "InStock" | "OutOfStock" | "PreOrder" | null;
-  specs?: Array<{ name: string; value: string }>;
 }) {
   const cur = (input.price.currency || "RUB").toUpperCase();
 
@@ -663,16 +662,6 @@ export function jsonLdProduct(input: {
 
   if (input.groupName) {
     obj.isVariantOf = { "@type": "ProductGroup", name: input.groupName };
-  }
-
-  if (Array.isArray(input.specs) && input.specs.length > 0) {
-    obj.additionalProperty = input.specs
-      .filter((s) => String(s?.name || "").trim() && String(s?.value || "").trim())
-      .map((s) => ({
-        "@type": "PropertyValue",
-        name: String(s.name).trim(),
-        value: String(s.value).trim(),
-      }));
   }
 
   // ✅ цену у Product показываем ТОЛЬКО через offers
