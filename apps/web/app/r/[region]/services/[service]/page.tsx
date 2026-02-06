@@ -62,7 +62,7 @@ export default async function Page({
   const low = lowPrice !== null && lowPrice !== Number.POSITIVE_INFINITY ? asNumber(lowPrice) : null;
   const high = highPrice !== null ? asNumber(highPrice) : null;
 
-  // JSON-LD: Service + AggregateOffer (low/high) + ItemList (компании)
+  // JSON-LD: Service + Offer + AggregateOffer + ServiceChannel + ItemList (компании)
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -71,15 +71,37 @@ export default async function Page({
       "@type": "AdministrativeArea",
       name: regionObj?.name || regionSlug,
     },
-    offers: companies.length
-      ? {
-          "@type": "AggregateOffer",
-          priceCurrency: "RUB",
-          lowPrice: low ?? undefined,
-          highPrice: high ?? undefined,
-          offerCount: companies.length,
-        }
-      : undefined,
+    availableChannel: {
+      "@type": "ServiceChannel",
+      serviceUrl: `https://moydompro.ru/r/${regionSlug}/services/${serviceSlug}`,
+      availableLanguage: "ru-RU",
+      serviceLocation: {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: regionObj?.name || regionSlug,
+        },
+      },
+    },
+    offers:
+      companies.length && (low != null || high != null)
+        ? [
+            {
+              "@type": "AggregateOffer",
+              priceCurrency: "RUB",
+              lowPrice: low ?? undefined,
+              highPrice: high ?? undefined,
+              offerCount: companies.length,
+              url: `https://moydompro.ru/r/${regionSlug}/services/${serviceSlug}`,
+            },
+            {
+              "@type": "Offer",
+              priceCurrency: "RUB",
+              price: low ?? high ?? undefined,
+              url: `https://moydompro.ru/r/${regionSlug}/services/${serviceSlug}`,
+            },
+          ]
+        : undefined,
     provider: {
       "@type": "Organization",
       name: "МойДомPRO",
