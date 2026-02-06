@@ -255,7 +255,7 @@ export default async function CompanyProfilePage({
   const ldWebPage = jsonLdWebPage({
     url: pageUrl,
     name: company.name,
-    description: String(company.description || company.about || "").trim() || undefined,
+    description: String(company.description || company.short_description || "").trim() || undefined,
     imageUrl: toPublicUploadsUrl(company.logo_url),
     mainEntityId: `${pageUrl}#company`,
   });
