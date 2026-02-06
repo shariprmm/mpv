@@ -11,6 +11,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import net from "node:net";
 import tls from "node:tls";
+import dns from "node:dns/promises";
 import { fileURLToPath } from "node:url";
 import { registerMasterRoutes } from "./master.js";
 import { registerAdminSeoGenerate } from "./admin_seo_generate.js";
@@ -230,6 +231,79 @@ function parseDataUrlBase64(dataUrl) {
   return { mime: m[1], b64: m[2] };
 }
 
+function isPrivateIp(ip) {
+  const v = net.isIP(ip);
+  if (!v) return false;
+
+  if (v === 4) {
+    const parts = ip.split(".").map((n) => Number(n));
+    if (parts.length !== 4 || parts.some((n) => Number.isNaN(n))) return true;
+    const [a, b] = parts;
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 0) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    return false;
+  }
+
+  const normalized = ip.toLowerCase();
+  if (normalized === "::1" || normalized === "::") return true;
+  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+  if (/^fe[89ab]/.test(normalized)) return true;
+  if (normalized.startsWith("2001:db8")) return true;
+  if (normalized.startsWith("::ffff:")) {
+    const mapped = normalized.replace("::ffff:", "");
+    return isPrivateIp(mapped);
+  }
+  return false;
+}
+
+function isBlockedHostname(hostname) {
+  const h = String(hostname || "").toLowerCase();
+  if (!h) return true;
+  if (h === "localhost" || h.endsWith(".localhost")) return true;
+  if (h === "metadata" || h === "metadata.google.internal") return true;
+  return false;
+}
+
+async function validateRemoteImageUrl(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(String(rawUrl));
+  } catch {
+    return { ok: false, error: "bad_image_url" };
+  }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    return { ok: false, error: "bad_image_url" };
+  }
+
+  if (isBlockedHostname(parsed.hostname)) {
+    return { ok: false, error: "bad_image_url" };
+  }
+
+  const ip = net.isIP(parsed.hostname) ? parsed.hostname : null;
+  if (ip && isPrivateIp(ip)) {
+    return { ok: false, error: "bad_image_url" };
+  }
+
+  if (!ip) {
+    try {
+      const lookups = await dns.lookup(parsed.hostname, { all: true });
+      if (!lookups.length) return { ok: false, error: "bad_image_url" };
+      if (lookups.some((entry) => isPrivateIp(entry.address))) {
+        return { ok: false, error: "bad_image_url" };
+      }
+    } catch {
+      return { ok: false, error: "bad_image_url" };
+    }
+  }
+
+  return { ok: true, url: parsed.toString() };
+}
+
 function extFromMime(mime, fallbackName = "") {
   const byMime = {
     "image/png": "png",
@@ -327,9 +401,12 @@ function isAllowedImageMime(m) {
 }
 
 async function saveRemoteImageAsWebp({ url, prefix, maxBytes }) {
+  const validated = await validateRemoteImageUrl(url);
+  if (!validated.ok) return { ok: false, error: validated.error };
+
   let resp;
   try {
-    resp = await fetch(url);
+    resp = await fetch(validated.url, { redirect: "error" });
   } catch (e) {
     return { ok: false, error: "image_fetch_failed" };
   }
