@@ -596,11 +596,23 @@ export function jsonLdService(input: {
   // ✅ Для Service areaServed валиден
   if (String(input.regionName || "").trim()) {
     obj.areaServed = { "@type": "City", name: input.regionName };
+    obj.availableChannel = {
+      "@type": "ServiceChannel",
+      serviceUrl: input.url,
+      availableLanguage: "ru-RU",
+      serviceLocation: {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: input.regionName,
+        },
+      },
+    };
   }
 
   // ✅ Цена — только через offers
   if (low != null || high != null) {
-    obj.offers = {
+    const aggregateOffer = {
       "@type": "AggregateOffer",
       priceCurrency: cur,
       offerCount: offerCount || 1,
@@ -608,6 +620,17 @@ export function jsonLdService(input: {
       ...(high != null ? { highPrice: high } : {}),
       url: input.url,
     };
+    const directPrice = low ?? high;
+    const offer =
+      directPrice != null
+        ? {
+            "@type": "Offer",
+            priceCurrency: cur,
+            price: directPrice,
+            url: input.url,
+          }
+        : null;
+    obj.offers = offer ? [aggregateOffer, offer] : aggregateOffer;
   }
 
   return obj;
@@ -626,7 +649,6 @@ export function jsonLdProduct(input: {
   modelName?: string | null;
   groupName?: string | null;
   availability?: "InStock" | "OutOfStock" | "PreOrder" | null;
-  specs?: Array<{ name: string; value: string }>;
 }) {
   const cur = (input.price.currency || "RUB").toUpperCase();
 
@@ -663,16 +685,6 @@ export function jsonLdProduct(input: {
 
   if (input.groupName) {
     obj.isVariantOf = { "@type": "ProductGroup", name: input.groupName };
-  }
-
-  if (Array.isArray(input.specs) && input.specs.length > 0) {
-    obj.additionalProperty = input.specs
-      .filter((s) => String(s?.name || "").trim() && String(s?.value || "").trim())
-      .map((s) => ({
-        "@type": "PropertyValue",
-        name: String(s.name).trim(),
-        value: String(s.value).trim(),
-      }));
   }
 
   // ✅ цену у Product показываем ТОЛЬКО через offers

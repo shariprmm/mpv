@@ -317,7 +317,6 @@ export default async function ProductPage({
       modelName,
       groupName,
       availability: companies.length > 0 ? "InStock" : "OutOfStock",
-      specs,
     }),
     ...(allImages.length ? { image: allImages } : {}),
     "@id": `${SITE_URL}/${regionSlug}/products/${productSlug}#product`,
