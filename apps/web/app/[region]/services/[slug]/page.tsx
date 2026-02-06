@@ -482,6 +482,14 @@ export default async function ServicePage({
     data?.service?.canonical_image ?? data?.service?.image_url ?? data?.service?.image
   );
 
+  const ldWebPage = jsonLdWebPage({
+    url: seo.canonical,
+    name: h1,
+    description: canonicalDesc || seo.description,
+    imageUrl: canonicalImage ? absUrlMaybe(canonicalImage) : null,
+    mainEntityId: `${seo.canonical}#service`,
+  });
+
   const galleryRaw = data?.service?.gallery ?? data?.service?.images ?? data?.service?.photos ?? null;
   const gallery = asArr(galleryRaw).map((x) => normalizePublicImageUrl(x)).filter(Boolean) as string[];
   // Убираем дубликат главного фото из галереи
