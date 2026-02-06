@@ -499,6 +499,72 @@ export function jsonLdBreadcrumb(items: { name: string; item?: string }[]) {
   };
 }
 
+export function jsonLdOrganization(input: { name: string; url: string; logoUrl?: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${input.url}#organization`,
+    name: input.name,
+    url: input.url,
+    ...(input.logoUrl
+      ? {
+          logo: {
+            "@type": "ImageObject",
+            url: input.logoUrl,
+          },
+        }
+      : {}),
+  };
+}
+
+export function jsonLdWebSite(input: { name: string; url: string; searchTarget?: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${input.url}#website`,
+    url: input.url,
+    name: input.name,
+    publisher: { "@id": `${input.url}#organization` },
+    ...(input.searchTarget
+      ? {
+          potentialAction: {
+            "@type": "SearchAction",
+            target: input.searchTarget,
+            "query-input": "required name=search_term_string",
+          },
+        }
+      : {}),
+  };
+}
+
+export function jsonLdWebPage(input: {
+  url: string;
+  name: string;
+  description?: string;
+  imageUrl?: string | null;
+  mainEntityId?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${input.url}#webpage`,
+    url: input.url,
+    name: input.name,
+    ...(input.description ? { description: input.description } : {}),
+    isPartOf: { "@id": `${SITE_URL}#website` },
+    inLanguage: "ru-RU",
+    ...(input.imageUrl
+      ? {
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: input.imageUrl,
+          },
+        }
+      : {}),
+    ...(input.mainEntityId ? { mainEntity: { "@id": input.mainEntityId } } : {}),
+  };
+}
+
 export function jsonLdService(input: {
   url: string;
   name: string;
