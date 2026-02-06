@@ -15,6 +15,7 @@ import {
   computeMinMaxFromCompanies,
   jsonLdBreadcrumb,
   jsonLdService,
+  jsonLdWebPage,
   regionLoc,
 } from "@/lib/seo";
 
@@ -433,12 +434,23 @@ export default async function ServicePage({
     { name: serviceLabel, item: seo.canonical },
   ]);
 
-  const ldService = jsonLdService({
+  const ldService = {
+    ...jsonLdService({
+      url: seo.canonical,
+      name: serviceLabel,
+      regionName,
+      price: pr,
+      companiesCount: companies.length,
+    }),
+    "@id": `${seo.canonical}#service`,
+  };
+
+  const ldWebPage = jsonLdWebPage({
     url: seo.canonical,
-    name: serviceLabel,
-    regionName,
-    price: pr,
-    companiesCount: companies.length,
+    name: h1,
+    description: canonicalDesc || seo.description,
+    imageUrl: canonicalImage ? absUrlMaybe(canonicalImage) : null,
+    mainEntityId: `${seo.canonical}#service`,
   });
 
   const ctx = {
@@ -534,6 +546,7 @@ export default async function ServicePage({
   return (
     <div className={styles.wrap}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldService) }} />
       {ldImages ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldImages) }} /> : null}
 

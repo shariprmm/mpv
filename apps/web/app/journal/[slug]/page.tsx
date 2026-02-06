@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import styles from "./page.module.css";
 import { ArticleViewer } from "./ArticleViewer"; // ✅ Клиентский компонент для Лайтбокса
+import { jsonLdWebPage } from "@/lib/seo";
 
 // Конфиг
 const API = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || "https://api.moydompro.ru";
@@ -353,11 +354,20 @@ export default async function JournalPostPage({ params }: { params: { slug: stri
       logo: { "@type": "ImageObject", url: `${SITE_URL}/uploads/logo.png` },
     },
   };
+  const ldWebPage = jsonLdWebPage({
+    url,
+    name: post.title,
+    description: post.seo_description || post.excerpt || undefined,
+    imageUrl: cover || null,
+    mainEntityId: `${url}#article`,
+  });
+  const ldArticleWithId = { ...ldArticle, "@id": `${url}#article` };
 
   return (
     <main className={styles.wrap}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldArticle) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldArticleWithId) }} />
 
       <div className={styles.shell}>
         <div className={styles.grid}>
