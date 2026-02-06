@@ -167,6 +167,7 @@ type CompanyApi = {
   is_verified?: boolean;
 
   description?: string | null;
+  short_description?: string | null;
   about?: string | null;
   photos?: any;
 
