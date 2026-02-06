@@ -1,7 +1,9 @@
 // apps/web/app/layout.tsx
 import SiteHeader from "@/components/SiteHeader";
+import SeoJsonLd from "@/components/SeoJsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { RegionProvider } from "@/context/RegionContext";
+import { SITE_NAME, SITE_URL, absUrl, jsonLdOrganization, jsonLdWebSite } from "@/lib/seo";
 import styles from "./layout.module.css";
 import "./globals.css";
 
@@ -49,6 +51,23 @@ export default async function RootLayout({
       </head>
 
       <body className={styles.body}>
+        <SeoJsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@graph": [
+              jsonLdOrganization({
+                name: SITE_NAME,
+                url: SITE_URL,
+                logoUrl: absUrl("/images/og-default.png"),
+              }),
+              jsonLdWebSite({
+                name: SITE_NAME,
+                url: SITE_URL,
+                searchTarget: `${SITE_URL}/search?q={search_term_string}`,
+              }),
+            ],
+          }}
+        />
         <RegionProvider initialRegions={regions}>
           <SiteHeader regions={regions} />
 

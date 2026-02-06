@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import styles from "./page.module.css";
 import type { Metadata } from "next";
-import { buildCompanySeo, toNextMetadata } from "@/lib/seo";
+import { buildCompanySeo, jsonLdWebPage, toNextMetadata } from "@/lib/seo";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import { jsonLdBreadcrumb, jsonLdCompany, absUrl } from "@/lib/seo";
 
@@ -167,6 +167,7 @@ type CompanyApi = {
   is_verified?: boolean;
 
   description?: string | null;
+  short_description?: string | null;
   about?: string | null;
   photos?: any;
 
@@ -251,6 +252,14 @@ export default async function CompanyProfilePage({
     rating: typeof company.rating === "string" ? Number(company.rating) : (company.rating ?? null),
     reviewsCount: company.reviews_count ?? null,
   });
+  const ldCompanyWithId = { ...ldCompany, "@id": `${pageUrl}#company` };
+  const ldWebPage = jsonLdWebPage({
+    url: pageUrl,
+    name: company.name,
+    description: String(company.description || company.about || "").trim() || undefined,
+    imageUrl: toPublicUploadsUrl(company.logo_url),
+    mainEntityId: `${pageUrl}#company`,
+  });
 
 
   const items: CompanyItemApi[] = Array.isArray(data.items) ? data.items : [];
@@ -327,7 +336,8 @@ export default async function CompanyProfilePage({
   return (
     <main className={styles.LayoutMain}>
       <SeoJsonLd data={ldBreadcrumb} />
-      <SeoJsonLd data={ldCompany} />
+      <SeoJsonLd data={ldWebPage} />
+      <SeoJsonLd data={ldCompanyWithId} />
 
       <div className={styles.ContentWrap}>
         

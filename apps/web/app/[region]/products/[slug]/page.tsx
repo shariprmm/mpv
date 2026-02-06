@@ -15,6 +15,7 @@ import {
   computeMinMaxFromCompanies,
   jsonLdBreadcrumb,
   jsonLdProduct,
+  jsonLdWebPage,
   regionLoc,
 } from "@/lib/seo";
 
@@ -258,6 +259,10 @@ export default async function ProductPage({
   };
 
   const descriptionHtml = renderTemplate(product.description || product.short_description || "", ctx);
+  const descriptionPlain = String(product.short_description || product.description || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const categories = normalizeCategoriesPayload(categoriesRes.data);
   const { current: currentCategory, parent: parentCategory } = resolveCategoryByProduct(categories, product);
   const quizConfigId = (() => {
@@ -296,11 +301,20 @@ export default async function ProductPage({
       reviewsCount: Number(reviewsStats?.total_count) || null,
     }),
     ...(allImages.length ? { image: allImages } : {}),
+    "@id": `${SITE_URL}/${regionSlug}/products/${productSlug}#product`,
   };
+  const ldWebPage = jsonLdWebPage({
+    url: `${SITE_URL}/${regionSlug}/products/${productSlug}`,
+    name: `${productName} в ${regionIn}`,
+    description: descriptionPlain || undefined,
+    imageUrl: allImages[0] || null,
+    mainEntityId: `${SITE_URL}/${regionSlug}/products/${productSlug}#product`,
+  });
 
   return (
     <div className={styles.wrap}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldProduct) }} />
         
         <Breadcrumbs items={crumbs} />
