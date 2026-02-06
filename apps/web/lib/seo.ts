@@ -596,11 +596,23 @@ export function jsonLdService(input: {
   // ✅ Для Service areaServed валиден
   if (String(input.regionName || "").trim()) {
     obj.areaServed = { "@type": "City", name: input.regionName };
+    obj.availableChannel = {
+      "@type": "ServiceChannel",
+      serviceUrl: input.url,
+      availableLanguage: "ru-RU",
+      serviceLocation: {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: input.regionName,
+        },
+      },
+    };
   }
 
   // ✅ Цена — только через offers
   if (low != null || high != null) {
-    obj.offers = {
+    const aggregateOffer = {
       "@type": "AggregateOffer",
       priceCurrency: cur,
       offerCount: offerCount || 1,
@@ -608,6 +620,17 @@ export function jsonLdService(input: {
       ...(high != null ? { highPrice: high } : {}),
       url: input.url,
     };
+    const directPrice = low ?? high;
+    const offer =
+      directPrice != null
+        ? {
+            "@type": "Offer",
+            priceCurrency: cur,
+            price: directPrice,
+            url: input.url,
+          }
+        : null;
+    obj.offers = offer ? [aggregateOffer, offer] : aggregateOffer;
   }
 
   return obj;
