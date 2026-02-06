@@ -622,6 +622,11 @@ export function jsonLdProduct(input: {
   companiesCount: number;
   rating?: number | null;
   reviewsCount?: number | null;
+  brandName?: string | null;
+  modelName?: string | null;
+  groupName?: string | null;
+  availability?: "InStock" | "OutOfStock" | "PreOrder" | null;
+  specs?: Array<{ name: string; value: string }>;
 }) {
   const cur = (input.price.currency || "RUB").toUpperCase();
 
@@ -637,6 +642,10 @@ export function jsonLdProduct(input: {
 
   const offerCount = Math.max(0, Number(input.companiesCount || 0));
 
+  const availabilityUrl = input.availability
+    ? `https://schema.org/${input.availability}`
+    : undefined;
+
   const obj: any = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -644,16 +653,71 @@ export function jsonLdProduct(input: {
     url: input.url,
   };
 
+  if (input.brandName) {
+    obj.brand = { "@type": "Brand", name: input.brandName };
+  }
+
+  if (input.modelName) {
+    obj.model = { "@type": "ProductModel", name: input.modelName };
+  }
+
+  if (input.groupName) {
+    obj.isVariantOf = { "@type": "ProductGroup", name: input.groupName };
+  }
+
+  if (Array.isArray(input.specs) && input.specs.length > 0) {
+    obj.additionalProperty = input.specs
+      .filter((s) => String(s?.name || "").trim() && String(s?.value || "").trim())
+      .map((s) => ({
+        "@type": "PropertyValue",
+        name: String(s.name).trim(),
+        value: String(s.value).trim(),
+      }));
+  }
+
   // ✅ цену у Product показываем ТОЛЬКО через offers
   if (low != null || high != null) {
-    obj.offers = {
+    const price = low ?? high;
+    const priceSpecifications: any[] = [];
+
+    if (price != null) {
+      priceSpecifications.push({
+        "@type": "UnitPriceSpecification",
+        price,
+        priceCurrency: cur,
+        priceType: "https://schema.org/SalePrice",
+      });
+    }
+
+    if (high != null && low != null && high > low) {
+      priceSpecifications.push({
+        "@type": "UnitPriceSpecification",
+        price: high,
+        priceCurrency: cur,
+        priceType: "https://schema.org/ListPrice",
+      });
+    }
+
+    const offer = {
+      "@type": "Offer",
+      ...(price != null ? { price } : {}),
+      priceCurrency: cur,
+      ...(availabilityUrl ? { availability: availabilityUrl } : {}),
+      url: input.url,
+      ...(priceSpecifications.length ? { priceSpecification: priceSpecifications } : {}),
+    };
+
+    const aggregateOffer = {
       "@type": "AggregateOffer",
       priceCurrency: cur,
       offerCount: offerCount || 1,
       ...(low != null ? { lowPrice: low } : {}),
       ...(high != null ? { highPrice: high } : {}),
       url: input.url,
+      ...(availabilityUrl ? { availability: availabilityUrl } : {}),
     };
+
+    obj.offers = [offer, aggregateOffer];
   }
 
   const rating = input.rating;

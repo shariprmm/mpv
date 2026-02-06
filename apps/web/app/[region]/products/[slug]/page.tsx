@@ -245,6 +245,19 @@ export default async function ProductPage({
   }
   specs = specs.slice(0, 15);
 
+  const findSpecValue = (keys: string[]) => {
+    const lowered = keys.map((k) => k.toLowerCase());
+    const match = specs.find((s) => {
+      const name = String(s.name || "").toLowerCase();
+      return lowered.some((key) => name.includes(key));
+    });
+    return match?.value ? String(match.value).trim() : null;
+  };
+
+  const brandName =
+    findSpecValue(["бренд", "brand", "марка", "производитель"]) || "МойДомПро";
+  const modelName = findSpecValue(["модель", "model"]) || productName;
+
   const ctx = {
     region: { id: region?.id ?? "", slug: regionSlug, name: regionName, in: regionIn },
     product: { id: product?.id ?? "", slug: productSlug, name: productName },
@@ -259,12 +272,13 @@ export default async function ProductPage({
   };
 
   const descriptionHtml = renderTemplate(product.description || product.short_description || "", ctx);
-  const descriptionPlain = String(product.short_description || product.description || "")
+  const descriptionPlain = String(renderTemplate(product.short_description || product.description || "", ctx))
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
   const categories = normalizeCategoriesPayload(categoriesRes.data);
   const { current: currentCategory, parent: parentCategory } = resolveCategoryByProduct(categories, product);
+  const groupName = currentCategory?.name || parentCategory?.name || null;
   const quizConfigId = (() => {
     const hints = [
       productName,
@@ -299,6 +313,11 @@ export default async function ProductPage({
       companiesCount: companies.length,
       rating: Number(reviewsStats?.rating_avg) || null,
       reviewsCount: Number(reviewsStats?.total_count) || null,
+      brandName,
+      modelName,
+      groupName,
+      availability: companies.length > 0 ? "InStock" : "OutOfStock",
+      specs,
     }),
     ...(allImages.length ? { image: allImages } : {}),
     "@id": `${SITE_URL}/${regionSlug}/products/${productSlug}#product`,
@@ -312,7 +331,7 @@ export default async function ProductPage({
   });
 
   return (
-    <div className={styles.wrap}>
+    <div className={styles.wrap} itemScope itemType="https://schema.org/Product">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldProduct) }} />
@@ -320,7 +339,9 @@ export default async function ProductPage({
         <Breadcrumbs items={crumbs} />
 
         <div className={styles.h1Row}>
-            <h1 className={styles.h1}>{productName} в {regionIn}</h1>
+            <h1 className={styles.h1}>
+              <span itemProp="name">{productName}</span> в {regionIn}
+            </h1>
         </div>
 
         <div className={styles.productGrid}>
@@ -339,6 +360,7 @@ export default async function ProductPage({
                                     alt={productName} 
                                     className={styles.heroImg} 
                                     loading="eager"
+                                    itemProp="image"
                                 />
                             </div>
                             
@@ -360,9 +382,15 @@ export default async function ProductPage({
                         <h2 className={styles.h2}>Характеристики</h2>
                         <div className={styles.specTable}>
                             {specs.map((s, idx) => (
-                                <div key={idx} className={styles.specRow}>
-                                    <div className={styles.specName}>{s.name}</div>
-                                    <div className={styles.specVal}>{s.value}</div>
+                                <div
+                                    key={idx}
+                                    className={styles.specRow}
+                                    itemProp="additionalProperty"
+                                    itemScope
+                                    itemType="https://schema.org/PropertyValue"
+                                >
+                                    <div className={styles.specName} itemProp="name">{s.name}</div>
+                                    <div className={styles.specVal} itemProp="value">{s.value}</div>
                                 </div>
                             ))}
                         </div>
