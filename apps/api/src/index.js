@@ -2693,13 +2693,34 @@ app.post(
       );
       const user = u.rows[0];
 
-      const token = signToken({ sub: user.id, company_id: user.company_id, role: user.role });
-      setAuthCookie(res, token);
+      const emailToken = signEmailToken({
+        sub: user.id,
+        company_id: user.company_id,
+        email: user.email,
+        type: "email_verify",
+      });
+      const verifyUrl = `${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(emailToken)}`;
+      const subject = "Подтверждение регистрации компании";
+      const text = `Здравствуйте!\n\nВы зарегистрировали компанию "${company.name}". Подтвердите email по ссылке:\n${verifyUrl}\n\nЕсли это были не вы, просто проигнорируйте письмо.`;
+      const html = `<p>Здравствуйте!</p>
+<p>Вы зарегистрировали компанию <strong>${company.name}</strong>. Подтвердите email по ссылке:</p>
+<p><a href="${verifyUrl}">${verifyUrl}</a></p>
+<p>Если это были не вы, просто проигнорируйте письмо.</p>`;
+
+      let emailSent = false;
+      try {
+        const sendResult = await sendEmail({ to: user.email, subject, text, html });
+        emailSent = sendResult.ok;
+      } catch (e) {
+        console.error("register email failed", e);
+        emailSent = false;
+      }
 
       return res.json({
         ok: true,
         user,
         company: { ...company, region_slug: region.slug, region_name: region.name },
+        email_sent: emailSent,
       });
     } catch (e) {
       console.error("register error", e);
