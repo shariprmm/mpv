@@ -445,6 +445,14 @@ export default async function ServicePage({
     "@id": `${seo.canonical}#service`,
   };
 
+  const ldWebPage = jsonLdWebPage({
+    url: seo.canonical,
+    name: h1,
+    description: canonicalDesc || seo.description,
+    imageUrl: canonicalImage ? absUrlMaybe(canonicalImage) : null,
+    mainEntityId: `${seo.canonical}#service`,
+  });
+
   const ctx = {
     region: { id: data?.region?.id ?? "", slug: regionSlug, name: regionName, in: regionIn },
     service: { id: data?.service?.id ?? "", slug: serviceSlug, name: serviceLabel },
@@ -474,7 +482,7 @@ export default async function ServicePage({
     data?.service?.canonical_image ?? data?.service?.image_url ?? data?.service?.image
   );
 
-  const ldWebPageData = jsonLdWebPage({
+  const ldWebPage = jsonLdWebPage({
     url: seo.canonical,
     name: h1,
     description: canonicalDesc || seo.description,
@@ -546,7 +554,7 @@ export default async function ServicePage({
   return (
     <div className={styles.wrap}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPageData) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldService) }} />
       {ldImages ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldImages) }} /> : null}
 
