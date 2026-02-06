@@ -272,7 +272,7 @@ export default async function ProductPage({
   };
 
   const descriptionHtml = renderTemplate(product.description || product.short_description || "", ctx);
-  const descriptionPlain = String(product.short_description || product.description || "")
+  const descriptionPlain = String(renderTemplate(product.short_description || product.description || "", ctx))
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
