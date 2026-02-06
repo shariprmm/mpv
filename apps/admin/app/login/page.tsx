@@ -10,8 +10,8 @@ const API =
   "https://api.moydompro.ru";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("owner1@moydompro.ru");
-  const [password, setPassword] = useState("Password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -62,14 +62,14 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={onSubmit} className={styles.form}>
+        <form onSubmit={onSubmit} className={styles.form} autoComplete="off">
           <div className={styles.field}>
             <label className={styles.label}>Email</label>
             <input
               className={styles.input}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
+              autoComplete="off"
               placeholder="name@company.com"
               type="email"
               required
@@ -83,7 +83,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              autoComplete="current-password"
+              autoComplete="off"
               placeholder="••••••••"
               required
             />
