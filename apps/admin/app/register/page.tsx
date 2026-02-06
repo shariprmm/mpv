@@ -1,7 +1,7 @@
 // apps/admin/app/register/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import styles from "./register.module.css";
 
@@ -14,9 +14,54 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
+  const [regionSlug, setRegionSlug] = useState("");
+  const [regions, setRegions] = useState<{ id: number; name: string; slug: string }[]>([]);
+  const [regionsError, setRegionsError] = useState<string | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function loadRegions() {
+      try {
+        const r = await fetch(`${API}/public/regions`);
+        const data = await r.json();
+        if (!r.ok || !data?.items) {
+          throw new Error(data?.error || "regions_load_failed");
+        }
+        if (active) {
+          setRegions(data.items);
+          if (!regionSlug && data.items.length > 0) {
+            setRegionSlug(data.items[0].slug);
+          }
+        }
+      } catch (e: any) {
+        if (active) {
+          setRegionsError(e?.message || "regions_load_failed");
+        }
+      }
+    }
+
+    loadRegions();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const errorMessage = useMemo(() => {
+    if (!err) return null;
+    const known: Record<string, string> = {
+      invalid_region: "Выберите регион из списка.",
+      region_not_found: "Регион не найден. Выберите из списка.",
+      invalid_email: "Проверьте корректность email.",
+      password_min_8: "Пароль должен быть не короче 8 символов.",
+      invalid_company_name: "Введите корректное название компании.",
+      email_exists: "Этот email уже зарегистрирован.",
+      server_error: "Не удалось зарегистрироваться. Попробуйте позже.",
+    };
+    return known[err] || err;
+  }, [err]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +77,7 @@ export default function RegisterPage() {
           email, 
           password, 
           company_name: companyName,
+          region_slug: regionSlug,
           phone 
         }),
       });
@@ -68,9 +114,9 @@ export default function RegisterPage() {
           Создайте профиль, чтобы размещать услуги и получать заявки бесплатно.
         </p>
 
-        {err && (
+        {errorMessage && (
           <div className={styles.error} role="alert">
-            {err}
+            {errorMessage}
           </div>
         )}
 
@@ -88,6 +134,34 @@ export default function RegisterPage() {
             />
             <div className={styles.hint}>
               Так вас будут видеть клиенты в каталоге.
+            </div>
+          </div>
+
+          {/* Поле Регион */}
+          <div className={styles.field}>
+            <label className={styles.label}>Регион</label>
+            <select
+              className={styles.input}
+              value={regionSlug}
+              onChange={(e) => setRegionSlug(e.target.value)}
+              required
+              aria-invalid={!regionSlug}
+            >
+              {regions.length === 0 && (
+                <option value="" disabled>
+                  Загрузка регионов...
+                </option>
+              )}
+              {regions.map((region) => (
+                <option key={region.id} value={region.slug}>
+                  {region.name}
+                </option>
+              ))}
+            </select>
+            <div className={styles.hint}>
+              {regionsError
+                ? "Не удалось загрузить список регионов. Обновите страницу."
+                : "Выберите регион, в котором работает компания."}
             </div>
           </div>
 
@@ -135,10 +209,10 @@ export default function RegisterPage() {
               type="password"
               autoComplete="new-password"
               required
-              minLength={6}
+              minLength={8}
             />
             <div className={styles.hint}>
-              Минимум 6 символов.
+              Минимум 8 символов.
             </div>
           </div>
 
