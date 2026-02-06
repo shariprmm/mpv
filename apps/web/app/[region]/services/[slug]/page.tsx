@@ -11,7 +11,6 @@ import { renderTemplate } from "@/lib/renderTemplate";
 import {
   SITE_URL,
   buildServiceSeo,
-  buildSeoText,
   computeMinMaxFromCompanies,
   jsonLdBreadcrumb,
   jsonLdService,
@@ -41,7 +40,9 @@ async function apiGet(path: string) {
 }
 
 // ✅ для страниц, где важен корректный 404 — получаем статус
-async function apiGetWithStatus(path: string): Promise<{ status: number; data: any | null }> {
+async function apiGetWithStatus(
+  path: string
+): Promise<{ status: number; data: any | null }> {
   const base = String(API_BASE || "").replace(/\/$/, "");
   const url = base + path;
 
@@ -66,7 +67,10 @@ function lcFirst(s: string) {
   return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
-async function resolveServiceName(regionSlug: string, serviceSlug: string): Promise<string | null> {
+async function resolveServiceName(
+  regionSlug: string,
+  serviceSlug: string
+): Promise<string | null> {
   const slug = String(serviceSlug || "").trim();
   if (!slug) return null;
 
@@ -77,12 +81,22 @@ async function resolveServiceName(regionSlug: string, serviceSlug: string): Prom
   } catch {}
 
   try {
-    const list = await apiGet(`/public/region/${encodeURIComponent(regionSlug)}/services`);
+    const list = await apiGet(
+      `/public/region/${encodeURIComponent(regionSlug)}/services`
+    );
     const target = slug;
     const seen = new Set<any>();
 
     function pickSlug(x: any): string {
-      return String(x?.slug ?? x?.service_slug ?? x?.serviceSlug ?? x?.code ?? x?.alias ?? x?.id ?? "").trim();
+      return String(
+        x?.slug ??
+          x?.service_slug ??
+          x?.serviceSlug ??
+          x?.code ??
+          x?.alias ??
+          x?.id ??
+          ""
+      ).trim();
     }
     function pickName(x: any): string {
       return String(x?.name ?? x?.title ?? x?.label ?? "").trim();
@@ -131,7 +145,9 @@ async function resolveServiceName(regionSlug: string, serviceSlug: string): Prom
 async function resolveRegionName(regionSlug: string): Promise<string> {
   try {
     const data = await apiGet(`/home?region_slug=${encodeURIComponent(regionSlug)}`);
-    return String(data?.region?.name || data?.region?.title || data?.region_name || regionSlug).trim();
+    return String(
+      data?.region?.name || data?.region?.title || data?.region_name || regionSlug
+    ).trim();
   } catch {
     return regionSlug;
   }
@@ -167,14 +183,16 @@ function normalizePublicImageUrl(u: any): string | null {
 }
 
 function asArr(v: any): string[] {
-  if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean);
+  if (Array.isArray(v))
+    return v.map((x) => String(x ?? "").trim()).filter(Boolean);
   if (!v) return [];
   if (typeof v === "string") {
     const s = v.trim();
     if (!s) return [];
     try {
       const parsed = JSON.parse(s);
-      if (Array.isArray(parsed)) return parsed.map((x) => String(x ?? "").trim()).filter(Boolean);
+      if (Array.isArray(parsed))
+        return parsed.map((x) => String(x ?? "").trim()).filter(Boolean);
     } catch {
       if (s.includes(",")) return s.split(",").map((x) => x.trim()).filter(Boolean);
     }
@@ -207,11 +225,15 @@ function companiesLabel(count: number) {
   const mod10 = n % 10;
   const mod100 = n % 100;
   if (mod10 === 1 && mod100 !== 11) return "компания";
-  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return "компании";
+  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14))
+    return "компании";
   return "компаний";
 }
 
-function pickCompanyPriceFrom(company: any, serviceSlug: string): { priceMin: number | null; currency: string } {
+function pickCompanyPriceFrom(
+  company: any,
+  serviceSlug: string
+): { priceMin: number | null; currency: string } {
   const directCandidates = [
     company?.price_min,
     company?.price_from,
@@ -239,7 +261,9 @@ function pickCompanyPriceFrom(company: any, serviceSlug: string): { priceMin: nu
     const kind = String(it?.kind ?? it?.type ?? "").trim();
     if (kind && kind !== "service") continue;
     if (itSlug && slug && itSlug !== slug) continue;
-    const n = toNum(it?.price_min ?? it?.priceMin ?? it?.price_from ?? it?.priceFrom ?? it?.price);
+    const n = toNum(
+      it?.price_min ?? it?.priceMin ?? it?.price_from ?? it?.priceFrom ?? it?.price
+    );
     if (n !== null) best = best === null ? n : Math.min(best, n);
   }
   const cur = String(company?.currency || "RUB");
@@ -261,7 +285,9 @@ function pickCompanyLogoUrl(co: any): string | null {
 }
 
 function pickCompanyCoverUrl(co: any): string | null {
-  return normalizePublicImageUrl(co?.cover_image ?? co?.coverImage ?? co?.cover_url ?? co?.cover ?? null);
+  return normalizePublicImageUrl(
+    co?.cover_image ?? co?.coverImage ?? co?.cover_url ?? co?.cover ?? null
+  );
 }
 
 function pickCompanyAddress(co: any): string {
@@ -329,7 +355,9 @@ export async function generateMetadata({
 
   try {
     const { status, data } = await apiGetWithStatus(
-      `/public/region/${encodeURIComponent(regionSlug)}/services/${encodeURIComponent(serviceSlug)}`
+      `/public/region/${encodeURIComponent(regionSlug)}/services/${encodeURIComponent(
+        serviceSlug
+      )}`
     );
     if (status === 404) notFound();
 
@@ -371,8 +399,12 @@ export async function generateMetadata({
 
     const overrideTitleRaw = String(data?.service?.seo_title ?? "").trim();
     const overrideDescRaw = String(data?.service?.seo_description ?? "").trim();
-    const title = (overrideTitleRaw ? renderTemplate(overrideTitleRaw, ctx) : "") || renderTemplate(seo.title, ctx);
-    const description = (overrideDescRaw ? renderTemplate(overrideDescRaw, ctx) : "") || renderTemplate(seo.description, ctx);
+    const title =
+      (overrideTitleRaw ? renderTemplate(overrideTitleRaw, ctx) : "") ||
+      renderTemplate(seo.title, ctx);
+    const description =
+      (overrideDescRaw ? renderTemplate(overrideDescRaw, ctx) : "") ||
+      renderTemplate(seo.description, ctx);
 
     return {
       title,
@@ -401,17 +433,24 @@ export default async function ServicePage({
   if (isInvalidServiceSlug(serviceSlug)) notFound();
 
   const { status, data } = await apiGetWithStatus(
-    `/public/region/${encodeURIComponent(regionSlug)}/services/${encodeURIComponent(serviceSlug)}`
+    `/public/region/${encodeURIComponent(regionSlug)}/services/${encodeURIComponent(
+      serviceSlug
+    )}`
   );
   if (status === 404) notFound();
 
   const nameFromDetail = String(data?.service?.name || "").trim();
   const resolvedName = nameFromDetail || (await resolveServiceName(regionSlug, serviceSlug));
-  const apiSaysNotFound = data?.ok === false && (data?.error === "service_not_found" || data?.error === "not_found" || data?.error === "region_not_found");
+  const apiSaysNotFound =
+    data?.ok === false &&
+    (data?.error === "service_not_found" ||
+      data?.error === "not_found" ||
+      data?.error === "region_not_found");
 
   if (apiSaysNotFound || !resolvedName) notFound();
 
-  const regionName = String(data?.region?.name || "").trim() || (await resolveRegionName(regionSlug));
+  const regionName =
+    String(data?.region?.name || "").trim() || (await resolveRegionName(regionSlug));
   const regionIn = regionLoc({ slug: regionSlug, name: regionName });
   const serviceLabel = resolvedName;
 
@@ -426,31 +465,6 @@ export default async function ServicePage({
     serviceSlug,
     price: pr,
     companiesCount: companies.length,
-  });
-
-  const ldBreadcrumbs = jsonLdBreadcrumb([
-    { name: "Главная", item: `${SITE_URL}/${regionSlug}` },
-    { name: "Услуги", item: `${SITE_URL}/${regionSlug}/services` },
-    { name: serviceLabel, item: seo.canonical },
-  ]);
-
-  const ldService = {
-    ...jsonLdService({
-      url: seo.canonical,
-      name: serviceLabel,
-      regionName,
-      price: pr,
-      companiesCount: companies.length,
-    }),
-    "@id": `${seo.canonical}#service`,
-  };
-
-  const ldWebPage = jsonLdWebPage({
-    url: seo.canonical,
-    name: h1,
-    description: canonicalDesc || seo.description,
-    imageUrl: canonicalImage ? absUrlMaybe(canonicalImage) : null,
-    mainEntityId: `${seo.canonical}#service`,
   });
 
   const ctx = {
@@ -482,9 +496,37 @@ export default async function ServicePage({
     data?.service?.canonical_image ?? data?.service?.image_url ?? data?.service?.image
   );
 
+  const ldBreadcrumbs = jsonLdBreadcrumb([
+    { name: "Главная", item: `${SITE_URL}/${regionSlug}` },
+    { name: "Услуги", item: `${SITE_URL}/${regionSlug}/services` },
+    { name: serviceLabel, item: seo.canonical },
+  ]);
 
-  const galleryRaw = data?.service?.gallery ?? data?.service?.images ?? data?.service?.photos ?? null;
-  const gallery = asArr(galleryRaw).map((x) => normalizePublicImageUrl(x)).filter(Boolean) as string[];
+  const ldService = {
+    ...jsonLdService({
+      url: seo.canonical,
+      name: serviceLabel,
+      regionName,
+      price: pr,
+      companiesCount: companies.length,
+    }),
+    "@id": `${seo.canonical}#service`,
+  };
+
+  // ✅ ВАЖНО: ldWebPage должен объявляться ПОСЛЕ вычисления h1/canonicalDesc/canonicalImage
+  const ldWebPage = jsonLdWebPage({
+    url: seo.canonical,
+    name: h1,
+    description: canonicalDesc || seo.description,
+    imageUrl: canonicalImage ? absUrlMaybe(canonicalImage) : null,
+    mainEntityId: `${seo.canonical}#service`,
+  });
+
+  const galleryRaw =
+    data?.service?.gallery ?? data?.service?.images ?? data?.service?.photos ?? null;
+  const gallery = asArr(galleryRaw)
+    .map((x) => normalizePublicImageUrl(x))
+    .filter(Boolean) as string[];
   // Убираем дубликат главного фото из галереи
   const galleryImages = uniq([canonicalImage, ...gallery].filter(Boolean));
 
@@ -519,8 +561,13 @@ export default async function ServicePage({
   // Prepare Companies
   const companiesForCards = companies.map((co: any) => {
     const p = pickCompanyPriceFrom(co, serviceSlug);
-    const photos = asArr(co?.photos ?? co?.gallery ?? co?.works).map((x) => normalizePublicImageUrl(x)).filter(Boolean) as string[];
-    const desc = String(co?.description ?? co?.short_description ?? "").replace(/\s+/g, " ").trim() || null;
+    const photos = asArr(co?.photos ?? co?.gallery ?? co?.works)
+      .map((x) => normalizePublicImageUrl(x))
+      .filter(Boolean) as string[];
+    const desc =
+      String(co?.description ?? co?.short_description ?? "")
+        .replace(/\s+/g, " ")
+        .trim() || null;
     const cover = pickCompanyCoverUrl(co);
 
     return {
@@ -546,10 +593,24 @@ export default async function ServicePage({
 
   return (
     <div className={styles.wrap}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldService) }} />
-      {ldImages ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldImages) }} /> : null}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ldBreadcrumbs) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebPage) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ldService) }}
+      />
+      {ldImages ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ldImages) }}
+        />
+      ) : null}
 
       <Breadcrumbs
         items={[
@@ -564,26 +625,29 @@ export default async function ServicePage({
       </div>
 
       <div className={styles.pageGrid}>
-        
         {/* ЛЕВАЯ КОЛОНКА */}
         <div className={styles.mainColumn}>
-          
           {/* 1. ГАЛЕРЕЯ */}
           <section className={styles.galleryBlock}>
             {galleryImages.length > 0 ? (
               <>
                 <div className={styles.heroImgWrap}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={galleryImages[0]} alt={serviceLabel} className={styles.heroImg} loading="eager" />
+                  <img
+                    src={galleryImages[0]}
+                    alt={serviceLabel}
+                    className={styles.heroImg}
+                    loading="eager"
+                  />
                 </div>
                 {galleryImages.length > 1 && (
-                   <div className={styles.thumbsContainer}>
-                     <GalleryLightbox images={galleryImages} altBase={serviceLabel} />
-                   </div>
+                  <div className={styles.thumbsContainer}>
+                    <GalleryLightbox images={galleryImages} altBase={serviceLabel} />
+                  </div>
                 )}
               </>
             ) : (
-               <div className={styles.missingImage}>Изображение отсутствует</div>
+              <div className={styles.missingImage}>Изображение отсутствует</div>
             )}
           </section>
 
@@ -604,10 +668,13 @@ export default async function ServicePage({
 
           {/* 3. ОПИСАНИЕ */}
           {canonicalDesc && (
-             <section className={styles.descBlock}>
-               <h2 className={styles.h2}>Описание</h2>
-               <div className={styles.descText} dangerouslySetInnerHTML={{ __html: canonicalDesc }} />
-             </section>
+            <section className={styles.descBlock}>
+              <h2 className={styles.h2}>Описание</h2>
+              <div
+                className={styles.descText}
+                dangerouslySetInnerHTML={{ __html: canonicalDesc }}
+              />
+            </section>
           )}
         </div>
 
@@ -623,13 +690,16 @@ export default async function ServicePage({
               </div>
 
               {companies.length > 0 ? (
-                 <div className={styles.companiesCount}>
-                    ✓ {companies.length} {companiesLabel(companies.length)}
-                 </div>
+                <div className={styles.companiesCount}>
+                  ✓ {companies.length} {companiesLabel(companies.length)}
+                </div>
               ) : (
-                 <div className={styles.companiesCount} style={{background: '#f3f4f6', color: '#666'}}>
-                    Нет предложений
-                 </div>
+                <div
+                  className={styles.companiesCount}
+                  style={{ background: "#f3f4f6", color: "#666" }}
+                >
+                  Нет предложений
+                </div>
               )}
 
               <a href="#companies" className={styles.summaryBtn}>
@@ -644,25 +714,29 @@ export default async function ServicePage({
       <section className={styles.companiesSection} id="companies">
         <h2 className={styles.h2}>Предложения компаний ({companies.length})</h2>
         {companies.length === 0 ? (
-           <p className={styles.emptyCompanies}>Пока нет активных предложений по этой услуге в выбранном регионе.</p>
+          <p className={styles.emptyCompanies}>
+            Пока нет активных предложений по этой услуге в выбранном регионе.
+          </p>
         ) : (
-           <div className={styles.companiesListWrapper}>
-              <div className={styles.companiesList}>
-                  {companiesForCards.map((c) => (
-                      <CompanyCard
-                          key={c.id}
-                          regionSlug={regionSlug}
-                          company={c as any}
-                          companyHref={`/${regionSlug}/c/${c.id}`}
-                      />
-                  ))}
-              </div>
-           </div>
+          <div className={styles.companiesListWrapper}>
+            <div className={styles.companiesList}>
+              {companiesForCards.map((c) => (
+                <CompanyCard
+                  key={c.id}
+                  regionSlug={regionSlug}
+                  company={c as any}
+                  companyHref={`/${regionSlug}/c/${c.id}`}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </section>
 
       <div className={styles.backRow}>
-        <Link href={`/${regionSlug}/services`} className={styles.backLink}>← Все услуги</Link>
+        <Link href={`/${regionSlug}/services`} className={styles.backLink}>
+          ← Все услуги
+        </Link>
       </div>
     </div>
   );
