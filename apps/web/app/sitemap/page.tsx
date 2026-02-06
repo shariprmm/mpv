@@ -6,7 +6,7 @@ import styles from "./sitemap.module.css";
 export const metadata: Metadata = {
   title: "Карта сайта | МойДомПро",
   description: "Полная структура сайта: регионы, услуги, товары и компании.",
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 };
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://moydompro.ru").replace(/\/+$/, "");
