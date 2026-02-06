@@ -245,6 +245,19 @@ export default async function ProductPage({
   }
   specs = specs.slice(0, 15);
 
+  const findSpecValue = (keys: string[]) => {
+    const lowered = keys.map((k) => k.toLowerCase());
+    const match = specs.find((s) => {
+      const name = String(s.name || "").toLowerCase();
+      return lowered.some((key) => name.includes(key));
+    });
+    return match?.value ? String(match.value).trim() : null;
+  };
+
+  const brandName =
+    findSpecValue(["бренд", "brand", "марка", "производитель"]) || "МойДомПро";
+  const modelName = findSpecValue(["модель", "model"]) || productName;
+
   const ctx = {
     region: { id: region?.id ?? "", slug: regionSlug, name: regionName, in: regionIn },
     product: { id: product?.id ?? "", slug: productSlug, name: productName },
@@ -265,6 +278,7 @@ export default async function ProductPage({
     .trim();
   const categories = normalizeCategoriesPayload(categoriesRes.data);
   const { current: currentCategory, parent: parentCategory } = resolveCategoryByProduct(categories, product);
+  const groupName = currentCategory?.name || parentCategory?.name || null;
   const quizConfigId = (() => {
     const hints = [
       productName,
@@ -299,6 +313,10 @@ export default async function ProductPage({
       companiesCount: companies.length,
       rating: Number(reviewsStats?.rating_avg) || null,
       reviewsCount: Number(reviewsStats?.total_count) || null,
+      brandName,
+      modelName,
+      groupName,
+      availability: companies.length > 0 ? "InStock" : "OutOfStock",
     }),
     ...(allImages.length ? { image: allImages } : {}),
     "@id": `${SITE_URL}/${regionSlug}/products/${productSlug}#product`,
