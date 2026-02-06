@@ -146,6 +146,16 @@
   border: 1px solid #fecaca;
 }
 
+.success {
+  background: #ecfdf3;
+  color: #057a55;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #bbf7d0;
+}
+
 /* Футер */
 .footer {
   margin-top: 24px;

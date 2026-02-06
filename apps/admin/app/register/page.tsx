@@ -20,6 +20,8 @@ export default function RegisterPage() {
   
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [registered, setRegistered] = useState(false);
+  const [emailSent, setEmailSent] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -90,8 +92,9 @@ export default function RegisterPage() {
         throw new Error(data?.error || data?.message || "Ошибка регистрации");
       }
 
-      // Успех -> редирект в админку (прайс)
-      location.href = "/price";
+      setRegistered(true);
+      setEmailSent(Boolean(data?.email_sent));
+      setPassword("");
     } catch (e: any) {
       setErr(e?.message || String(e));
     } finally {
@@ -117,6 +120,14 @@ export default function RegisterPage() {
         {errorMessage && (
           <div className={styles.error} role="alert">
             {errorMessage}
+          </div>
+        )}
+
+        {registered && (
+          <div className={styles.success} role="status">
+            {emailSent
+              ? "Проверьте почту и подтвердите email, чтобы войти в аккаунт."
+              : "Аккаунт создан, но письмо не отправилось. Проверьте корректность email и попробуйте войти позже."}
           </div>
         )}
 
