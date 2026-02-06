@@ -2610,9 +2610,12 @@ app.post(
       });
       const verifyUrl = `${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(emailToken)}`;
       const subject = "Подтверждение регистрации компании";
-      const text = `Здравствуйте!\n\nВы зарегистрировали компанию "${company.name}". Подтвердите email по ссылке:\n${verifyUrl}\n\nЕсли это были не вы, просто проигнорируйте письмо.`;
+      const text = `Здравствуйте!\n\nВы зарегистрировали компанию "${company.name}".\n\nЛогин: ${user.email}\nПароль: ${password}\n\nПодтвердите email по ссылке:\n${verifyUrl}\n\nЕсли это были не вы, просто проигнорируйте письмо.`;
       const html = `<p>Здравствуйте!</p>
-<p>Вы зарегистрировали компанию <strong>${company.name}</strong>. Подтвердите email по ссылке:</p>
+<p>Вы зарегистрировали компанию <strong>${company.name}</strong>.</p>
+<p><strong>Логин:</strong> ${user.email}<br/>
+<strong>Пароль:</strong> ${password}</p>
+<p>Подтвердите email по ссылке:</p>
 <p><a href="${verifyUrl}">${verifyUrl}</a></p>
 <p>Если это были не вы, просто проигнорируйте письмо.</p>`;
 
@@ -2693,9 +2696,12 @@ app.post(
       });
       const verifyUrl = `${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(emailToken)}`;
       const subject = "Подтверждение регистрации компании";
-      const text = `Здравствуйте!\n\nВы зарегистрировали компанию "${company.name}". Подтвердите email по ссылке:\n${verifyUrl}\n\nЕсли это были не вы, просто проигнорируйте письмо.`;
+      const text = `Здравствуйте!\n\nВы зарегистрировали компанию "${company.name}".\n\nЛогин: ${user.email}\nПароль: ${password}\n\nПодтвердите email по ссылке:\n${verifyUrl}\n\nЕсли это были не вы, просто проигнорируйте письмо.`;
       const html = `<p>Здравствуйте!</p>
-<p>Вы зарегистрировали компанию <strong>${company.name}</strong>. Подтвердите email по ссылке:</p>
+<p>Вы зарегистрировали компанию <strong>${company.name}</strong>.</p>
+<p><strong>Логин:</strong> ${user.email}<br/>
+<strong>Пароль:</strong> ${password}</p>
+<p>Подтвердите email по ссылке:</p>
 <p><a href="${verifyUrl}">${verifyUrl}</a></p>
 <p>Если это были не вы, просто проигнорируйте письмо.</p>`;
 
