@@ -78,6 +78,40 @@ app.use((req, _res, next) => {
   next();
 });
 
+/* =========================================================
+   BLOG POSTS COLUMNS (TG support guard)
+========================================================= */
+let blogPostsColsPromise = null;
+
+async function getBlogPostsCols() {
+  if (!blogPostsColsPromise) {
+    blogPostsColsPromise = pool
+      .query(
+        `
+        select column_name
+        from information_schema.columns
+        where table_schema = 'public' and table_name = 'blog_posts'
+      `
+      )
+      .then((r) => new Set(r.rows.map((x) => String(x.column_name).toLowerCase())));
+  }
+  return blogPostsColsPromise;
+}
+
+async function getBlogPostsTgSupport() {
+  const cols = await getBlogPostsCols();
+  const required = [
+    "tg_publish_at",
+    "tg_status",
+    "tg_posted_at",
+    "tg_error",
+    "tg_message_id",
+    "tg_chat_id",
+  ];
+  const missing = required.filter((col) => !cols.has(col));
+  return { cols, missing };
+}
+
 // body + cookies
 app.use(express.json({ limit: "25mb" }));
 app.use(cookieParser());
