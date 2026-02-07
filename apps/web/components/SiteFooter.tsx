@@ -93,6 +93,25 @@ export function SiteFooter({ productCats = [], serviceCats = [] }: SiteFooterPro
               <a href="mailto:info@moydompro.ru" className={styles.contactLink}>
                 info@moydompro.ru
               </a>
+              <div className={styles.socialLinks}>
+                <span className={styles.socialHeading}>Мы в соцсетях</span>
+                <a
+                  href="https://t.me/moydompro"
+                  className={styles.link}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Telegram
+                </a>
+                <a
+                  href="https://dzen.ru/moydompro"
+                  className={styles.link}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Dzen
+                </a>
+              </div>
               <Link href="/sitemap" className={`${styles.link} ${styles.sitemapLink}`}>
                 Карта сайта (HTML)
               </Link>
