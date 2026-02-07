@@ -11,7 +11,7 @@ services:
       - ./packages/db/migrations:/migrations:ro
     ports:
       - "127.0.0.1:5432:5432"
-
+      
   api:
     build:
       context: .
@@ -34,6 +34,9 @@ services:
       SMTP_USER: "no-reply@moydompro.ru"
       SMTP_PASS: "k48f6u6ck3"
       MAIL_FROM: "МойДомПро <no-reply@moydompro.ru>"
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
+      TG_CHANNEL: ${TG_CHANNEL}
+      SITE_URL: ${SITE_URL}
     volumes:
       - ./data/api_uploads:/app/uploads
 
