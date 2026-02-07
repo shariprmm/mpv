@@ -4209,14 +4209,6 @@ app.get(
   "/master/blog-posts",
   requireMaster,
   aw(async (req, res) => {
-    const { cols } = await getBlogPostsTgSupport();
-    const hasTgPublishAt = cols.has("tg_publish_at");
-    const hasTgStatus = cols.has("tg_status");
-    const hasTgPostedAt = cols.has("tg_posted_at");
-    const hasTgError = cols.has("tg_error");
-    const hasTgMessageId = cols.has("tg_message_id");
-    const hasTgChatId = cols.has("tg_chat_id");
-
     const where = [];
     const vals = [];
     const put = (v) => {
@@ -4225,7 +4217,7 @@ app.get(
     };
 
     const status = String(req.query.status || "").trim();
-    if (status && hasTgStatus) {
+    if (status) {
       where.push(`p.tg_status = ${put(status)}`);
     }
 
@@ -4239,12 +4231,12 @@ app.get(
     const publishFrom = req.query.tg_publish_from
       ? new Date(String(req.query.tg_publish_from))
       : null;
-    if (publishFrom && Number.isFinite(publishFrom.getTime()) && hasTgPublishAt) {
+    if (publishFrom && Number.isFinite(publishFrom.getTime())) {
       where.push(`p.tg_publish_at >= ${put(publishFrom.toISOString())}`);
     }
 
     const publishTo = req.query.tg_publish_to ? new Date(String(req.query.tg_publish_to)) : null;
-    if (publishTo && Number.isFinite(publishTo.getTime()) && hasTgPublishAt) {
+    if (publishTo && Number.isFinite(publishTo.getTime())) {
       where.push(`p.tg_publish_at <= ${put(publishTo.toISOString())}`);
     }
 
@@ -4256,12 +4248,7 @@ app.get(
          p.category_id, c.name as category_name,
          p.seo_title, p.seo_description,
          p.is_published, p.published_at,
-         ${hasTgPublishAt ? "p.tg_publish_at" : "NULL as tg_publish_at"},
-         ${hasTgStatus ? "p.tg_status" : "NULL as tg_status"},
-         ${hasTgPostedAt ? "p.tg_posted_at" : "NULL as tg_posted_at"},
-         ${hasTgError ? "p.tg_error" : "NULL as tg_error"},
-         ${hasTgMessageId ? "p.tg_message_id" : "NULL as tg_message_id"},
-         ${hasTgChatId ? "p.tg_chat_id" : "NULL as tg_chat_id"},
+         p.tg_publish_at, p.tg_status, p.tg_posted_at, p.tg_error, p.tg_message_id, p.tg_chat_id,
          p.created_at, p.updated_at
        from blog_posts p
        left join blog_categories c on c.id = p.category_id
@@ -4619,11 +4606,6 @@ app.patch(
   "/master/blog-posts/:id/tg",
   requireMaster,
   aw(async (req, res) => {
-    const { missing } = await getBlogPostsTgSupport();
-    if (missing.length) {
-      return res.status(409).json({ ok: false, error: "tg_columns_missing", missing });
-    }
-
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ ok: false, error: "bad_id" });
 
@@ -4701,11 +4683,6 @@ app.post(
   "/master/blog-posts/:id/tg/publish-now",
   requireMaster,
   aw(async (req, res) => {
-    const { missing } = await getBlogPostsTgSupport();
-    if (missing.length) {
-      return res.status(409).json({ ok: false, error: "tg_columns_missing", missing });
-    }
-
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ ok: false, error: "bad_id" });
 
@@ -5950,11 +5927,6 @@ registerAdminSeoGenerate(app);
 ========================================================= */
 async function processTelegramQueue() {
   if (!TG_BOT_TOKEN) return;
-  const { missing } = await getBlogPostsTgSupport();
-  if (missing.length) {
-    console.warn("TG_SCHEDULER_DISABLED: missing columns", missing);
-    return;
-  }
 
   const client = await pool.connect();
   try {
