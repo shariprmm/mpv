@@ -13,6 +13,12 @@ import { fileURLToPath } from "node:url";
 import { registerMasterRoutes } from "./master.js";
 import { registerAdminSeoGenerate } from "./admin_seo_generate.js";
 import sharp from "sharp";
+import {
+  buildTelegramText,
+  resolveCoverUrl,
+  resolveTelegramChat,
+  sendToTelegram,
+} from "./telegram.js";
 
 import { registerGeoRedirect } from "./geo_redirect.js";
 import { registerLeadsRoutes } from "./leads.js";
@@ -35,6 +41,9 @@ app.set("trust proxy", 1);
 
 const ADMIN_BASE_URL = (process.env.ADMIN_BASE_URL || "https://admin.moydompro.ru").replace(/\/+$/, "");
 const API_BASE_URL = (process.env.API_BASE_URL || "https://api.moydompro.ru").replace(/\/+$/, "");
+const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || "";
+const TG_CHANNEL = process.env.TG_CHANNEL || "@moydompro";
+const SITE_URL = (process.env.SITE_URL || "https://moydompro.ru").replace(/\/+$/, "");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +77,40 @@ app.use((req, _res, next) => {
   }
   next();
 });
+
+/* =========================================================
+   BLOG POSTS COLUMNS (TG support guard)
+========================================================= */
+let blogPostsColsPromise = null;
+
+async function getBlogPostsCols() {
+  if (!blogPostsColsPromise) {
+    blogPostsColsPromise = pool
+      .query(
+        `
+        select column_name
+        from information_schema.columns
+        where table_schema = 'public' and table_name = 'blog_posts'
+      `
+      )
+      .then((r) => new Set(r.rows.map((x) => String(x.column_name).toLowerCase())));
+  }
+  return blogPostsColsPromise;
+}
+
+async function getBlogPostsTgSupport() {
+  const cols = await getBlogPostsCols();
+  const required = [
+    "tg_publish_at",
+    "tg_status",
+    "tg_posted_at",
+    "tg_error",
+    "tg_message_id",
+    "tg_chat_id",
+  ];
+  const missing = required.filter((col) => !cols.has(col));
+  return { cols, missing };
+}
 
 // body + cookies
 app.use(express.json({ limit: "25mb" }));
@@ -4165,18 +4208,67 @@ app.delete(
 app.get(
   "/master/blog-posts",
   requireMaster,
-  aw(async (_req, res) => {
+  aw(async (req, res) => {
+    const { cols } = await getBlogPostsTgSupport();
+    const hasTgPublishAt = cols.has("tg_publish_at");
+    const hasTgStatus = cols.has("tg_status");
+    const hasTgPostedAt = cols.has("tg_posted_at");
+    const hasTgError = cols.has("tg_error");
+    const hasTgMessageId = cols.has("tg_message_id");
+    const hasTgChatId = cols.has("tg_chat_id");
+
+    const where = [];
+    const vals = [];
+    const put = (v) => {
+      vals.push(v);
+      return `$${vals.length}`;
+    };
+
+    const status = String(req.query.status || "").trim();
+    if (status && hasTgStatus) {
+      where.push(`p.tg_status = ${put(status)}`);
+    }
+
+    const search = String(req.query.search || "").trim();
+    if (search) {
+      const q = `%${search}%`;
+      const token = put(q);
+      where.push(`(p.title ilike ${token} or p.slug ilike ${token})`);
+    }
+
+    const publishFrom = req.query.tg_publish_from
+      ? new Date(String(req.query.tg_publish_from))
+      : null;
+    if (publishFrom && Number.isFinite(publishFrom.getTime()) && hasTgPublishAt) {
+      where.push(`p.tg_publish_at >= ${put(publishFrom.toISOString())}`);
+    }
+
+    const publishTo = req.query.tg_publish_to ? new Date(String(req.query.tg_publish_to)) : null;
+    if (publishTo && Number.isFinite(publishTo.getTime()) && hasTgPublishAt) {
+      where.push(`p.tg_publish_at <= ${put(publishTo.toISOString())}`);
+    }
+
+    const whereSql = where.length ? `where ${where.join(" and ")}` : "";
+
     const r = await pool.query(
       `select
          p.id, p.slug, p.title, p.excerpt, p.cover_image,
          p.category_id, c.name as category_name,
          p.seo_title, p.seo_description,
          p.is_published, p.published_at,
+         ${hasTgPublishAt ? "p.tg_publish_at" : "NULL as tg_publish_at"},
+         ${hasTgStatus ? "p.tg_status" : "NULL as tg_status"},
+         ${hasTgPostedAt ? "p.tg_posted_at" : "NULL as tg_posted_at"},
+         ${hasTgError ? "p.tg_error" : "NULL as tg_error"},
+         ${hasTgMessageId ? "p.tg_message_id" : "NULL as tg_message_id"},
+         ${hasTgChatId ? "p.tg_chat_id" : "NULL as tg_chat_id"},
          p.created_at, p.updated_at
        from blog_posts p
        left join blog_categories c on c.id = p.category_id
+       ${whereSql}
        order by p.id desc
-       limit 500`
+       limit 500`,
+      vals
     );
     return res.json({ ok: true, items: r.rows });
   })
@@ -4520,6 +4612,158 @@ app.patch(
 
     if (!r.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
     return res.json({ ok: true, item: r.rows[0] });
+  })
+);
+
+app.patch(
+  "/master/blog-posts/:id/tg",
+  requireMaster,
+  aw(async (req, res) => {
+    const { missing } = await getBlogPostsTgSupport();
+    if (missing.length) {
+      return res.status(409).json({ ok: false, error: "tg_columns_missing", missing });
+    }
+
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ ok: false, error: "bad_id" });
+
+    const current = await pool.query(
+      `select id, tg_status, tg_publish_at, tg_chat_id
+       from blog_posts
+       where id=$1
+       limit 1`,
+      [id]
+    );
+    if (!current.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
+    const row = current.rows[0];
+
+    const hasPublishAt = Object.prototype.hasOwnProperty.call(req.body || {}, "tg_publish_at");
+    const hasChatId = Object.prototype.hasOwnProperty.call(req.body || {}, "tg_chat_id");
+    const forceResend = Boolean(req.body?.force_resend);
+
+    const sets = [];
+    const vals = [];
+    const put = (col, v) => {
+      vals.push(v);
+      sets.push(`${col}=$${vals.length}`);
+    };
+
+    if (hasChatId) {
+      const chatIdRaw = String(req.body?.tg_chat_id ?? "").trim();
+      put("tg_chat_id", chatIdRaw || null);
+    } else if (hasPublishAt && req.body?.tg_publish_at) {
+      const resolved = resolveTelegramChat(row.tg_chat_id, TG_CHANNEL);
+      if (resolved && !row.tg_chat_id) {
+        put("tg_chat_id", resolved);
+      }
+    }
+
+    if (hasPublishAt) {
+      if (req.body?.tg_publish_at) {
+        const parsed = new Date(req.body.tg_publish_at);
+        if (!Number.isFinite(parsed.getTime())) {
+          return res.status(400).json({ ok: false, error: "bad_tg_publish_at" });
+        }
+        put("tg_publish_at", parsed.toISOString());
+        put("tg_status", "pending");
+        put("tg_error", null);
+        put("tg_message_id", null);
+        put("tg_posted_at", null);
+      } else {
+        put("tg_publish_at", null);
+        put("tg_status", null);
+        put("tg_error", null);
+        put("tg_message_id", null);
+        put("tg_posted_at", null);
+      }
+    } else if (forceResend) {
+      put("tg_status", "pending");
+      put("tg_error", null);
+      put("tg_message_id", null);
+      put("tg_posted_at", null);
+    }
+
+    if (!sets.length) return res.json({ ok: true });
+
+    vals.push(id);
+    const r = await pool.query(
+      `update blog_posts set ${sets.join(", ")}
+       where id=$${vals.length}
+       returning id, tg_publish_at, tg_status, tg_posted_at, tg_error, tg_message_id, tg_chat_id`,
+      vals
+    );
+
+    return res.json({ ok: true, item: r.rows[0] });
+  })
+);
+
+app.post(
+  "/master/blog-posts/:id/tg/publish-now",
+  requireMaster,
+  aw(async (req, res) => {
+    const { missing } = await getBlogPostsTgSupport();
+    if (missing.length) {
+      return res.status(409).json({ ok: false, error: "tg_columns_missing", missing });
+    }
+
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ ok: false, error: "bad_id" });
+
+    const r = await pool.query(
+      `select id, slug, title, excerpt, content_html, content_md, cover_image,
+        tg_status, tg_chat_id, is_published
+       from blog_posts
+       where id=$1
+       limit 1`,
+      [id]
+    );
+
+    if (!r.rowCount) return res.status(404).json({ ok: false, error: "not_found" });
+    const post = r.rows[0];
+
+    if (!post.is_published) {
+      return res.status(409).json({ ok: false, error: "not_published" });
+    }
+
+    const force = Boolean(req.body?.force);
+    if (post.tg_status === "sent" && !force) {
+      return res.status(409).json({ ok: false, error: "already_sent" });
+    }
+
+    const chatId = resolveTelegramChat(post.tg_chat_id, TG_CHANNEL);
+    const text = buildTelegramText(post, { siteUrl: SITE_URL });
+    const imageUrl = resolveCoverUrl(post, SITE_URL);
+
+    const result = await sendToTelegram({
+      chatId,
+      text,
+      imageUrl,
+      token: TG_BOT_TOKEN,
+      siteUrl: SITE_URL,
+    });
+
+    if (result.ok) {
+      await pool.query(
+        `update blog_posts
+         set tg_status='sent',
+             tg_posted_at=now(),
+             tg_message_id=$2,
+             tg_error=null
+         where id=$1`,
+        [id, result.message_id]
+      );
+      return res.json({ ok: true, message_id: result.message_id });
+    }
+
+    await pool.query(
+      `update blog_posts
+       set tg_status='error',
+           tg_error=$2
+       where id=$1`,
+      [id, result.error || "send_failed"]
+    );
+
+    return res.status(500).json({ ok: false, error: result.error || "send_failed" });
   })
 );
 
@@ -5700,6 +5944,82 @@ app.get("/public/service-categories", aw(async (_req, res) => {
 registerLeadsRoutes(app, pool, requireAuth);
 registerMasterRoutes(app, pool, requireSuperadmin, { cleanStr, sanitizeText });
 registerAdminSeoGenerate(app);
+
+/* =========================================================
+   TELEGRAM SCHEDULER
+========================================================= */
+async function processTelegramQueue() {
+  if (!TG_BOT_TOKEN) return;
+  const { missing } = await getBlogPostsTgSupport();
+  if (missing.length) {
+    console.warn("TG_SCHEDULER_DISABLED: missing columns", missing);
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const r = await client.query(
+      `
+      select
+        id, slug, title, excerpt, content_html, content_md, cover_image, tg_chat_id
+      from blog_posts
+      where is_published = true
+        and tg_status = 'pending'
+        and tg_publish_at is not null
+        and tg_publish_at <= now()
+      order by tg_publish_at asc, id asc
+      limit 10
+      for update skip locked
+      `
+    );
+
+    for (const post of r.rows) {
+      const chatId = resolveTelegramChat(post.tg_chat_id, TG_CHANNEL);
+      const text = buildTelegramText(post, { siteUrl: SITE_URL });
+      const imageUrl = resolveCoverUrl(post, SITE_URL);
+
+      const result = await sendToTelegram({
+        chatId,
+        text,
+        imageUrl,
+        token: TG_BOT_TOKEN,
+        siteUrl: SITE_URL,
+      });
+
+      if (result.ok) {
+        await client.query(
+          `update blog_posts
+           set tg_status='sent',
+               tg_posted_at=now(),
+               tg_message_id=$2,
+               tg_error=null
+           where id=$1`,
+          [post.id, result.message_id]
+        );
+      } else {
+        await client.query(
+          `update blog_posts
+           set tg_status='error',
+               tg_error=$2
+           where id=$1`,
+          [post.id, result.error || "send_failed"]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("TG_SCHEDULER_ERROR:", err);
+  } finally {
+    client.release();
+  }
+}
+
+setInterval(() => {
+  processTelegramQueue().catch(() => {});
+}, 60000);
 
 /* =========================================================
    GLOBAL ERROR HANDLER
