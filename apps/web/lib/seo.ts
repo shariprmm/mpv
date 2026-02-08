@@ -487,10 +487,11 @@ export function toNextMetadata(seo: { title: string; description: string; canoni
    JSON-LD BUILDERS
 ========================= */
 
-export function jsonLdBreadcrumb(items: { name: string; item?: string }[]) {
+export function jsonLdBreadcrumb(items: { name: string; item?: string }[], id?: string) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
+    ...(id ? { "@id": id } : {}),
     itemListElement: items.map((x, i) => ({
       "@type": "ListItem",
       position: i + 1,

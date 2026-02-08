@@ -760,10 +760,13 @@ export default async function RegionPage({
             data={{
               "@context": "https://schema.org",
               "@graph": [
-                jsonLdBreadcrumb([
-                  { name: "Главная", item: canonical },
-                  { name: regionName, item: canonical },
-                ]),
+                jsonLdBreadcrumb(
+                  [
+                    { name: "Главная", item: canonical },
+                    { name: regionName, item: canonical },
+                  ],
+                  canonical + "#breadcrumb",
+                ),
                 {
                   "@type": "WebSite",
                   "@id": site + "#website",
