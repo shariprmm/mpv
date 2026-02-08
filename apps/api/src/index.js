@@ -67,6 +67,14 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use("/uploads", express.static(UPLOAD_DIR, { maxAge: "7d", etag: true }));
 
 /* =========================================================
+   ROBOTS
+========================================================= */
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain");
+  res.send("User-agent: *\nDisallow: /\n");
+});
+
+/* =========================================================
    MIDDLEWARES
 ========================================================= */
 
