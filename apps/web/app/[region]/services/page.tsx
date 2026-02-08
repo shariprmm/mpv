@@ -254,10 +254,13 @@ export default async function ServicesPage({
         data={{
           "@context": "https://schema.org",
           "@graph": [
-            jsonLdBreadcrumb([
-              { name: "Главная", item: absUrl(`/${region}`) },
-              { name: "Услуги", item: canonical },
-            ]),
+            jsonLdBreadcrumb(
+              [
+                { name: "Главная", item: absUrl(`/${region}`) },
+                { name: "Услуги", item: canonical },
+              ],
+              canonical + "#breadcrumb",
+            ),
             {
               "@type": "WebSite",
               "@id": site + "#website",
