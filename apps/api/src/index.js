@@ -9,6 +9,7 @@ import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
 import dns from "node:dns/promises";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { registerMasterRoutes } from "./master.js";
 import { registerAdminSeoGenerate } from "./admin_seo_generate.js";
