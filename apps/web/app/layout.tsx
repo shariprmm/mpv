@@ -1,9 +1,12 @@
 // apps/web/app/layout.tsx
+import Script from "next/script";
+
 import SiteHeader from "@/components/SiteHeader";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
 import { RegionProvider } from "@/context/RegionContext";
 import { SITE_NAME, SITE_URL, absUrl, jsonLdOrganization, jsonLdWebSite } from "@/lib/seo";
+
 import styles from "./layout.module.css";
 import "./globals.css";
 
@@ -18,17 +21,12 @@ async function apiGet(path: string) {
     const r = await fetch(url, { next: { revalidate: 60 } });
     if (!r.ok) return null;
     return await r.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Загружаем данные из вашего обновленного index.js
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [regionsData, prodCatsData, servCatsData] = await Promise.all([
     apiGet("/public/regions"),
     apiGet("/public/product-categories"),
@@ -48,31 +46,40 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
-        <script
-          type="text/javascript"
+      </head>
+
+      <body className={styles.body}>
+        {/* Yandex Metrika */}
+        <Script
+          id="yandex-metrika"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(m,e,t,r,i,k,a){
-    m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-    m[i].l=1*new Date();
-    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+  m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+  m[i].l=1*new Date();
+  for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
 })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=106687922', 'ym');
 
 ym(106687922, 'init', {ssr:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});`,
           }}
         />
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-6H00X5416S"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-6H00X5416S');
-</script>
-      </head>
-
-      <body className={styles.body}>
+        {/* Google tag (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-6H00X5416S"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="gtag-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-6H00X5416S');`,
+          }}
+        />
 
         <noscript>
           <div>
@@ -83,6 +90,7 @@ ym(106687922, 'init', {ssr:true, clickmap:true, ecommerce:"dataLayer", referrer:
             />
           </div>
         </noscript>
+
         <SeoJsonLd
           data={{
             "@context": "https://schema.org",
@@ -100,12 +108,10 @@ ym(106687922, 'init', {ssr:true, clickmap:true, ecommerce:"dataLayer", referrer:
             ],
           }}
         />
+
         <RegionProvider initialRegions={regions}>
           <SiteHeader regions={regions} />
-
-          {/* flex-grow: 1 растягивает контент, прижимая футер к низу */}
           <main className={styles.main}>{children}</main>
-
           <SiteFooter productCats={productCats} serviceCats={serviceCats} />
         </RegionProvider>
       </body>
