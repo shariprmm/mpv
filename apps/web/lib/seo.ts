@@ -460,7 +460,7 @@ export function buildCompanySeo(input: {
 ========================= */
 
 export function toNextMetadata(seo: { title: string; description: string; canonical: string }): Metadata {
-  const ogImage = absUrl("/images/og-default.png");
+  const ogImage = absUrl("/images/og-default.webp");
   return {
     title: normalizeText(seo.title),
     description: normalizeText(seo.description),

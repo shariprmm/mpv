@@ -98,7 +98,7 @@ gtag('config', 'G-6H00X5416S');`,
               jsonLdOrganization({
                 name: SITE_NAME,
                 url: SITE_URL,
-                logoUrl: absUrl("/images/og-default.png"),
+                logoUrl: absUrl("/images/og-default.webp"),
               }),
               jsonLdWebSite({
                 name: SITE_NAME,

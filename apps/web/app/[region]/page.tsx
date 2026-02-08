@@ -789,7 +789,7 @@ export default async function RegionPage({
                   breadcrumb: { "@id": canonical + "#breadcrumb" },
                   primaryImageOfPage: {
                     "@type": "ImageObject",
-                    url: absUrl("/images/og-default.png"),
+                    url: absUrl("/images/og-default.webp"),
                   },
                 },
                 ...(serviceCatItems.length

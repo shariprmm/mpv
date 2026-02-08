@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     type: "website",
     locale: "ru_RU",
-    images: [absUrl("/images/og-default.png")],
+    images: [absUrl("/images/og-default.webp")],
   },
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} — услуги и товары для дома`,
     description: "Каталог услуг, товаров и компаний для загородного дома по регионам.",
-    images: [absUrl("/images/og-default.png")],
+    images: [absUrl("/images/og-default.webp")],
   },
 };
 
@@ -99,7 +99,7 @@ export default async function Page({ searchParams }: { searchParams?: { region?:
     url: canonical,
     name: pageName,
     description: pageDesc,
-    imageUrl: absUrl("/images/og-default.png"),
+    imageUrl: absUrl("/images/og-default.webp"),
   });
 
   const itemList = (id: string, name: string, items: Array<{ name: string; url: string }>) => ({
