@@ -1,5 +1,6 @@
 // apps/web/lib/seo.ts
 import type { Metadata } from "next";
+import { capitalizeFirst } from "./text";
 
 export const SITE_NAME = "МойДомПро";
 export const SITE_URL = "https://moydompro.ru";
@@ -347,7 +348,7 @@ export function buildRegionSeo(input: { regionSlug: string; regionName: string }
   };
 
   const key = `region:${ctx.regionSlug}`;
-  const title = chooseText(key, regionTitles, ctx);
+  const title = capitalizeFirst(chooseText(key, regionTitles, ctx));
   const description = chooseText(`${key}:d`, regionDescs, ctx);
   const canonical = absUrl(`/${ctx.regionSlug}`);
 
@@ -370,7 +371,7 @@ export function buildListSeo(input: {
   };
 
   const key = `list:${input.type}:${ctx.regionSlug}:${ctx.category || "all"}`;
-  const title = chooseText(key, listTitles, ctx);
+  const title = capitalizeFirst(chooseText(key, listTitles, ctx));
   const description = chooseText(`${key}:d`, listDescs, ctx);
 
   const url =
@@ -400,7 +401,7 @@ export function buildServiceSeo(input: {
   };
 
   const key = `service:${ctx.regionSlug}:${input.serviceSlug}`;
-  const title = chooseText(key, serviceTitles, ctx);
+  const title = capitalizeFirst(chooseText(key, serviceTitles, ctx));
   const description = chooseText(`${key}:d`, serviceDescs, ctx);
   const canonical = absUrl(`/${ctx.regionSlug}/services/${input.serviceSlug}`);
 
@@ -426,7 +427,7 @@ export function buildProductSeo(input: {
   };
 
   const key = `product:${ctx.regionSlug}:${input.productSlug}`;
-  const title = chooseText(key, productTitles, ctx);
+  const title = capitalizeFirst(chooseText(key, productTitles, ctx));
   const description = chooseText(`${key}:d`, productDescs, ctx);
   const canonical = absUrl(`/${ctx.regionSlug}/products/${input.productSlug}`);
 
@@ -447,7 +448,7 @@ export function buildCompanySeo(input: {
   };
 
   const key = `company:${ctx.regionSlug}:${input.companyId}`;
-  const title = chooseText(key, companyTitles, ctx);
+  const title = capitalizeFirst(chooseText(key, companyTitles, ctx));
   const description = chooseText(`${key}:d`, companyDescs, ctx);
   const canonical = absUrl(`/${ctx.regionSlug}/c/${input.companyId}`);
 
