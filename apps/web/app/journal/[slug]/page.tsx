@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import styles from "./page.module.css";
 import { ArticleViewer } from "./ArticleViewer"; // ✅ Клиентский компонент для Лайтбокса
 import { jsonLdWebPage } from "@/lib/seo";
+import { capitalizeFirst } from "@/lib/text";
 
 // Конфиг
 const API = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || "https://api.moydompro.ru";
@@ -273,12 +274,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const url = `${SITE_URL}/journal/${post.slug}`;
   const img = toAbsPublicUrl(post.cover_image);
 
+  const title = capitalizeFirst(post.seo_title || post.title);
+
   return {
-    title: post.seo_title || post.title,
+    title,
     description: post.seo_description || post.excerpt || undefined,
     alternates: { canonical: url },
     openGraph: {
-      title: post.seo_title || post.title,
+      title,
       description: post.seo_description || post.excerpt || undefined,
       url,
       type: "article",

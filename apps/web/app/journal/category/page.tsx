@@ -1,6 +1,7 @@
 // /web/app/journal/[slug]/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
+import { capitalizeFirst } from "@/lib/text";
 import styles from "./page.module.css";
 
 const API =
@@ -34,11 +35,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const post = await getPost(params.slug);
   if (!post) return { title: "Статья не найдена — MoyDomPro" };
 
+  const title = capitalizeFirst(post.seo_title || post.title);
+
   return {
-    title: post.seo_title || post.title,
+    title,
     description: post.seo_description || post.excerpt || undefined,
     openGraph: {
-      title: post.seo_title || post.title,
+      title,
       description: post.seo_description || post.excerpt || undefined,
       images: post.cover_image ? [post.cover_image] : undefined,
     },
