@@ -358,24 +358,58 @@ function ServiceCard(props: {
 /**
  * ✅ Подстановка плейсхолдеров из админки/БД
  */
+type PlaceholderContext = {
+  city: string;
+  cityIn: string;
+  region?: string;
+  regionIn?: string;
+  companiesCount?: number | null;
+};
+
+function normalizePlaceholderKey(key: string) {
+  return key.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "").toUpperCase();
+}
+
 function applyCityPlaceholders(
   input: string | null | undefined,
-  ctx: { city: string; cityIn: string; region?: string; regionIn?: string }
+  ctx: PlaceholderContext
 ) {
   const s = String(input ?? "");
   if (!s.trim()) return "";
+
+  const hasCompaniesCount =
+    ctx.companiesCount !== null &&
+    ctx.companiesCount !== undefined &&
+    Number.isFinite(Number(ctx.companiesCount));
+  const companiesCount = hasCompaniesCount ? String(Number(ctx.companiesCount)) : undefined;
 
   const rep: Record<string, string> = {
     CITY: ctx.city,
     CITY_IN: ctx.cityIn,
     REGION: ctx.region ?? ctx.city,
     REGION_IN: ctx.regionIn ?? ctx.cityIn,
+    ...(companiesCount ? { COMPANIES_COUNT: companiesCount } : {}),
   };
 
-  return s.replace(/{{\s*([A-Z_]+)\s*}}/g, (m, keyRaw) => {
-    const key = String(keyRaw || "").trim().toUpperCase();
+  return s.replace(/{{\s*([A-Za-z0-9_.-]+)\s*}}/g, (m, keyRaw) => {
+    const key = normalizePlaceholderKey(String(keyRaw || "").trim());
     return rep[key] ?? m;
   });
+}
+
+function extractCompaniesCount(source: any, items: ServiceItem[]) {
+  const direct =
+    source?.companies_count ??
+    source?.companiesCount ??
+    source?.companies?.count ??
+    source?.companies?.total ??
+    source?.companies_total;
+  const directNumber = Number(direct);
+  if (direct !== null && direct !== undefined && Number.isFinite(directNumber)) return directNumber;
+
+  const summed = items.reduce((acc, s) => acc + (Number(s?.companies_count) || 0), 0);
+  if (items.length) return summed;
+  return summed > 0 ? summed : null;
 }
 
 function SeoTextBlock({ html }: { html?: string | null }) {
@@ -600,7 +634,11 @@ export async function generateMetadata({
 
   const seoRaw = extractSeo(catPublic, activeCat);
 
-  const ctx = { city: regionTitle, cityIn: regionIn, region: regionTitle, regionIn };
+  const companiesCount = extractCompaniesCount(
+    catPublic,
+    Array.isArray(catPublic?.services) ? catPublic.services : Array.isArray(catPublic?.items) ? catPublic.items : []
+  );
+  const ctx = { city: regionTitle, cityIn: regionIn, region: regionTitle, regionIn, companiesCount };
   const fallbackTitleBase = activeCat?.name || activeSlug;
 
   const title = applyCityPlaceholders(
@@ -643,8 +681,6 @@ export default async function ServiceCategoryPage({
   const regionTitle = home?.region?.name || home?.region?.title || home?.region_name || region;
   const regionIn = toPrepositional(regionTitle);
 
-  const ctx = { city: regionTitle, cityIn: regionIn, region: regionTitle, regionIn };
-
   // ✅ категории услуг берём из /public/services/categories (там есть image_thumb_url)
   const catsPublic = await apiGetSafe(`/public/services/categories`);
   let allCats: ServiceCategoryFlat[] = Array.isArray(catsPublic?.categories) ? catsPublic.categories : [];
@@ -681,12 +717,6 @@ export default async function ServiceCategoryPage({
 
   const seoRaw = extractSeo(catPublic, activeCat);
 
-  const rawH1 = (seoRaw.seo_h1 || activeCat.name || activeSlug).trim();
-  const h1 = applyCityPlaceholders(rawH1, ctx);
-
-  const seoText = applyCityPlaceholders(seoRaw.seo_text || "", ctx);
-  const { top: seoTop, bottom: seoBottom } = splitSeoText(seoText);
-
   const categoryId = Number(activeCat?.id ?? 0);
   const data =
     (catPublic && (Array.isArray(catPublic?.services) || Array.isArray(catPublic?.items)) ? catPublic : null) ||
@@ -701,6 +731,15 @@ export default async function ServiceCategoryPage({
     : Array.isArray(data?.items)
       ? data.items
       : [];
+
+  const companiesCount = extractCompaniesCount(catPublic, items);
+  const ctx = { city: regionTitle, cityIn: regionIn, region: regionTitle, regionIn, companiesCount };
+
+  const rawH1 = (seoRaw.seo_h1 || activeCat.name || activeSlug).trim();
+  const h1 = applyCityPlaceholders(rawH1, ctx);
+
+  const seoText = applyCityPlaceholders(seoRaw.seo_text || "", ctx);
+  const { top: seoTop, bottom: seoBottom } = splitSeoText(seoText);
 
   const subcategories = allCats
     .filter((c) => Number(c.parent_id ?? 0) === categoryId)
