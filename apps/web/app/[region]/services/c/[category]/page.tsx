@@ -388,7 +388,7 @@ function applyCityPlaceholders(
     CITY_IN: ctx.cityIn,
     REGION: ctx.region ?? ctx.city,
     REGION_IN: ctx.regionIn ?? ctx.cityIn,
-    ...(companiesCount ? { COMPANIES_COUNT: companiesCount } : {}),
+    ...(hasCompaniesCount ? { COMPANIES_COUNT: companiesCount ?? "" } : {}),
   };
 
   return s.replace(/{{\s*([A-Za-z0-9_.-]+)\s*}}/g, (m, keyRaw) => {
