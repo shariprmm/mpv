@@ -38,10 +38,38 @@
 
 .seoBlock p {
   margin: 0 0 14px;
+  line-height: 1.6;
 }
 
 .seoBlock p:last-child {
   margin-bottom: 0;
+}
+
+.seoBlock h2,
+.seoBlock h3 {
+  margin: 48px 0 16px;
+}
+
+.seoBlock ul,
+.seoBlock ol {
+  margin: 0 0 20px;
+  padding-left: 22px;
+}
+
+.seoBlock :global(.badge) {
+  display: inline-flex;
+  margin-bottom: 0;
+}
+
+.seoBlock :global(.badge) + h1,
+.seoBlock :global(.badge) + h2,
+.seoBlock :global(.badge) + h3 {
+  margin-top: 32px;
+}
+
+.seoBlock strong,
+.seoBlock b {
+  font-weight: 600;
 }
 
 /* ---------- SUBCATEGORY TAG CLOUD ---------- */
@@ -197,6 +225,19 @@
 @media (max-width: 980px) {
   .h1 {
     font-size: 34px;
+  }
+}
+
+@media (max-width: 768px) {
+  .seoBlock h2,
+  .seoBlock h3 {
+    margin: 32px 0 12px;
+  }
+
+  .seoBlock ul,
+  .seoBlock ol {
+    margin-bottom: 16px;
+    padding-left: 18px;
   }
 }
 
