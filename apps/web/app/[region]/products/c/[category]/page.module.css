@@ -64,6 +64,42 @@
   white-space: pre-line;
 }
 
+.seoText p {
+  margin: 0 0 14px;
+  line-height: 1.6;
+}
+
+.seoText p:last-child {
+  margin-bottom: 0;
+}
+
+.seoText h2,
+.seoText h3 {
+  margin: 20px 0 10px;
+}
+
+.seoText ul,
+.seoText ol {
+  margin: 0 0 20px;
+  padding-left: 22px;
+}
+
+.seoText :global(.badge) {
+  display: inline-flex;
+  margin-bottom: 0;
+}
+
+.seoText :global(.badge) + h1,
+.seoText :global(.badge) + h2,
+.seoText :global(.badge) + h3 {
+  margin-top: 32px;
+}
+
+.seoText strong,
+.seoText b {
+  font-weight: 600;
+}
+
 .section {
   margin-top: 18px;
   padding: 0 12px;
@@ -294,5 +330,18 @@
   }
   .simpleCard {
     padding: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .seoText h2,
+  .seoText h3 {
+    margin: 16px 0 8px;
+  }
+
+  .seoText ul,
+  .seoText ol {
+    margin-bottom: 16px;
+    padding-left: 18px;
   }
 }
