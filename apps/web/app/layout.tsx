@@ -50,6 +50,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className={styles.body}>
+        <Script
+          id="rubik-font"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+  if (document.getElementById('rubik-font-link')) return;
+  const l = document.createElement('link');
+  l.id = 'rubik-font-link';
+  l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap';
+  document.head.appendChild(l);
+})();`,
+          }}
+        />
+
         {/* Yandex Metrika */}
         <Script
           id="yandex-metrika"
@@ -81,6 +96,13 @@ gtag('js', new Date());
 gtag('config', 'G-6H00X5416S');`,
           }}
         />
+
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap"
+          />
+        </noscript>
 
         <noscript>
           <div>

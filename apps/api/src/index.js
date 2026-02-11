@@ -1496,6 +1496,7 @@ app.get(
           p.category_id,
           pc.slug as category_slug,
           pc.name as category_name,
+          pc.image_thumb_url as image_thumb_url,
           coalesce(p.category, pc.slug, '') as category,
 
           count(distinct c.id)::int as companies_count,
@@ -1529,7 +1530,7 @@ app.get(
         group by
           p.id, p.slug, p.name,
           p.category_id,
-          pc.slug, pc.name,
+          pc.slug, pc.name, pc.image_thumb_url,
           category,
           p.cover_image,
           p.show_on_site
@@ -1555,6 +1556,7 @@ app.get(
           p.category_id,
           pc.slug as category_slug,
           pc.name as category_name,
+          pc.image_thumb_url as image_thumb_url,
           coalesce(p.category, pc.slug, '') as category,
 
           count(distinct c.id)::int as companies_count,
@@ -1588,7 +1590,7 @@ app.get(
         group by
           p.id, p.slug, p.name,
           p.category_id,
-          pc.slug, pc.name,
+          pc.slug, pc.name, pc.image_thumb_url,
           category,
           p.cover_image,
           p.show_on_site
@@ -1613,6 +1615,7 @@ app.get(
         p.category_id,
         pc.slug as category_slug,
         pc.name as category_name,
+        pc.image_thumb_url as image_thumb_url,
         coalesce(p.category, pc.slug, '') as category,
 
         count(distinct c.id)::int as companies_count,
@@ -1645,7 +1648,7 @@ app.get(
       group by
         p.id, p.slug, p.name,
         p.category_id,
-        pc.slug, pc.name,
+        pc.slug, pc.name, pc.image_thumb_url,
         category,
         p.cover_image,
         p.show_on_site
@@ -1689,6 +1692,7 @@ app.get(
           p.category_id,
           pc.slug as category_slug,
           pc.name as category_name,
+          pc.image_thumb_url as image_thumb_url,
           coalesce(p.category, pc.slug, '') as category,
 
           p.description,
@@ -1732,6 +1736,7 @@ app.get(
           p.category_id,
           pc.slug as category_slug,
           pc.name as category_name,
+          pc.image_thumb_url as image_thumb_url,
           coalesce(p.category, pc.slug, '') as category,
 
           p.description,
@@ -2255,6 +2260,7 @@ app.get(
           s.default_unit,
           sc.slug as category_slug,
           sc.name as category_name,
+          sc.image_thumb_url as image_thumb_url,
 
           count(distinct c.id)::int as companies_count,
           min(ci.price_min) filter (where ci.price_min is not null) as price_min,
@@ -2282,7 +2288,7 @@ app.get(
 
         group by
           s.id, s.slug, s.name, s.default_unit,
-          sc.slug, sc.name,
+          sc.slug, sc.name, sc.image_thumb_url,
           s.cover_image,
           s.show_on_site
 
@@ -2311,6 +2317,7 @@ app.get(
           s.default_unit,
           sc.slug as category_slug,
           sc.name as category_name,
+          sc.image_thumb_url as image_thumb_url,
 
           count(distinct c.id)::int as companies_count,
           min(ci.price_min) filter (where ci.price_min is not null) as price_min,
@@ -2338,7 +2345,7 @@ app.get(
 
         group by
           s.id, s.slug, s.name, s.default_unit,
-          sc.slug, sc.name,
+          sc.slug, sc.name, sc.image_thumb_url,
           s.cover_image,
           s.show_on_site
 
@@ -2365,6 +2372,7 @@ app.get(
         s.default_unit,
         sc.slug as category_slug,
         sc.name as category_name,
+        sc.image_thumb_url as image_thumb_url,
 
         count(distinct c.id)::int as companies_count,
         min(ci.price_min) filter (where ci.price_min is not null) as price_min,
@@ -2390,7 +2398,7 @@ app.get(
 
       group by
         s.id, s.slug, s.name, s.default_unit,
-        sc.slug, sc.name,
+        sc.slug, sc.name, sc.image_thumb_url,
         s.cover_image,
         s.show_on_site
 
