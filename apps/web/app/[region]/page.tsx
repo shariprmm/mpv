@@ -430,6 +430,8 @@ function MediaCard({
   imgSrc,
   imgAlt,
   fit = "cover",
+  imageLoading = "lazy",
+  imageFetchPriority = "auto",
 }: {
   title: string;
   href: string;
@@ -437,6 +439,8 @@ function MediaCard({
   imgSrc?: string | null;
   imgAlt?: string;
   fit?: "cover" | "contain";
+  imageLoading?: "lazy" | "eager";
+  imageFetchPriority?: "high" | "low" | "auto";
 }) {
   const src = absMedia(imgSrc || "");
 
@@ -451,7 +455,9 @@ function MediaCard({
               alt={imgAlt || ""}
               width={38}
               height={38}
-              loading="lazy"
+              decoding="async"
+              fetchPriority={imageFetchPriority}
+              loading={imageLoading}
               className={`${styles.thumbImage} ${
                 fit === "contain" ? styles.thumbImageContain : styles.thumbImageCover
               }`}
@@ -884,7 +890,7 @@ export default async function RegionPage({
           <p className={styles.emptyText}>Пока нет услуг в прайсах компаний этого региона.</p>
         ) : (
           <div className={styles.grid}>
-            {services.slice(0, 12).map((s: any) => {
+            {services.slice(0, 12).map((s: any, idx: number) => {
               const parts: string[] = [];
               const p = formatPriceFrom(s.price_min ?? null, s.currency ?? "RUB");
               if (p) parts.push(p);
@@ -899,8 +905,10 @@ export default async function RegionPage({
                   key={s.slug || s.id}
                   title={s.name || s.title || s.slug}
                   href={`/${region}/services/${s.slug || s.code || s.id}`}
-                  imgSrc={s.image_url}
+                  imgSrc={s.image_thumb_url || s.image_url}
                   imgAlt={s.name || ""}
+                  imageLoading={idx === 0 ? "eager" : "lazy"}
+                  imageFetchPriority={idx === 0 ? "high" : "auto"}
                   meta={parts.length ? parts.join(" • ") : undefined}
                 />
               );
@@ -922,7 +930,7 @@ export default async function RegionPage({
           <p className={styles.emptyText}>Пока нет товаров в прайсах компаний этого региона.</p>
         ) : (
           <div className={styles.grid}>
-            {products.slice(0, 12).map((p: any) => {
+            {products.slice(0, 12).map((p: any, idx: number) => {
               const parts: string[] = [];
               const pr = formatPriceFrom(p.price_min ?? null, p.currency ?? "RUB");
               if (pr) parts.push(pr);
@@ -937,8 +945,10 @@ export default async function RegionPage({
                   key={p.slug || p.id}
                   title={p.name || p.title || p.slug}
                   href={`/${region}/products/${p.slug || p.code || p.id}`}
-                  imgSrc={p.image_url}
+                  imgSrc={p.image_thumb_url || p.image_url}
                   imgAlt={p.name || ""}
+                  imageLoading={idx === 0 ? "eager" : "lazy"}
+                  imageFetchPriority={idx === 0 ? "high" : "auto"}
                   meta={parts.length ? parts.join(" • ") : undefined}
                 />
               );
