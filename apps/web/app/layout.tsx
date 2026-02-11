@@ -1,6 +1,5 @@
 // apps/web/app/layout.tsx
 import Script from "next/script";
-
 import SiteHeader from "@/components/SiteHeader";
 import SeoJsonLd from "@/components/SeoJsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -9,6 +8,7 @@ import { SITE_NAME, SITE_URL, absUrl, jsonLdOrganization, jsonLdWebSite } from "
 
 import styles from "./layout.module.css";
 import "./globals.css";
+
 
 const API_BASE =
   process.env.API_BASE_URL ||
@@ -42,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preload" href="/images/logo.png" as="image" fetchPriority="high" />
         <link
           href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
